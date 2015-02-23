@@ -1,2 +1,2 @@
 # lims
-General LIMS scripts
+Miscellaneous scripts for Clarity LIMS.
