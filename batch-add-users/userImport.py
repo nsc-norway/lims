@@ -1,3 +1,6 @@
+# This was the example from Genologics Cookbook. 
+# Modified to handle a file format more suitable for the NSC.
+
 import sys
 import getopt
 import glsapiutil
@@ -9,7 +12,6 @@ VERSION = "v2"
 
 DEBUG = True
 api = None
-args = None
 COLS = {}
 DATA = []
 LABS = {}
@@ -25,13 +27,13 @@ def processColumnHeaders( headers ):
 		COLS[ token ] = count
 		count += 1
 
-def parseFile():
+def parseFile(fileName):
 
 	global DATA
 
 	LINES = []
 
-	f = open( args[ "fileName" ], "r" )
+	f = open( fileName, "r" )
 	TEMP = f.readlines()
 	f.close()
 
@@ -127,7 +129,7 @@ def createUser( uName, fName, lName, eMail, lab ):
 	uXML += '<password>abcd1234</password>'
 	uXML += '<account-locked>false</account-locked><role name="Collaborator"/>'
 	uXML += '</credentials>'
-	initials = fName.strip()[0] + lName.strip()[0] + 'X'
+	initials = "".join( [name[0] for name in fName.split(" ") + lName.split(" ")] )
 	uXML += '<initials>' + initials + '</initials>'
 	uXML += '</res:researcher>'
 
@@ -143,10 +145,10 @@ def createUser( uName, fName, lName, eMail, lab ):
 		print( "User: " + uName + " was created successfully" )
 		return True
 
-def importData():
+def importData(fileName, server):
 
 	## step 1: parse the file into data structures:
-	parseFile()
+	parseFile(fileName)
 	if DEBUG:
 		print COLS
 		print DATA[0]
@@ -162,6 +164,7 @@ def importData():
 	lNameIndex = COLS[ "Last Name" ]
 	eMailIndex = COLS[ "E-mail" ]
 	labIndex = COLS[ "Institution" ]
+	accessIndex = COLS[ server ]
 
 	for line in DATA:
 		tokens = line.split( "," )
@@ -170,11 +173,12 @@ def importData():
 		lName = tokens[ lNameIndex ]
 		eMail= tokens[ eMailIndex ]
 		lab = tokens[ labIndex ]
+		accessLevel = tokens[ accessIndex ]
 
 		## is a user with this username already in the system?
 		exists = doesUserExist( uName )
 		if not exists:
-			status = createUser( uName, fName, lName, eMail, lab )
+			status = createUser( uName, fName, lName, eMail, lab, accessLevel )
 			if status and DEBUG:
 				## jump out of the loop after the first successful creation
 				break
@@ -184,7 +188,6 @@ def importData():
 def main():
 
 	global api
-	global args
 	global BASE_URI
 
 	args = {}
@@ -207,10 +210,9 @@ def main():
 	api.setup( args[ "username" ], args[ "password" ] )
 	BASE_URI = args[ "host" ] + "/api/" + VERSION + "/"
 
-	## at this point, we have the parameters the EPP plugin passed, and we have network plumbing
-	## so let's get this show on the road!
-	importData()
+	importData(args['fileName'])
 
 
 if __name__ == "__main__":
 	main()
+
