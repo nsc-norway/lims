@@ -5,12 +5,13 @@ import sys
 import glsapiutil
 import xml.dom.minidom
 from xml.dom.minidom import parseString
+from xml.sax.saxutils import escape
 import urllib2
 from argparse import ArgumentParser
 
 VERSION = "v2"
 
-DEBUG = True
+DEBUG = False
 api = None
 COLS = {}
 DATA = []
@@ -106,32 +107,32 @@ def createUser( uName, fName, lName, eMail, lab, role, password ):
 				print( "Skipping the creation of user: " + uName )
 
 	## now create the user itself
-	uXML = '<res:researcher xmlns:res="http://genologics.com/ri/researcher">'
-	uXML += '<first-name>' + fName.strip() + '</first-name>'
-	uXML += '<last-name>' + lName.strip() + '</last-name>'
-	uXML += '<email>' + eMail.strip() + '</email>'
+	uXML = unicode('<res:researcher xmlns:res="http://genologics.com/ri/researcher">\n')
+	uXML += '<first-name><![CDATA[' + fName.strip() + ']]></first-name>\n'
+	uXML += '<last-name><![CDATA[' + lName.strip() + ']]></last-name>\n'
+	uXML += '<email>' + eMail.strip() + '</email>\n'
 	if len(lab) > 0:
 		lURI = LABS[ lab ]
-		uXML += '<lab uri="' + lURI + '"/>'
-	uXML += '<credentials>'
-	uXML += '<username>' + uName.strip() + '</username>'
-	uXML += '<password>' + password + '</password>'
-	uXML += '<account-locked>false</account-locked><role name="Collaborator"/>'
-        uXML += '<role name="' + role + '"/>'
-	uXML += '</credentials>'
-	initials = "".join( [name[0] for name in fName.split(" ") + lName.split(" ")] )
+		print lURI
+		uXML += '<lab uri="' + lURI + '"/>\n'
+	uXML += '<credentials>\n'
+	uXML += '<username>' + uName.strip() + '</username>\n'
+	uXML += '<password>' + password + '</password>\n'
+	uXML += '<account-locked>false</account-locked>\n'
+        uXML += '<role name="' + role + '"/>\n'
+	uXML += '</credentials>\n'
+	initials = "".join( [part[0] for name in fName.split(" ") + lName.split(" ") for part in name.split("-")] )
 	while len(initials) < 3:
 		initials = initials + "X"
-	uXML += '<initials>' + initials + '</initials>'
+	uXML += '<initials>' + initials + '</initials>\n'
 	uXML += '</res:researcher>'
 
-	rXML = api.createObject( uXML, BASE_URI + "researchers" )
+	rXML = api.createObject( uXML.encode('utf-8'), BASE_URI + "researchers" )
 	rDOM = parseString( rXML )
 	nodes = rDOM.getElementsByTagName( "res:researcher" )
 	if len(nodes) == 0:
 		print( "There was a problem creating the user: " + uName )
-		if DEBUG:
-			print rXML
+		print rXML
 		return False
 	else:
 		print( "User: " + uName + " was created successfully" )
@@ -154,7 +155,8 @@ def importData(fileName, server, suffix):
 	roleIndex = COLS[ server ]
 
 	for line in DATA:
-		tokens = line.split( ";" )
+		l = line.decode('utf-8')
+		tokens = l.split( ";" )
 		uName = tokens[ uNameIndex ]
 		fName = tokens[ fnameIndex ]
 		lName = tokens[ lNameIndex ]
@@ -170,6 +172,8 @@ def importData(fileName, server, suffix):
 			status = createUser( uName, fName, lName, eMail, lab, role, pw )
 			if status and DEBUG:
 				## jump out of the loop after the first successful creation
+				break
+			if not status:
 				break
 		else:
 			print( "User: " + uName + " already exists in the system.")
@@ -191,7 +195,10 @@ def main():
 		password = raw_input("Enter LIMS password: ")
 	url = args.host
 	if not url:
-		host_map = {"sandbox": "https://sandbox-lims.sequencing.uio.no"}
+		host_map = {"sandbox": "https://sandbox-lims.sequencing.uio.no",
+			"cees": "https://cees-lims.sequencing.uio.no",
+			"ous": "https://ous-lims.ous.nsc.local",
+			"dev": "https://dev-lims.ous.nsc.local"}
 		url = host_map[args.server]
 
 	api = glsapiutil.glsapiutil()
