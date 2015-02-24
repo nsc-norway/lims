@@ -1,12 +1,12 @@
-# This was the example from Genologics Cookbook. 
+# Based on the example from Genologics Cookbook. 
 # Modified to handle a file format more suitable for the NSC.
 
 import sys
-import getopt
 import glsapiutil
 import xml.dom.minidom
 from xml.dom.minidom import parseString
 import urllib2
+from argparse import ArgumentParser
 
 VERSION = "v2"
 
@@ -22,7 +22,7 @@ def processColumnHeaders( headers ):
 
 	count = 0
 
-	tokens = headers.split( "," )
+	tokens = headers.split( ";" )
 	for token in tokens:
 		COLS[ token ] = count
 		count += 1
@@ -31,31 +31,20 @@ def parseFile(fileName):
 
 	global DATA
 
-	LINES = []
-
 	f = open( fileName, "r" )
-	TEMP = f.readlines()
+	LINES = [l.strip("\n\r") for l in f.readlines()]
 	f.close()
 
-	headerRow = 3
-	lineCount = 1
-	for line in TEMP:
-		if lineCount >= headerRow:
-			if line.startswith( "," ):
-				break
-			tokens = line.split( "\n" )
-			for token in tokens:
-				LINES.append( token )
-		lineCount += 1
+	headerRow = 1
 
 	linecount = 0
 	for line in LINES:
-		if linecount == 0:
+		if linecount == headerRow:
 			processColumnHeaders( line )
-			linecount += 1
-		else:
+		elif linecount > headerRow:
 			if len(line) > 0:
 				DATA.append( line )
+		linecount += 1
 
 def getExistingLabs():
 
@@ -107,7 +96,7 @@ def createLab( labName ):
 			print rXML
 		return False
 
-def createUser( uName, fName, lName, eMail, lab ):
+def createUser( uName, fName, lName, eMail, lab, role, password ):
 
 	## does the lab exist, or does it need to be created?
 	if len(lab) > 0:
@@ -126,10 +115,13 @@ def createUser( uName, fName, lName, eMail, lab ):
 		uXML += '<lab uri="' + lURI + '"/>'
 	uXML += '<credentials>'
 	uXML += '<username>' + uName.strip() + '</username>'
-	uXML += '<password>abcd1234</password>'
+	uXML += '<password>' + password + '</password>'
 	uXML += '<account-locked>false</account-locked><role name="Collaborator"/>'
+        uXML += '<role name="' + role + '"/>'
 	uXML += '</credentials>'
 	initials = "".join( [name[0] for name in fName.split(" ") + lName.split(" ")] )
+	while len(initials) < 3:
+		initials = initials + "X"
 	uXML += '<initials>' + initials + '</initials>'
 	uXML += '</res:researcher>'
 
@@ -145,40 +137,37 @@ def createUser( uName, fName, lName, eMail, lab ):
 		print( "User: " + uName + " was created successfully" )
 		return True
 
-def importData(fileName, server):
+def importData(fileName, server, suffix):
 
 	## step 1: parse the file into data structures:
 	parseFile(fileName)
-	if DEBUG:
-		print COLS
-		print DATA[0]
 
 	## step 2: build a data structure that holds the current labs
 	getExistingLabs()
-	if DEBUG:
-		print LABS
 
 	##step 3: start stepping through the file and create labs / users as required
-	uNameIndex = COLS[ "User"]
-	fnameIndex = COLS[ "First Name" ]
-	lNameIndex = COLS[ "Last Name" ]
+	uNameIndex = COLS[ "Username"]
+	fnameIndex = COLS[ "First name" ]
+	lNameIndex = COLS[ "Last name" ]
 	eMailIndex = COLS[ "E-mail" ]
-	labIndex = COLS[ "Institution" ]
-	accessIndex = COLS[ server ]
+	labIndex = COLS[ "Lab" ]
+	roleIndex = COLS[ server ]
 
 	for line in DATA:
-		tokens = line.split( "," )
+		tokens = line.split( ";" )
 		uName = tokens[ uNameIndex ]
 		fName = tokens[ fnameIndex ]
 		lName = tokens[ lNameIndex ]
 		eMail= tokens[ eMailIndex ]
 		lab = tokens[ labIndex ]
-		accessLevel = tokens[ accessIndex ]
+		role = tokens[ roleIndex ]
 
 		## is a user with this username already in the system?
+		print "About to check username " , uName
 		exists = doesUserExist( uName )
 		if not exists:
-			status = createUser( uName, fName, lName, eMail, lab, accessLevel )
+			pw = uName + suffix
+			status = createUser( uName, fName, lName, eMail, lab, role, pw )
 			if status and DEBUG:
 				## jump out of the loop after the first successful creation
 				break
@@ -189,28 +178,29 @@ def main():
 
 	global api
 	global BASE_URI
-
-	args = {}
-
-	opts, extraparams = getopt.getopt(sys.argv[1:], "h:u:p:f:")
-
-	for o,p in opts:
-		if o == '-h':
-			args[ "host" ] = p
-		elif o == '-u':
-			args[ "username" ] = p
-		elif o == '-p':
-			args[ "password" ] = p
-		elif o == '-f':
-			args[ "fileName" ] = p
+	parser = ArgumentParser()
+	parser.add_argument("--username", help="Your LIMS access username", required = True)
+	parser.add_argument("--password", help="Existing password for LIMS (optional)")
+	parser.add_argument("--host", help="LIMS server base URL (optional)")
+	parser.add_argument("--file-name", help="Name of CSV file with user info", required = True)
+	parser.add_argument("--server", help="Short name of LIMS server, corresponds to column in CSV", required = True)
+	parser.add_argument("--pw-suffix", help="Temporary password suffix", required = True)
+	args = parser.parse_args()
+        password = args.password
+        if not password:
+		password = raw_input("Enter LIMS password: ")
+	url = args.host
+	if not url:
+		host_map = {"sandbox": "https://sandbox-lims.sequencing.uio.no"}
+		url = host_map[args.server]
 
 	api = glsapiutil.glsapiutil()
-	api.setHostname( args[ "host" ] )
+	api.setHostname( url )
 	api.setVersion( VERSION )
-	api.setup( args[ "username" ], args[ "password" ] )
-	BASE_URI = args[ "host" ] + "/api/" + VERSION + "/"
+	api.setup( args.username, password )
+	BASE_URI = url + "/api/" + VERSION + "/"
 
-	importData(args['fileName'])
+	importData(args.file_name, args.server, args.pw_suffix)
 
 
 if __name__ == "__main__":
