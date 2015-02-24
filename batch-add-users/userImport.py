@@ -165,18 +165,19 @@ def importData(fileName, server, suffix):
 		role = tokens[ roleIndex ]
 
 		## is a user with this username already in the system?
-		print "About to check username " , uName
-		exists = doesUserExist( uName )
-		if not exists:
-			pw = uName + suffix
-			status = createUser( uName, fName, lName, eMail, lab, role, pw )
-			if status and DEBUG:
-				## jump out of the loop after the first successful creation
-				break
-			if not status:
-				break
-		else:
-			print( "User: " + uName + " already exists in the system.")
+		if role != "None":
+			print "About to check username " , uName
+			exists = doesUserExist( uName )
+			if not exists:
+				pw = uName + suffix
+				status = createUser( uName, fName, lName, eMail, lab, role, pw )
+				if status and DEBUG:
+					## jump out of the loop after the first successful creation
+					break
+				if not status:
+					break
+			else:
+				print( "User: " + uName + " already exists in the system.")
 
 def main():
 
