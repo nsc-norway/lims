@@ -1,6 +1,7 @@
 # Based on the example from Genologics Cookbook. 
 # Modified to handle a file format more suitable for the NSC.
-
+import os.path
+import getpass
 import sys
 import glsapiutil
 import xml.dom.minidom
@@ -32,7 +33,7 @@ def parseFile(fileName):
 
 	global DATA
 
-	f = open( fileName, "r" )
+	f = open( os.path.expanduser(fileName), "r" )
 	LINES = [l.strip("\n\r") for l in f.readlines()]
 	f.close()
 
@@ -193,7 +194,7 @@ def main():
 	args = parser.parse_args()
         password = args.password
         if not password:
-		password = raw_input("Enter LIMS password: ")
+		password = getpass.getpass("Enter LIMS password: ")
 	url = args.host
 	if not url:
 		host_map = {"sandbox": "https://sandbox-lims.sequencing.uio.no",
