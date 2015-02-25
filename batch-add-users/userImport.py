@@ -114,7 +114,6 @@ def createUser( uName, fName, lName, eMail, lab, role, password ):
 	uXML += '<email>' + eMail.strip() + '</email>\n'
 	if len(lab) > 0:
 		lURI = LABS[ lab ]
-		print lURI
 		uXML += '<lab uri="' + lURI + '"/>\n'
 	uXML += '<credentials>\n'
 	uXML += '<username>' + uName.strip() + '</username>\n'
@@ -167,7 +166,7 @@ def importData(fileName, server, suffix):
 
 		## is a user with this username already in the system?
 		if role != "None":
-			print "About to check username " , uName
+			#print "About to check username " , uName
 			exists = doesUserExist( uName )
 			if not exists:
 				pw = uName + suffix
