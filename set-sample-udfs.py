@@ -4,8 +4,27 @@ from genologics import config
 
 import checks
 
-email_fields = ['Email', 'Billing email']
 
+project_fields = [
+    "Contact name",
+    "String",
+    "Contact institution",
+    "Contact address",
+    "Contact email",
+    "Contact telephone",
+    "Billing contact person",
+    "Billing institution",
+    "Billing address",
+    "Billing email",
+    "Billing telephone",
+    "Purchase order number",
+    "Kontostreng (Internal orders only)",
+    "Delivery method"
+    ]
+
+
+
+email_fields = ['Email', 'Billing email']
 
 def check(udfname, udfvalue):
     """Check if provided string is valid"""
@@ -31,7 +50,9 @@ def main(process_id):
             print "Samples from more than one project are not allowed"
             sys.exit(1)
 
-    for udfname, udfvalue in process.udf.items():
+    # Set UDFs
+    for udfname in project_fields:
+        udfvalue = process.udf[udfname]
         if not check(udfname, udfvalue):
             sys.exit(1)
         project.udf[udfname] = udfvalue
