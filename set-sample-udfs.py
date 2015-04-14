@@ -7,12 +7,14 @@ def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
     
-    for analyte in process.all_inputs(unique=True):
-        sample = analyte.samples[0]
-        
-        for udfname, udfval in process.udf.items():
-            sample.udf['NSC ' + udfname] = udfval
-            sample.put()
+    projects = {}
+    for ana in process.all_inputs():
+        project = ana.samples[0].project
+        projects[project.id] = project
+
+    for project in projects:
+        project.udf['Project Type'] = process.udf['Project Type']
+        project.put()
 
 
 if len(sys.argv) == 2:
