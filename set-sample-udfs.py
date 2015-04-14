@@ -8,10 +8,13 @@ email_fields = ['Email', 'Billing email']
 
 
 def check(udfname, udfvalue):
+    """Check if provided string is valid"""
+
     if udfname in email_fields:
         if not checks.is_valid_email(udfvalue):
             print "Text in", udfname, "is not a valid e-mail address."
             return False
+
     return True
 
 def main(process_id):
