@@ -28,11 +28,12 @@ def main(process_id):
             print "Samples from more than one project are not allowed"
             sys.exit(1)
 
+    project.get()
+    print project.name
     for udfname, udfvalue in process.udf.items():
         if not check(udfname, udfvalue):
             sys.exit(1)
-
-        project.udf[udfname] = udfvalue
+        #project.udf[udfname] = udfvalue
     project.put()
 
 
