@@ -22,9 +22,9 @@ def main(process_id):
     proj_id = None
     for ana in process.all_inputs():
         project = ana.samples[0].project
-        if not pid:
+        if not proj_id:
             proj_id = project.id
-        if pid != project.id:
+        if proj_id != project.id:
             print "Samples from more than one project are not allowed"
             sys.exit(1)
 
