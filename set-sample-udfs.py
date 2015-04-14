@@ -52,7 +52,6 @@ def main(process_id):
             sys.exit(1)
 
     # Set UDFs
-    project.get()
     for udfname in project_fields:
         try:
             udfvalue = process.udf[udfname]
