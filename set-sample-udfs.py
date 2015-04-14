@@ -2,19 +2,38 @@ import sys
 from genologics.lims import *
 from genologics import config
 
+import checks
+
+email_fields = ['Email', 'Billing email']
+
+
+def check(udfname, udfvalue):
+    if udfname in email_fields:
+        if not checks.is_valid_email(udfvalue):
+            print "Text in", udfname, "is not a valid e-mail address."
+            return False
+    return True
 
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
-    
-    projects = {}
+
+    # Check that all samples are from the same project
+    proj_id = None
     for ana in process.all_inputs():
         project = ana.samples[0].project
-        projects[project.id] = project
+        if not pid:
+            proj_id = project.id
+        if pid != project.id:
+            print "Samples from more than one project are not allowed"
+            sys.exit(1)
 
-    for project in projects:
-        project.udf['Project Type'] = process.udf['Project Type']
-        project.put()
+    for udfname, udfvalue in process.udf:
+        if not check(udfname, udfvalue):
+            sys.exit(1)
+
+        project.udf[udfname] = udfvalue
+    project.put()
 
 
 if len(sys.argv) == 2:
@@ -22,5 +41,4 @@ if len(sys.argv) == 2:
 else:
     print "use: python set-sample-udfs.py PROCESS_ID"
     sys.exit(1)
-
 
