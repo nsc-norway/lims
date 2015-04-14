@@ -6,8 +6,8 @@ import checks
 
 
 project_fields = [
-    "Contact name",
-    "String",
+    "Project Type",
+    "Contact person",
     "Contact institution",
     "Contact address",
     "Contact email",
@@ -19,6 +19,7 @@ project_fields = [
     "Billing telephone",
     "Purchase order number",
     "Kontostreng (Internal orders only)",
+    "Funded by Norsk Forskningsradet",
     "Delivery method"
     ]
 
@@ -51,13 +52,18 @@ def main(process_id):
             sys.exit(1)
 
     # Set UDFs
+    project.get()
     for udfname in project_fields:
-        udfvalue = process.udf[udfname]
+        try:
+            udfvalue = process.udf[udfname]
+        except KeyError:
+            continue
+
         if not check(udfname, udfvalue):
             sys.exit(1)
         project.udf[udfname] = udfvalue
-    project.put()
 
+    project.put()
 
 if len(sys.argv) == 2:
     main(sys.argv[1])
