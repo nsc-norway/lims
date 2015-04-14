@@ -31,7 +31,6 @@ def main(process_id):
             print "Samples from more than one project are not allowed"
             sys.exit(1)
 
-    project.get() # (as we're not triggering a read request otherwise)
     for udfname, udfvalue in process.udf.items():
         if not check(udfname, udfvalue):
             sys.exit(1)
