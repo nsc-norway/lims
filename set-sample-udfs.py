@@ -33,7 +33,7 @@ def main(process_id):
     for udfname, udfvalue in process.udf.items():
         if not check(udfname, udfvalue):
             sys.exit(1)
-        #project.udf[udfname] = udfvalue
+        project.udf[udfname] = udfvalue
     project.put()
 
 
