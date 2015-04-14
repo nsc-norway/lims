@@ -12,6 +12,7 @@ def main(process_id):
         
         for udfname, udfval in process.udf.items():
             sample.udf['NSC ' + udfname] = udfval
+            sample.put()
 
 
 if len(sys.argv) == 2:
