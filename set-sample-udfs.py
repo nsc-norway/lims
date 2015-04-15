@@ -33,8 +33,8 @@ project_fields = [
 sample_fields = [
         ("Sample type", "NSC sample type"),
         ("Sample buffer", "NSC sample buffer"),
-        ("Method used to determine concentration", "NSC method used to determine concentration"),
-        ("Method used to purify DNA/RNA", "NSC method used to purify DNA/RNA")
+        ("Method used to determine concentration", "NSC Method used to determine concentration"),
+        ("Method used to purify DNA/RNA", "NSC Method used to purify DNA/RNA")
 ]
 
 
