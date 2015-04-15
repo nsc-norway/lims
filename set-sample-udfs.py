@@ -79,7 +79,7 @@ def main(process_id):
 
     # Set Sample UDFs
     for ana in process.all_inputs(unique=True):
-        sample = ana.sample[0]
+        sample = ana.samples[0]
         for udfname in sample_fields:
             sample.udf['NSC ' + udfname] = ana.udf[udfname]
         sample.put()
