@@ -53,7 +53,7 @@ def main(process_id):
             try:
                 sample.udf[dest_udf] = process.udf[src_udf]
             except KeyError:
-                continue
+                pass
         sample.put()
 
 if len(sys.argv) == 2:
