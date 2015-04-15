@@ -6,22 +6,36 @@ import checks
 
 
 project_fields = [
-    "Project Type",
-    "Contact person",
-    "Contact institution",
-    "Contact address",
-    "Contact email",
-    "Contact telephone",
-    "Billing contact person",
-    "Billing institution",
-    "Billing address",
-    "Billing email",
-    "Billing telephone",
-    "Purchase order number",
-    "Kontostreng (Internal orders only)",
-    "Funded by Norsk Forskningsradet",
-    "Delivery method"
-    ]
+        "Project Type",
+        "Application",
+        "Sequencing method",
+        "Sequencing instrument requested",
+        "Read length requested",
+        "Sample prep requested",
+        "Desired insert size",
+        "Delivery method",
+        "Reference genome",
+        "Contact person",
+        "Contact institution",
+        "Contact address",
+        "Contact email",
+        "Contact telephone",
+        "Billing contact person",
+        "Billing institution",
+        "Billing address",
+        "Billing email",
+        "Billing telephone",
+        "Purchase order number",
+        "Funded by Norsk Forskningsradet",
+        "Kontostreng (Internal orders only)",
+]
+
+sample_fields = [
+        "Sample type",
+        "Sample buffer",
+        "Method used to determine concentration",
+        "Method used to purify DNA/RNA"
+]
 
 
 
@@ -51,7 +65,7 @@ def main(process_id):
             print "Samples from more than one project are not allowed"
             sys.exit(1)
 
-    # Set UDFs
+    # Set Project UDFs
     for udfname in project_fields:
         try:
             udfvalue = process.udf[udfname]
@@ -61,8 +75,14 @@ def main(process_id):
         if not check(udfname, udfvalue):
             sys.exit(1)
         project.udf[udfname] = udfvalue
-
     project.put()
+
+    # Set Sample UDFs
+    for ana in process.all_inputs(unique=True):
+        sample = ana.sample[0]
+        for udfname in sample_fields:
+            sample.udf['NSC ' + udfname] = ana.udf[udfname]
+        sample.put()
 
 if len(sys.argv) == 2:
     main(sys.argv[1])
