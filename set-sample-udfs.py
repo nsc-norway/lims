@@ -31,10 +31,10 @@ project_fields = [
 ]
 
 sample_fields = [
-        "Sample type",
-        "Sample buffer",
-        "Method used to determine concentration",
-        "Method used to purify DNA/RNA"
+        ("Sample type", "NSC sample type"),
+        ("Sample buffer", "NSC sample buffer"),
+        ("Method used to determine concentration", "NSC method used to determine concentration"),
+        ("Method used to purify DNA/RNA", "NSC method used to purify DNA/RNA")
 ]
 
 
@@ -80,8 +80,8 @@ def main(process_id):
     # Set Sample UDFs
     for ana in process.all_inputs(unique=True):
         sample = ana.samples[0]
-        for udfname in sample_fields:
-            sample.udf['NSC ' + udfname] = process.udf[udfname]
+        for src_udf, dest_udf in sample_fields:
+            sample.udf[src_udf] = process.udf[dest_udf]
         sample.put()
 
 if len(sys.argv) == 2:
