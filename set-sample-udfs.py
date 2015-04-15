@@ -1,55 +1,24 @@
 import sys
+import re
 from genologics.lims import *
 from genologics import config
 
-import checks
+import settings
 
-
-project_fields = [
-        "Project Type",
-        "Application",
-        "Sequencing method",
-        "Sequencing instrument requested",
-        "Read length requested",
-        "Sample prep requested",
-        "Desired insert size",
-        "Delivery method",
-        "Reference genome",
-        "Contact person",
-        "Contact institution",
-        "Contact address",
-        "Contact email",
-        "Contact telephone",
-        "Billing contact person",
-        "Billing institution",
-        "Billing address",
-        "Billing email",
-        "Billing telephone",
-        "Purchase order number",
-        "Funded by Norsk Forskningsradet",
-        "Kontostreng (Internal orders only)",
-]
-
-sample_fields = [
-        ("Sample type", "NSC sample type"),
-        ("Sample buffer", "NSC sample buffer"),
-        ("Method used to determine concentration", "NSC Method used to determine concentration"),
-        ("Method used to purify DNA/RNA", "NSC Method used to purify DNA/RNA")
-]
-
-
-
-email_fields = ['Email', 'Billing email']
 
 def check(udfname, udfvalue):
     """Check if provided string is valid"""
 
-    if udfname in email_fields:
-        if not checks.is_valid_email(udfvalue):
+    if udfname in settings.email_fields:
+        if not re.match(r".*@.+\..+$", udfvalue):
             print "Text in", udfname, "is not a valid e-mail address."
+            return False
+        if re.search(r"[A-Z]", udfvalue):
+            print "Capital letters not allowed in email addresses, in ", udfname, "."
             return False
 
     return True
+
 
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
@@ -66,7 +35,7 @@ def main(process_id):
             sys.exit(1)
 
     # Set Project UDFs
-    for udfname in project_fields:
+    for udfname in settings.project_fields:
         try:
             udfvalue = process.udf[udfname]
         except KeyError:
@@ -80,8 +49,11 @@ def main(process_id):
     # Set Sample UDFs
     for ana in process.all_inputs(unique=True):
         sample = ana.samples[0]
-        for src_udf, dest_udf in sample_fields:
-            sample.udf[dest_udf] = process.udf[src_udf]
+        for src_udf, dest_udf in settings.sample_fields:
+            try:
+                sample.udf[dest_udf] = process.udf[src_udf]
+            except KeyError:
+                continue
         sample.put()
 
 if len(sys.argv) == 2:
