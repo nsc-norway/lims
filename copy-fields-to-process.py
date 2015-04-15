@@ -16,20 +16,24 @@ def main(process_id):
     proj_id = None
 
     # Set Project UDFs
-    for udfname in project_fields:
+    any_set = False
+    for udfname in settings.project_fields:
         try:
             process.udf[udfname] = project.udf[udfname]
+            any_set = True
         except KeyError:
             pass
 
     # Set Sample UDFs
-    for dest_udf, src_udf in sample_fields:
+    for dest_udf, src_udf in settings.sample_fields:
         try:
             process.udf[dest_udf] = sample.udf[src_udf]
+            any_set = True
         except KeyError:
             pass
 
-    process.put()
+    if any_set:
+        process.put()
 
 
 if len(sys.argv) == 2:
