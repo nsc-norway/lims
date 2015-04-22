@@ -1,3 +1,7 @@
+# For the project evaluation workflow.
+# Copies UDFs from a process to the Sample objects associated with the 
+# inputs of that process, and the Project associated with those samples.
+
 import sys
 import re
 from genologics.lims import *

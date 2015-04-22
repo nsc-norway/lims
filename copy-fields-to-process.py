@@ -1,3 +1,5 @@
+# Script to populate fields in process for Project Evaluation workflow.
+
 import sys
 import re
 import requests
@@ -14,7 +16,6 @@ def main(process_id):
     # Get the first sample and project
     sample = process.all_inputs()[0].samples[0]
     project = sample.project
-    proj_id = None
 
     # Set Project UDFs
     any_set = False

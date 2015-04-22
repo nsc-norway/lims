@@ -1,8 +1,8 @@
 # Script intended to be run in the Project Dashboard on analytes
 # Sets the correct reagenet labels on Analytes based on a UDF 
-# called NSC Sequence on the associated Sample. This allows a 
-# user to import samples with only the sequence, and later 
-# associate the sample with the correct reagent label. 
+# called "NSC index requested/used" on the associated Sample. 
+# This allows a user to import samples with only the sequence, and
+# later associate the sample with the correct reagent label. 
 
 # use: python set-reagent-labels.py "Reagent category" {LIMS IDs}
 # The first argument is the name of a reagent category.
