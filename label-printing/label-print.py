@@ -3,7 +3,6 @@ import re
 import uuid
 import tempfile
 import datetime
-import barcode
 from appy.pod.renderer import Renderer
 from hubarcode.datamatrix import DataMatrixEncoder
 from genologics.lims import *
@@ -54,6 +53,7 @@ def make_tube_label(analyte):
 
     params = {}
     image_data = DataMatrixEncoder(analyte.id).get_imagedata(cellsize=1)
+    open('test.png', 'wb').write(image_data)
     params['barcode'] = image_data
     params['project_customer'] = project_customer
     params['project_label'] = project_label
@@ -69,7 +69,8 @@ def make_tube_label(analyte):
 
 def main():
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
-    make_tube_label(Artifact(lims, id = "SUN155A1PA1"))
+    #make_tube_label(Artifact(lims, id = "SUN155A1PA1"))
+    make_tube_label(Artifact(lims, id = "BJR158A19PA1"))
 
 
 main()
