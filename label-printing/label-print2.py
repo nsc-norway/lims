@@ -3,42 +3,19 @@ import re
 import uuid
 import tempfile
 import datetime
-from appy.pod.renderer import Renderer
 from hubarcode.datamatrix import DataMatrixEncoder
 from genologics.lims import *
 from genologics import config
-import PIL
+from reportlab.lib import colors
+from reportlab.graphics.shapes import *
+from reportlab.graphics import renderPDF
 
 #template_dir = "C:\\Users\\admin\\Desktop"
 #template_dir = "/Users/paalmbj/git/lims/label-printing/templates"
 template_dir = "templates"
 print_spool_dir = "/tmp"
 
-class Barcode(object):
-    def __init__(self, name, type, cellsize):
-        self.name = name
-        self.type = type
-        self.cellsize = cellsize
-
-
 use_printer = "LABEL1"
-
-def prepare_odt(template, printer, template_parameters):
-    template_path = os.path.join(template_dir, template)
-    output_name = "{0}-{1:%Y%m%d%H%M_%f}.odt".format(
-            printer,
-            datetime.datetime.now()
-            )
-    output_path = os.path.join(print_spool_dir, "transfer", output_name)
-    renderer = Renderer(
-            template_path,
-            template_parameters,
-            output_path,
-            pythonWithUnoPath="/Applications/LibreOffice.app/Contents/MacOS/python"
-            )
-    renderer.run()
-    os.rename(output_path, os.path.join(print_spool_dir, output_name))
-
 
 
 
@@ -52,6 +29,10 @@ def make_tube_label(analyte):
         project_customer = "Invalid"
         project_label = "Project"
         project_date = "Name"
+
+    d = Drawing(254, 127)
+    d.add(Rect(10, 10, 244, 117, fillColor=colors.yellow))
+    d.add(String(
 
     params = {}
     #image_data = DataMatrixEncoder(analyte.id).get_imagedata(cellsize=10)
