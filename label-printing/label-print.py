@@ -54,12 +54,13 @@ def make_tube_label(analyte):
         project_date = "Name"
 
     params = {}
-    #image_data = DataMatrixEncoder(analyte.id).get_imagedata(cellsize=10)
-    image_data = open('test2.png').read()
+    image_data = DataMatrixEncoder(analyte.id).get_imagedata(cellsize=1)
     params['barcode'] = image_data
     params['project_customer'] = project_customer
     params['project_label'] = project_label
     params['project_date'] = project_date
+
+    params['sample_name'] = sample.name
 
     params['date'] = datetime.date.today().strftime("%y-%m-%d")
     params['type'] = 'STOCK'
@@ -71,8 +72,8 @@ def make_tube_label(analyte):
 
 def main():
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
-    #make_tube_label(Artifact(lims, id = "SUN155A1PA1"))
-    make_tube_label(Artifact(lims, id = "FJE56A136PA1"))
+    make_tube_label(Artifact(lims, id = "SUN155A1PA1"))
+    #make_tube_label(Artifact(lims, id = "FJE56A136PA1"))
 
 
 main()
