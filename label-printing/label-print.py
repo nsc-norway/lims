@@ -1,18 +1,22 @@
+#!/usr/bin/python
+# Requirements:
+# PIL (use the fork pillow) -- pip install pillow
+#  - PIL requires yum packages gcc-c++, zlib-devel (for PNG), python-devel on RHEL6
+# huBarcode - pip install hubarcode
+# appy - pip install appy
+# SciLife Genologics lib - use NSC fork in genologics repo
+
 import os
 import re
-import uuid
-import tempfile
+import sys
 import datetime
 from appy.pod.renderer import Renderer
 from hubarcode.datamatrix import DataMatrixEncoder
 from genologics.lims import *
 from genologics import config
-import PIL
 
-#template_dir = "C:\\Users\\admin\\Desktop"
-#template_dir = "/Users/paalmbj/git/lims/label-printing/templates"
-template_dir = "templates"
-print_spool_dir = "/tmp"
+template_dir = os.path.dirname(os.path.realpath(__file__)) + "/templates"
+print_spool_dir = "/remote/label-printing"
 
 class Barcode(object):
     def __init__(self, name, type, cellsize):
@@ -70,10 +74,18 @@ def make_tube_label(analyte):
 
  
 
-def main():
+def main(type, lims_ids):
+
+    if type == 'tube':
+        do = make_tube_label
+    else:
+        print "Don't know how to make '", type, "' label"
+
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
-    make_tube_label(Artifact(lims, id = "SUN155A1PA1"))
-    #make_tube_label(Artifact(lims, id = "FJE56A136PA1"))
+
+    for id in lims_ids:
+        do(Artifact(lims, id=id))
 
 
-main()
+main(sys.argv[1], sys.argv[2:])
+
