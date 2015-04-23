@@ -18,14 +18,6 @@ from genologics import config
 template_dir = os.path.dirname(os.path.realpath(__file__)) + "/templates"
 print_spool_dir = "/remote/label-printing"
 
-class Barcode(object):
-    def __init__(self, name, type, cellsize):
-        self.name = name
-        self.type = type
-        self.cellsize = cellsize
-
-
-use_printer = "LABEL1"
 
 def prepare_odt(template, printer, template_parameters):
     template_path = os.path.join(template_dir, template)
@@ -42,8 +34,6 @@ def prepare_odt(template, printer, template_parameters):
             )
     renderer.run()
     os.rename(output_path, os.path.join(print_spool_dir, output_name))
-
-
 
 
 def make_tube_label(analyte):
@@ -80,6 +70,7 @@ def main(type, lims_ids):
         do = make_tube_label
     else:
         print "Don't know how to make '", type, "' label"
+        sys.exit(1)
 
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
 
