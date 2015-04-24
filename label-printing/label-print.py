@@ -82,8 +82,8 @@ def main(type, lims_ids):
         do(Artifact(lims, id=id), outputfile.name)
         files.append(outputfile.name)
 
+    ooopy = OOoPy(infile = files[0], outfile=transfer_output_path)
     if len(lims_ids) > 1:
-        ooopy = OOoPy(infile = files[0], outfile=transfer_output_path)
         t = Transformer \
             ( ooopy.mimetype
             , Transforms.get_meta        (ooopy.mimetype)
@@ -94,10 +94,7 @@ def main(type, lims_ids):
             , Transforms.Manifest_Append ()
             )
         t.transform (ooopy)
-        ooopy.close()
-    else: 
-        print files[0]
-        os.rename(files[0], transfer_output_path)
+    ooopy.close()
 
     os.rename(transfer_output_path, os.path.join(print_spool_dir, result_name))
 
