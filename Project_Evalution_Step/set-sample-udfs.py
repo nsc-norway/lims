@@ -51,14 +51,14 @@ def main(process_id):
     project.put()
 
     # Set Sample UDFs
-    for ana in process.all_inputs(unique=True):
-        sample = ana.samples[0]
-        for src_udf, dest_udf in settings.sample_fields:
-            try:
-                sample.udf[dest_udf] = process.udf[src_udf]
-            except KeyError:
-                pass
-        sample.put()
+    #for ana in process.all_inputs(unique=True):
+    #    sample = ana.samples[0]
+    #    for src_udf, dest_udf in settings.sample_fields:
+    #        try:
+    #            sample.udf[dest_udf] = process.udf[src_udf]
+    #        except KeyError:
+    #            pass
+    #    sample.put()
 
 if len(sys.argv) == 2:
     main(sys.argv[1])

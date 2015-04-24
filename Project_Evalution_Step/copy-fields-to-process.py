@@ -27,12 +27,12 @@ def main(process_id):
             pass
 
     # Set Sample UDFs
-    for dest_udf, src_udf in settings.sample_fields:
-        try:
-            process.udf[dest_udf] = sample.udf[src_udf]
-            any_set = True
-        except KeyError:
-            pass
+    #for dest_udf, src_udf in settings.sample_fields:
+    #    try:
+    #        process.udf[dest_udf] = sample.udf[src_udf]
+    #        any_set = True
+    #    except KeyError:
+    #        pass
 
     if any_set:
         try:
