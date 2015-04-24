@@ -14,9 +14,6 @@ def check(udfname, udfvalue):
     """Check if provided string is valid"""
 
     if udfname in settings.email_fields:
-        if not re.match(r".*@.+\..+$", udfvalue):
-            print "Text in", udfname, "is not a valid e-mail address."
-            return False
         if re.search(r"[A-Z]", udfvalue):
             print "Capital letters not allowed in email addresses, in ", udfname, "."
             return False
@@ -45,8 +42,12 @@ def main(process_id):
         except KeyError:
             continue
 
-        if not check(udfname, udfvalue):
-            sys.exit(1)
+        if udfname in settings.email_fields:
+            if not re.match(r".*@.+\..+$", udfvalue):
+                print "Text in", udfname, "is not a valid e-mail address."
+                sys.exit(1)
+            udfvalue = udfvalue.lower()
+
         project.udf[udfname] = udfvalue
     project.put()
 
