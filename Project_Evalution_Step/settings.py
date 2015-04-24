@@ -25,6 +25,9 @@ project_fields = [
         "Billing institution",
         "Sequencing method",
         "Sample type",
+	"Sample buffer"
+	"Method used to determine concentration"
+	"Method used to purify DNA/RNA"
         "Application",
         "Sequencing instrument requested",
         "Read length requested",
@@ -47,12 +50,12 @@ project_fields = [
         "Evaluation comments"
 ]
 
-sample_fields = [
-        ("Sample type", "NSC sample type"),
-        ("Sample buffer", "NSC sample buffer"),
-        ("Method used to determine concentration", "NSC method used to determine concentration"),
-        ("Method used to purify DNA/RNA", "NSC method used to purify DNA/RNA")
-]
+# sample_fields = [
+#        ("Sample type", "NSC sample type"),
+#        ("Sample buffer", "NSC sample buffer"),
+#        ("Method used to determine concentration", "NSC method used to determine concentration"),
+#        ("Method used to purify DNA/RNA", "NSC method used to purify DNA/RNA")
+# ]
 
 
 
