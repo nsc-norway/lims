@@ -10,33 +10,31 @@ import os
 import re
 import sys
 import datetime
+import tempfile
 from appy.pod.renderer import Renderer
 from hubarcode.datamatrix import DataMatrixEncoder
 from genologics.lims import *
 from genologics import config
+from ooopy.OOoPy import OOoPy
+from ooopy.Transformer  import Transformer
+import ooopy.Transforms as     Transforms
 
 template_dir = os.path.dirname(os.path.realpath(__file__)) + "/templates"
 print_spool_dir = "/remote/label-printing"
+#print_spool_dir = "/tmp"
+printers = {'tube': 'LABEL1'}
 
-
-def prepare_odt(template, printer, template_parameters):
+def prepare_odt(template, template_parameters, output_path):
     template_path = os.path.join(template_dir, template)
-    output_name = "{0}-{1:%Y%m%d%H%M_%f}.odt".format(
-            printer,
-            datetime.datetime.now()
-            )
-    output_path = os.path.join(print_spool_dir, "transfer", output_name)
     renderer = Renderer(
             template_path,
             template_parameters,
-            output_path,
-            pythonWithUnoPath="/Applications/LibreOffice.app/Contents/MacOS/python"
+            output_path
             )
     renderer.run()
-    os.rename(output_path, os.path.join(print_spool_dir, output_name))
 
 
-def make_tube_label(analyte):
+def make_tube_label(analyte, outputfile):
     sample = analyte.samples[0]
     project = sample.project
     project_match = re.match(r"(.*)-(.*)-(\d{4}-\d{2}-\d{2})", project.name)
@@ -60,7 +58,7 @@ def make_tube_label(analyte):
     params['type'] = 'STOCK'
     params['location'] = '0001-A1'
 
-    prepare_odt('tube.odt', 'LABEL1', params)
+    prepare_odt('tube.odt', params, outputfile)
 
  
 
@@ -74,9 +72,34 @@ def main(type, lims_ids):
 
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
 
+    result_name = "{0}-{1:%Y%m%d%H%M_%f}.odt".format(printers[type], datetime.datetime.now())
+    transfer_output_path = os.path.join(print_spool_dir, "transfer", result_name)
+        
+    files = []
     for id in lims_ids:
-        do(Artifact(lims, id=id))
+        outputfile = tempfile.NamedTemporaryFile(suffix='.odt')
+        outputfile.close()
+        do(Artifact(lims, id=id), outputfile.name)
+        files.append(outputfile.name)
 
+    if len(lims_ids) > 1:
+        ooopy = OOoPy(infile = files[0], outfile=transfer_output_path)
+        t = Transformer \
+            ( ooopy.mimetype
+            , Transforms.get_meta        (ooopy.mimetype)
+            , Transforms.Concatenate     (* (files [1:]))
+            , Transforms.renumber_all    (ooopy.mimetype)
+            , Transforms.set_meta        (ooopy.mimetype)
+            , Transforms.Fix_OOo_Tag     ()
+            , Transforms.Manifest_Append ()
+            )
+        t.transform (ooopy)
+        ooopy.close()
+    else: 
+        print files[0]
+        os.rename(files[0], transfer_output_path)
+
+    os.rename(transfer_output_path, os.path.join(print_spool_dir, result_name))
 
 main(sys.argv[1], sys.argv[2:])
 
