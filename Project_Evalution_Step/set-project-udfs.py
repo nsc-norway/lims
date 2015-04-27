@@ -10,19 +10,6 @@ from genologics import config
 import settings
 
 
-def check(udfname, udfvalue):
-    """Check if provided string is valid"""
-
-    if udfname in settings.email_fields:
-        if not re.match(r".*@.+\..+$", udfvalue):
-            print "Text in", udfname, "is not a valid e-mail address."
-            return False
-        if re.search(r"[A-Z]", udfvalue):
-            print "Capital letters not allowed in email addresses, in ", udfname, "."
-            return False
-
-    return True
-
 
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
@@ -45,20 +32,18 @@ def main(process_id):
         except KeyError:
             continue
 
-        if not check(udfname, udfvalue):
-            sys.exit(1)
+        if udfname in settings.email_fields:
+            if not re.match(r".*@.+\..+$", udfvalue):
+                print "Text in", udfname, "is not a valid e-mail address."
+                sys.exit(1)
+            udfvalue = udfvalue.lower()
         project.udf[udfname] = udfvalue
+        
+        single_line_field = settings.multiline_to_single_line.get(udfname)
+        if single_line_field:
+            project.udf[single_line_field] = " ".join(udfvalue.splitlines())
+        
     project.put()
-
-    # Set Sample UDFs
-    for ana in process.all_inputs(unique=True):
-        sample = ana.samples[0]
-        for src_udf, dest_udf in settings.sample_fields:
-            try:
-                sample.udf[dest_udf] = process.udf[src_udf]
-            except KeyError:
-                pass
-        sample.put()
 
 if len(sys.argv) == 2:
     main(sys.argv[1])

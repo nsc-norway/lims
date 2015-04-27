@@ -25,6 +25,9 @@ project_fields = [
         "Billing institution",
         "Sequencing method",
         "Sample type",
+	"Sample buffer",
+	"Method used to determine concentration",
+	"Method used to purify DNA/RNA",
         "Application",
         "Sequencing instrument requested",
         "Read length requested",
@@ -47,15 +50,14 @@ project_fields = [
         "Evaluation comments"
 ]
 
-sample_fields = [
-        ("Sample type", "NSC sample type"),
-        ("Sample buffer", "NSC sample buffer"),
-        ("Method used to determine concentration", "NSC method used to determine concentration"),
-        ("Method used to purify DNA/RNA", "NSC method used to purify DNA/RNA")
-]
-
-
-
 email_fields = ['Contact email', 'Billing email']
 
+multiline_to_single_line = {
+        "Evaluation comments": "Evaluation comments_S",
+        "Billing comments": "Billing comments_S",
+        "Project comments": "Project comments_S",
+        "Project goal": "Project goal_S",
+        "Billing address": "Billing address_S",
+        "Contact address": "Contact address_S",
+        }
 
