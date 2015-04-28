@@ -29,11 +29,28 @@ def main(process_id):
     for l in lines[1:]:
         cell = l.split(",")
         well = cell[h['WellId']]
-        i = well_input[well[0] + ":" + well[1]]
+        try:
+            i = well_input[well[0] + ":" + well[1]]
+        except KeyError:
+            continue
 
-        i.udf[''] = cell[h['']]
+        outputs = process.outputs_per_input(i.id)
+        for o in outputs:
+            if o.name == "Tapestation " + i.name:
+                output = o
+                break
+        else:
+            continue # skip lines without associated output
+
+        process.udf['Concentration'] = cell[h['Conc. [ng/\xc2l]']]
+        process.udf['Region To [bp]'] = cell[h['To [bp]']]
+        process.udf['Region From [bp]'] = cell[h['From [bp]']]
+        process.udf['Average Size [bp]'] = cell[h['Average Size [bp]']]
+        process.udf['Region % of Total'] = cell[h['% of Total']]
+        process.udf['Region Molarity [nmol/l]'] = cell[h['Conc. [ng/\xc2l]']]
         #...
         i.put()
 
 
 main(sys.argv[1])
+
