@@ -4,6 +4,9 @@ import csv
 from genologics.lims import *
 from genologics import config
 
+# Custom UDFs for analyte
+
+
 EXPECT_COLUMNS = 8
 FILE_LIMS_NAME = "Region csv file"
 
@@ -20,7 +23,7 @@ def main(process_id):
         print "No file to read"
         sys.exit(1)
 
-    well_input = dict((i.location[1], i) for i in process.all_inputs())
+    name_well = dict((i.location[1], i) for i in process.all_inputs())
 
     lines = file_data.splitlines()
     # Parse header row
