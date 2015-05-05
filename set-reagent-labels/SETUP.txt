@@ -1,0 +1,18 @@
+### Set reagent label script
+
+The script takes as the first argument the index category, and all 
+subsequent arguments are interpreted as analyte (derived sample) IDs. It
+is used with the Project Dashboard's Derived Sample Actions.
+
+
+## Installation
+
+In the web UI, under Configure, Automation, choose "Add action".
+
+Action Name: Set TruSeq DNA LT Indexes
+Channel Name: limsserver
+Command Line: /usr/bin/python /opt/gls/clarity/customextensions/lims/set-reagent-labels/set-reagent-labels.py "<CATEGORY>" {derivedSampleLuids}
+Command Line Example: /usr/bin/python /opt/gls/clarity/customextensions/lims/set-reagent-labels/set-reagent-labels.py "TruSeq DNA LT Adapters (AD series)" {derivedSampleLuids}
+
+
+One such action must be added for each index type.
