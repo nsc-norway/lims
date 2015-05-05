@@ -10,6 +10,14 @@ from xml.sax.saxutils import escape
 import urllib2
 from argparse import ArgumentParser
 
+
+print "WARNING: This script is flawed, will not set correct roles for"
+print "         system administrators. Please open the Modify dialogue"
+print "         for all system administrators and save them."
+# If users are created with only the "System administrator" role, things
+# will break if they own a process:
+# http://genologics.zendesk.com/requests/10018
+
 VERSION = "v2"
 
 DEBUG = False
