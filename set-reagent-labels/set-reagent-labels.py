@@ -1,6 +1,6 @@
 # Script intended to be run in the Project Dashboard on analytes
 # Sets the correct reagenet labels on Analytes based on a UDF 
-# called "NSC index requested/used" on the associated Sample. 
+# called "Index requested/used" on the associated Sample. 
 # This allows a user to import samples with only the sequence, and
 # later associate the sample with the correct reagent label. 
 
