@@ -24,7 +24,7 @@ def main(category, analyte_ids):
 
     for analyte_id in analyte_ids:
         ana = Artifact(lims, id = analyte_id)
-        sequence = ana.samples[0].udf['NSC index requested/used']
+        sequence = ana.samples[0].udf['Index requested/used']
         ana.reagent_labels.add(reagents[sequence].name)
         ana.put()
 
