@@ -2,7 +2,11 @@
 
 ### Edit these process types for adding reagents
 
+  - Adenylate ends & Ligate Adapters (KAPA LTP Library Prep) 5.0
+  - Adenylate ends & Ligate Adapters (TruSeq DNA) 5.0
   - Adenylate ends & Ligate Adapters (TruSeq RNA) 5.0
+  - Adenylate ends & Ligate Adapters (TruSeq Stranded mRNA) 5.0
+  - Adenylate ends & Ligate Adapters (TruSeq Stranded Total RNA) 5.0
 
 ### Make these changes to the process types
 
