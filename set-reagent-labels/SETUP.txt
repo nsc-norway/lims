@@ -16,3 +16,13 @@ Command Line Example: /usr/bin/python /opt/gls/clarity/customextensions/lims/set
 
 
 One such action must be added for each index type.
+
+## Automatic index detection
+
+In the web UI, under Configure, Automation, choose "Add action".
+
+Action Name: Set indexes (auto-detect)
+Channel Name: limsserver
+Command Line: /usr/bin/python /opt/gls/clarity/customextensions/lims/set-reagent-labels/set-index-auto.py {derivedSampleLuids}
+
+
