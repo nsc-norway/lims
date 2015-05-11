@@ -1,0 +1,13 @@
+#### Label printing action on dashboard
+
+Need pip package dependencies:
+ - appy
+ - hubarcode
+Yum package dependency:
+ - python-imaging
+
+Add in web interface, Configure, Automation, Add action:
+
+Action name: Print tube label
+Channel name: limsserver
+Command line: /usr/bin/python /opt/gls/clarity/customextensions/lims/label-printing/label-print.py tube {derivedSampleLuids}
