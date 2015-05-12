@@ -1,6 +1,5 @@
 from genologics.lims import *
 from genologics import config
-from collections import defaultdict
 import sys
 
 def main(analyte_ids):
