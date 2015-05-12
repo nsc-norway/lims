@@ -36,6 +36,7 @@ def main(analyte_ids):
 
         for ana in analytes:
             sequence = ana.samples[0].udf['Index requested/used']
+            ana.reagent_labels.clear()
             ana.reagent_labels.add(reagents[sequence].name)
             ana.put()
 

@@ -16,15 +16,22 @@ import sys
 def main(category, analyte_ids):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
+    analytes = [Artifact(lims, id=analyte_id) for analyte_id in analyte_ids]
+    sequences = set(ana.samples[0].udf['Index requested/used'] for ana in analytes)
+
     reagents = dict(
             (rt.index_sequence, rt) 
             for rt in lims.get_reagent_types() 
             if rt.category==category
         )
 
-    for analyte_id in analyte_ids:
-        ana = Artifact(lims, id = analyte_id)
+    if not sequences.issubset(set(reagents.keys())):
+        raise ValueError("Not all sequences are available in category")
+
+    for ana in analytes:
         sequence = ana.samples[0].udf['Index requested/used']
+        sequences.add(sequence)
+        ana.reagent_labels.clear()
         ana.reagent_labels.add(reagents[sequence].name)
         ana.put()
 
