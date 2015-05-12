@@ -31,7 +31,7 @@ def main(analyte_ids):
         reagents = dict(
                 (rt.index_sequence, rt) 
                 for rt in lims.get_reagent_types() 
-                if rt.category==category
+                if rt.category==categories[0]
             )
 
         for ana in analytes:
