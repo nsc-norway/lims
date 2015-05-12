@@ -3,7 +3,7 @@ from genologics import config
 from collections import defaultdict
 import sys
 
-def main(category, analyte_ids):
+def main(analyte_ids):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
     for analyte_id in analyte_ids:
