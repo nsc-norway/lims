@@ -28,16 +28,16 @@ def main(analyte_ids):
             categories.append(cat_name)
 
     if len(categories) == 1:
-        reagents = dict(
+        index_reagent_map = dict(
                 (rt.index_sequence, rt) 
-                for rt in lims.get_reagent_types() 
+                for rt in reagent_types
                 if rt.category==categories[0]
             )
 
         for ana in analytes:
             sequence = ana.samples[0].udf['Index requested/used']
             ana.reagent_labels.clear()
-            ana.reagent_labels.add(reagents[sequence].name)
+            ana.reagent_labels.add(index_reagent_map[sequence].name)
             ana.put()
 
     elif categories:
