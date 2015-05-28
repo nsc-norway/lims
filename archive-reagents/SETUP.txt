@@ -6,10 +6,8 @@ trigger (external program) must be created for each process type.
 For the process type which uses the reagents, add an external program:
 Channel name: limssserver
 Name: Archive reagent lots
-Command line: /usr/bin/python /opt/gls/clarity/customextensions/lims/archive-reagents/archive-reagents.py {processLuid} REAGENT-KIT-NAMES
-Replace REAGENT-KIT-NAMES with a list of reagent kits. E.g.
+Command line: /usr/bin/python /opt/gls/clarity/customextensions/lims/archive-reagents/archive-reagents.py {processLuid}
 
-/usr/bin/python /opt/gls/clarity/customextensions/lims/archive-reagents/archive-reagents.py {processLuid} "NextSeq Reagent Kit"
 
 In the web UI; protocol step configuration, set the script to run automatically at the
 end of the step.
