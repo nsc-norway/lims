@@ -1,0 +1,10 @@
+### Aggregate QC setup
+
+The Fragment length field needs to be added to the aggregate qc step. The
+following configuration changes are necessary:
+
+1. Analyte UDF
+   Add a UDF to analyte: Name: Fragment Length, Type: Numeric.
+
+2. Copying the fragment length in Agg.QC:
+   Add 
