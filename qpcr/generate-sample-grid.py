@@ -4,7 +4,7 @@ from genologics import config
 
 # Custom UDFs for analyte
 
-FILE_LIMS_NAME = "sample_grid.csv"
+FILE_LIMS_NAME = "sample_map.csv"
 
 def main(process_id, output_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
@@ -20,7 +20,7 @@ def main(process_id, output_file_id):
         row_cells = []
         for col in xrange(1,13):
             try:
-                row_cells.append(outputs["{0}:{1}".format(row, col)].id)
+                row_cells.append(outputs["{0}:{1}".format(row, col)].samples[0].name)
             except KeyError:
                 row_cells.append('""')
 
