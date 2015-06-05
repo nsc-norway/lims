@@ -17,6 +17,10 @@ On the qPCR QC 5.0 process type:
 xxxx
 
 
-## 
+## 3. Fragment length
 
+The fragment length is written by the modified Aggregate QC process. To show the fragment
+length in the qPCR step: In web UI, config qPCR step, Record details:
+Add the Fragment Length property of the Derived Sample to the Selected field in the Sample 
+Details section.
 
