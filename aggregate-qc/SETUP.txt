@@ -3,8 +3,23 @@
 The Fragment length field needs to be added to the aggregate qc step. The
 following configuration changes are necessary:
 
-1. Analyte UDF
-   Add a UDF to analyte: Name: Fragment Length, Type: Numeric.
+UDF configuration: 
 
-2. Copying the fragment length in Agg.QC:
-   Add 
+1. Analyte UDF
+   Add a UDF to analyte: Name: Fragment Length, Type: Numeric, Decimal places: 1.
+
+
+Process types (operations interface):
+
+2. Edit Aggregate QC (choose appropriate instance, DNA, RNA, etc)
+
+   Add an external program: 
+     Channel: limsserver
+     Name: Set Tapestations fragment length
+     Command line call: /usr/bin/python /opt/gls/clarity/customextensions/lims/aggregate-qc/set-tapestation-frag-length.py {processLuid}
+
+Edit appropriate protocol step in Web UI: Aggregate QC:
+    On Record Details page, add Derived Sample > Fragment Length. (Analyte UDF added above)
+
+
+
