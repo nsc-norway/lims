@@ -19,6 +19,6 @@ def main(process_id):
 if len(sys.argv) == 2:
     main(sys.argv[1])
 else:
-    print "use: python set-user-concentration.py PROCESS_ID"
+    print "use: python", sys.argv[0], "PROCESS_ID"
     sys.exit(1)
 
