@@ -6,6 +6,7 @@ def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
     step = Step(lims, id=process_id)
     for lot in step.reagent_lots:
+        lot.get()
         lot.status = "ARCHIVED"
         lot.put()
 
