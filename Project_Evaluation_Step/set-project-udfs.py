@@ -1,6 +1,6 @@
 # For the project evaluation workflow.
-# Copies UDFs from a process to the Sample objects associated with the 
-# inputs of that process, and the Project associated with those samples.
+# Copies UDFs from a process to the Project object associated with the 
+# inputs of the process
 
 import sys
 import re
