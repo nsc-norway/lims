@@ -2,6 +2,7 @@
 
 import sys
 import re
+import requests
 from genologics.lims import *
 from genologics import config
 
@@ -26,7 +27,10 @@ def main(process_id):
             pass
 
     if any_set:
-        process.put()
+        try:
+            process.put()
+        except requests.exceptions.HTTPError:
+            pass
 
 
 if len(sys.argv) == 2:
