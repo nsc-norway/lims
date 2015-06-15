@@ -5,8 +5,8 @@ from genologics.lims import *
 from genologics import config
 
 
-def get_buffer_vol(normalised_concentration, stock_volume, stock_concentration):
-    return stock_volume * (stock_concentration / normalised_concentration - 1.0)
+def get_buffer_vol(normalised_concentration, input_volume, input_concentration):
+    return input_volume * (input_concentration / normalised_concentration - 1.0)
 
 def main(process_id, output_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
@@ -27,11 +27,11 @@ def main(process_id, output_file_id):
                 sample_name = input.samples[0].name
 
                 norm_conc = output.udf['Normalized conc. (nM)']
-                stock_vol = output.udf['Volume of stock']
-                stock_conc = input.udf['Concentration']
-                buffer_vol = get_buffer_vol(norm_conc, stock_vol, stock_conc)
+                input_vol = output.udf['Volume of input']
+                input_conc = input.udf['Concentration']
+                buffer_vol = get_buffer_vol(norm_conc, input_vol, input_conc)
 
-                out.writerow([project_name, sample_name, stock_conc, stock_vol, norm_conc, buffer_vol])
+                out.writerow([project_name, sample_name, input_conc, stock_vol, norm_conc, buffer_vol])
 
 
 main(sys.argv[1], sys.argv[2])
