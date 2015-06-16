@@ -1,4 +1,4 @@
-# Set the tapestation fragment length
+# Assign inputs of a given process to workflow
 
 import sys
 import re
