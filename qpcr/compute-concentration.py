@@ -4,19 +4,21 @@ from genologics import config
 
 # Concentration calculator for qPCR
 
-def calculate_conc(frag_size, quant_mean):
-    return quant_mean * 103.0 / frag_size
+def calculate_molarity(frag_size, quant_mean):
+    return quant_mean * 452.0 / frag_size
 
 
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
     process = Process(lims, id=process_id)
-    inputs = process.all_inputs(unique=True)
-    for input in inputs:
-        input.get()
-        conc = calculate_conc(input.udf['Average Fragment Size'], input.udf['Quantity mean'])
-        input.udf['Concentration'] = conc
-        input.put()
+    for i,o in process.input_output_maps:
+        if o and o['output-type'] == 'ResultFile' and o['output-generation-type'] == 'PerInput':
+            input = i['uri']
+            measurement = o['uri']
+            input.get()
+            mol_conc = calculate_molarity(input.udf['Average Fragment Size'], measurement.udf['Quantity mean'])
+            measurement.udf['Molarity'] = mol_conc
+            measurement.put()
 
 
 main(sys.argv[1])

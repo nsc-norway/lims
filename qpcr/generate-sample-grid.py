@@ -2,9 +2,6 @@ import sys
 from genologics.lims import *
 from genologics import config
 
-# Custom UDFs for analyte
-
-FILE_LIMS_NAME = "sample_map.csv"
 
 def main(process_id, output_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
@@ -27,12 +24,8 @@ def main(process_id, output_file_id):
         result_rows.append(",".join(row_cells))
 
     result = "\n".join(result_rows)
-    output_artifact = Artifact(lims, id=output_file_id)
-    assert(output_artifact.name == FILE_LIMS_NAME)
-    pf = ProtoFile(lims, output_artifact, FILE_LIMS_NAME)
-    pf = lims.glsstorage(pf)
-    f = pf.post()
-    f.upload(result)
+    with open(output_file_id + "_placement.csv", 'w') as of:
+        of.write(result)
 
 main(sys.argv[1], sys.argv[2])
 

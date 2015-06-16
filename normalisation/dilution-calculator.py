@@ -17,7 +17,7 @@ def main(process_id, output_file_id):
     output_file_name = output_file_id + "_norm.csv"
     with open(output_file_name, 'wb') as out_file:
         out = csv.writer(out_file)
-        out.writerow(["Project", "Sample name", "Stock conc", "Stock volume", "Normalised conc", "Buffer volume"])
+        out.writerow(["Project", "Sample name", "Input molarity", "Input volume", "Normalised molarity", "Buffer volume"])
 
         for i,o in process.input_output_maps:
             output = o['uri']
@@ -28,7 +28,7 @@ def main(process_id, output_file_id):
 
                 norm_conc = output.udf['Normalized conc. (nM)']
                 input_vol = output.udf['Volume of input']
-                input_conc = input.udf['Concentration']
+                input_conc = input.udf['Molarity']
                 buffer_vol = get_buffer_vol(norm_conc, input_vol, input_conc)
 
                 out.writerow([project_name, sample_name, input_conc, input_vol, norm_conc, buffer_vol])
