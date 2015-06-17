@@ -26,6 +26,9 @@ COLS = {}
 DATA = []
 LABS = {}
 
+ROLES = ["System Administrator", "Facility?", "Researcher"]
+
+
 def processColumnHeaders( headers ):
 
 	global COLS
@@ -115,6 +118,12 @@ def createUser( uName, fName, lName, eMail, lab, role, password ):
 			if not status:
 				print( "Skipping the creation of user: " + uName )
 
+        
+        ## Specify also all lesser roles
+        index = ROLES.index(role)
+        user_roles = ROLES[index:]
+
+
 	## now create the user itself
 	uXML = unicode('<res:researcher xmlns:res="http://genologics.com/ri/researcher">\n')
 	uXML += '<first-name><![CDATA[' + fName.strip() + ']]></first-name>\n'
@@ -127,7 +136,8 @@ def createUser( uName, fName, lName, eMail, lab, role, password ):
 	uXML += '<username>' + uName.strip() + '</username>\n'
 	uXML += '<password>' + password + '</password>\n'
 	uXML += '<account-locked>false</account-locked>\n'
-        uXML += '<role name="' + role + '"/>\n'
+        for user_role in user_roles:
+            uXML += '<role name="' + user_role + '"/>\n'
 	uXML += '</credentials>\n'
 	initials = "".join( [part[0] for name in fName.split(" ") + lName.split(" ") for part in name.split("-")] )
 	while len(initials) < 3:
