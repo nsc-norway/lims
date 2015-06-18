@@ -38,21 +38,21 @@ def main(process_id, output_file_id):
         output = o['uri']
         if o and o['output-type'] == 'Analyte' and o['output-generation-type'] == 'PerInput':
             input = i['uri']
-            project_name = input.samples[0].project.name
-            sample_name = input.samples[0].name
+            project_name = input.samples[0].project.name.encode('utf-8')
+            sample_name = input.samples[0].name.encode('utf-8')
             dest_container = output.location[0].name
             dest_well = output.location[1]
 
             norm_conc = output.udf['Normalized conc. (nM)']
             input_vol = output.udf['Volume of input']
-            input_conc = input.udf['Molarity']
-            buffer_vol = get_buffer_vol(norm_conc, input_vol, input_conc)
+            input_mol_conc = input.udf['Molarity']
+            buffer_vol = "%4.2f" % (get_buffer_vol(norm_conc, input_vol, input_mol_conc))
             rows.append([
                 project_name,
                 sample_name,
                 dest_container,
                 dest_well,
-                input_conc,
+                input_mol_conc,
                 input_vol,
                 norm_conc,
                 buffer_vol
