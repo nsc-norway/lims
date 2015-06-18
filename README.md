@@ -17,3 +17,13 @@ Code overview:
   - batch-add-users/ : adding multiple users from CSV file.
   - deploy/ : deployment scripts.
   - genologics : (link to genologics library, needs to be in parent dir.)
+  - helpers/ : small scripts with general utility.
+  - label-printing/ : Printing labels directly from the LIMS. The EPP
+    (LIMS) script only writes files in ODF format to a directory, and a 
+    separate daemon script initiates the print jobs.
+  - normalisation/ : Computations and support scripts for normalising the
+    concentration of samples.
+  - printout/ : System for printing tables, and scripts for specific kinds 
+    of print jobs.
+  - Project_Evaluaton_Step/ : The project evaluation sysstem supports assigning
+    UDFs to projects, and reading them back from projects to the process instance.
