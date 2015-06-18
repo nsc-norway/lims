@@ -12,8 +12,9 @@ from genologics import config
 # python norm-setup.py PROCESS-ID INPUT-VOL NORM-CONC {COPY-UDFs}
 # 
 # PROCESS-ID: LIMS process ID
-# INPUT-VOL:  Volume to take from inputs (will set lower if volume UDF of input is less)
-# NORM-CONC:  Desired normalised concentration (set as is, not checked)
+# INPUT-VOL:  Volume to take from inputs
+# NORM-CONC:  Desired normalised concentration. If Molarity of input is set, and is
+#             less, set the normalized conc field equal to the Molarity.
 # COPY-UDFS:  Any number of UDFs to copy from input to output analytes. Will skip if
 #             doesn't exist on source.
 
@@ -29,7 +30,11 @@ def main(process_id, input_vol, norm_conc, copy_udfs):
             output = o['uri']
             input = i['uri']
             output.get()
-            output.udf['Normalized conc. (nM)'] = norm_conc_float
+            try:
+                source_molarity = input.udf['Molarity']
+                output.udf['Normalized conc. (nM)'] = min(norm_conc_float, source_molarity)
+            except KeyError:
+                output.udf['Normalized conc. (nM)'] = norm_conc_float
             output.udf['Volume of input'] = input_vol_float
             for u in copy_udfs:
                 try:
