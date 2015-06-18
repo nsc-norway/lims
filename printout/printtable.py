@@ -34,6 +34,5 @@ def print_table(title, data, table_header=True):
     DEVNULL = open(os.devnull, 'wb') # discard output, pdflatex too verbose
     subprocess.check_call(["pdflatex", "table.tex"], cwd=tmpdir, stdout=DEVNULL)
     subprocess.check_call(["lp", "-d", PRINTER, tmpdir+"/table.pdf"], stdout=DEVNULL)
-
     shutil.rmtree(tmpdir)
 
