@@ -27,3 +27,6 @@ Code overview:
     of print jobs.
   - Project_Evaluaton_Step/ : The project evaluation sysstem supports assigning
     UDFs to projects, and reading them back from projects to the process instance.
+  - qpcr/ : Used for working with the qPCR machine.
+  - set-reagent-labels/ : Manipulate the "reagent labels" of groups of analytes.
+    Reagent labels are the representations of index sequences in the LIMS.
