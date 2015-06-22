@@ -16,7 +16,11 @@ def main(process_id):
             input = i['uri']
             measurement = o['uri']
             input.get()
-            mol_conc = calculate_molarity(input.udf['Average Fragment Size'], measurement.udf['Quantity mean'])
+            try:
+                mol_conc = calculate_molarity(input.udf['Average Fragment Size'], measurement.udf['Quantity mean'])
+            except KeyError, e:
+                print "Missing ", e, "on", input.name.encode('utf-8')
+                sys.exit(1)
             measurement.udf['Molarity'] = mol_conc
             measurement.put()
 
