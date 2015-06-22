@@ -43,8 +43,22 @@ def main(process_id, output_file_id):
             dest_container = output.location[0].name
             dest_well = output.location[1]
 
-            norm_conc = output.udf['Normalized conc. (nM)']
-            input_vol = output.udf['Volume of input']
+            update_output = False
+            try:
+                norm_conc = output.udf['Normalized conc. (nM)']
+            except KeyError:
+                norm_conc = process.udf['Default normalised concentration (nM)']
+                output.udf['Normalized conc. (nM)'] = norm_conc
+                update_output = True
+            try:
+                input_vol = output.udf['Volume of input']
+            except KeyError:
+                input_vol = process.udf['Volume to take from inputs']
+                output.udf['Volume of input'] = input_vol
+                update_output = True
+            if update_output:
+                output.put()
+             
             input_mol_conc = input.udf['Molarity']
             buffer_vol = "%4.2f" % (get_buffer_vol(norm_conc, input_vol, input_mol_conc))
             rows.append([
