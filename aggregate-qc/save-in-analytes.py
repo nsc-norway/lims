@@ -17,10 +17,14 @@ def main(process_id, fields):
         if o and o['output-type'] == 'ResultFile' and o['output-generation-type'] == 'PerInput':
             input = i['uri']
             measurement = o['uri']
-            for field in fields:
-                input.get()
-                input.udf[field] = measurement.udf[field]
-                input.put()
+            try:
+                for field in fields:
+                    input.get()
+                    input.udf[field] = measurement.udf[field]
+                    input.put()
+            except KeyError:
+                print "Missing value for", field, "on sample", input.name.encode('utf-8'), "."
+                sys.exit(1)
 
 main(sys.argv[1], sys.argv[2:])
 
