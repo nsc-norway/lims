@@ -44,6 +44,8 @@ def make_tube_label(analyte, sample_type, outputfile):
         project_date = "Name"
 
     params = {}
+    # Norwegian keyboard map for barcode scanner, need to change symbols
+    barcode_string = analyte.id.replace("-", "/")
     image_data = DataMatrixEncoder(analyte.id).get_imagedata(cellsize=1)
     params['barcode'] = image_data
     params['project_customer'] = project_customer
