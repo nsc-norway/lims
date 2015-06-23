@@ -262,7 +262,10 @@ def post_process_values(fields):
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
-    docx_file_output = next(f for f in process.shared_result_files() if f.name.endswith("SubForm"))
+    docx_file_output = next(
+            f for f in process.shared_result_files()
+            if f.name.endswith("SubForm")
+            )
     if len(docx_file_output.files) == 1:
         docx_file = docx_file_output.files[0]
         docx_data = docx_file.download()
@@ -270,14 +273,14 @@ def main(process_id):
         print "Sample submission form not found"
         sys.exit(1)
 
-    udfs = get_values_from_doc(docx_data)
-    for uname, uvalue in udfs:
+    fields = get_values_from_doc(docx_data)
+    post_process_values(fields)
+    for uname, uvalue in fields:
         process.udf[uname] = uvalue
 
     process.put()
 
 
-values = get_values_from_doc(open("/home/fa2k/tmp/kent.docx"))
-post_process_values(values)
-print values
+main(sys.argv[1])
+
 
