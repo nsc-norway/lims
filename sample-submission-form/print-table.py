@@ -1,8 +1,13 @@
 from docx import Document
 
-d = Document("/home/fa2k/Downloads/sample-submission-form-(illumina)-2.docx")
+d = Document("/home/paalmbj/sample-submission.docx")
 
 for row in d.tables[0].rows:
-   print " | ".join(c.text for c in row.cells)
-   print " ------- "
+    for cell in row.cells:
+        print " | ", cell.text
+    print " ------- "
 
+for row in d.tables[1].rows:
+    for cell in row.cells:
+        print "2| ", cell.text
+    print "2------- "

@@ -1,0 +1,6 @@
+Dependencies (yum):
+ - libxml2-devel
+ - libxslt-devel
+
+
+
