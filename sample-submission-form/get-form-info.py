@@ -42,9 +42,7 @@ SEQUENCING_INSTRUMENTS = {
         }
 
 # Read lengths in LIMS also specify single read / paired end, 
-# so this requires post-processing. The strings to match, such as "35"
-# can only be found in the docx xml itself (or by printing the options
-# in get_yes_no_checkbox)
+# so this requires post-processing. 
 READ_LENGTHS = {
         "35 bp (N, high output only)": 35,
         "50 bp (H, M)": 50,
@@ -225,8 +223,40 @@ def get_values_from_doc(docx_data):
     return results
 
 
-def post_process_values(fields):
+def process_read_length(fields):
+    sequencing_method = read_length = None
+    for i, f in enumerate(fields):
+        if f[0] == 'Sequencing method':
+            sequencing_method = f
+        elif f[0] == 'Read length requested':
+            read_length = f
+            read_length_index = i
 
+    if sequencing_method and read_length:
+        del fields[read_length_index]
+        fields.append(('Read length requested', "TODO"))
+        
+
+def process_contact_billing(fields, field_name, contact_name, billing_name):
+    # If there are two instances of the field, the first is contact and the
+    # second is billing
+    index_instances = [
+            (i, f) 
+            for i, f in reversed(list(enumerate(fields))) # reversed, so we can del w/o changing indexes
+            if f[0] == field_name]
+    print len(index_instances)
+    for (i, f), udfname in zip(index_instances, (billing_name, contact_name)):
+        del fields[i]
+        if len(index_instances) == 2:
+            fields.append((udfname, f[1])) 
+    
+
+
+def post_process_values(fields):
+    process_read_length(fields)
+    process_contact_billing(fields, "Institution", "Contact institution", "Billing institution")
+    process_contact_billing(fields, "Email", "Contact email", "Billing email")
+    process_contact_billing(fields, "Telephone", "Contact telephone", "Billing telephone")
 
 
 def main(process_id):
@@ -247,5 +277,7 @@ def main(process_id):
     process.put()
 
 
-print get_values_from_doc(open("/home/paalmbj/kent.docx"))
+values = get_values_from_doc(open("/home/fa2k/tmp/kent.docx"))
+post_process_values(values)
+print values
 
