@@ -1,6 +1,8 @@
-import zipfile
 import sys
+import zipfile
+import datetime
 from functools import partial
+import StringIO
 from xml.etree.ElementTree import XML
 from genologics import config
 from genologics.lims import *
@@ -54,6 +56,22 @@ READ_LENGTHS = {
         "300 bp (M)": 300
         }
 
+DEFAULTS = [
+        ("Prepaid account", "No"),
+        ("Sample prep requested", "None"),
+        ("Date samples received", datetime.date.today()),
+        ("Reference genome", "-- Not provided --"),
+        ("Application", "-- Not provided --"),
+        ("Sample type", "-- Not provided --"),
+        ("Sample buffer", "-- Not provided --"),
+        ("Method used to determine concentration", "-- Not provided --"),
+        ("Method used to purify DNA/RNA", "-- Not provided --"),
+        ("Contact person", "-- Not provided --"),
+        ("Contact email", "-- Not provided --"),
+        ("Contact institution", "-- Not provided --"),
+        ("Billing institution", "-- Not provided --"),
+        ]
+
 # Helper: is checkbox checked
 def is_checked(checkbox_elem):
     checked_elem = checkbox_elem.find(CHECKED)
@@ -74,11 +92,12 @@ def is_checked(checkbox_elem):
 
 # Parsing various inputs
 def get_text_single(cell):
-    val = " ".join(t.text for t in cell.getiterator(TEXT))
+    val = "".join(t.text for t in cell.getiterator(TEXT))
     if val == PLACEHOLDER_STRING:
         return None
     else:
         return val.strip()
+
 
 def get_checkbox(cell):
     checkboxes = cell.getiterator(CHECKBOX)
@@ -133,11 +152,8 @@ def single_choice_checkbox(values, cell):
 
 
 def single_checkbox(value, cell):
-    for node in cell.getiterator(CHECKBOX):
-        if node.tag == CHECKBOX:
-            if is_checked(node):
-                return value
-    return None
+    if get_checkbox(cell):
+        return value
 
 
 def get_text_multi(cell):
@@ -162,6 +178,15 @@ def is_library(cell):
         return None
 
 
+def library_prep_used(cell):
+    text_nodes = cell.getiterator(TEXT)
+    if len(text_nodes) > 2:
+        if text_nodes[0].text.strip() == "If yes, please state which kit / method you used here:":
+            return "".join(text_node.text for text_node in text_nodes[1:])
+        
+
+
+
 def get_portable_hard_drive(cell):
     # First checkbox is User HDD, second is New HDD
     selected = [is_checked(node) for node in cell.getiterator(CHECKBOX)]
@@ -171,8 +196,8 @@ def get_portable_hard_drive(cell):
         return "New HDD"
 
 
-
-UDF_LABEL_PARSER = [
+# List of (label, udf, parser_func)
+LABEL_UDF_PARSER = [
         ("Method used to purify DNA / RNA", 'Method used to purify DNA/RNA', get_text_single),
         ("Method used to determine concentration", 'Method used to determine concentration', get_text_single),
         ("Buffer in which samples dissolved", 'Sample buffer', get_text_single),
@@ -200,7 +225,8 @@ UDF_LABEL_PARSER = [
         ("Billing Address", 'Billing address', get_text_multi),
         ("Purchase Order Number", 'Purchase order number', get_text_single),
         ("Project is fully or", 'Funded by Norsk Forskningsradet', get_yes_no_checkbox),
-        ("Kontostreng", 'Kontostreng (Internal orders only)', get_text_single)
+        ("Kontostreng", 'Kontostreng (Internal orders only)', get_text_single),
+        ("", 'Library prep used', library_prep_used)
         ]
 
 
@@ -215,7 +241,7 @@ def get_values_from_doc(docx_data):
         if len(cells) == 2:
             label = get_text_single(cells[0])
             data = cells[1]
-            for test_label, udf, parser_func in UDF_LABEL_PARSER:
+            for test_label, udf, parser_func in LABEL_UDF_PARSER:
                 if label.startswith(test_label):
                     value = parser_func(data)
                     if not value is None:
@@ -228,14 +254,22 @@ def process_read_length(fields):
     sequencing_method = read_length = None
     for i, f in enumerate(fields):
         if f[0] == 'Sequencing method':
-            sequencing_method = f
+            sequencing_method = f[1]
         elif f[0] == 'Read length requested':
-            read_length = f
+            read_length = f[1]
             read_length_index = i
 
-    if sequencing_method and read_length:
+    if read_length:
         del fields[read_length_index]
-        fields.append(('Read length requested', "TODO"))
+
+    if sequencing_method and read_length:
+        if sequencing_method == "Paired End Read":
+            num_reads = 2
+        elif sequencing_method == "Single Read":
+            num_reads = 1
+        else:
+            return
+        fields.append(('Read length requested', "{0}x{1}".format(read_length, num_reads)))
         
 
 def process_contact_billing(fields, field_name, contact_name, billing_name):
@@ -250,6 +284,16 @@ def process_contact_billing(fields, field_name, contact_name, billing_name):
         if len(index_instances) == 2:
             fields.append((udfname, f[1])) 
     
+
+def process_hazardous(fields):
+    for i, f in reversed(list(enumerate(fields))):
+        if f[0] == 'Hazardous':
+            if f[1]:
+                print "Warning: Hazardous samples."
+                sys.exit(1)
+            else:
+                del fields[i]
+
 
 def remove_duplicates(fields):
     # If there are two entries for a given field (e.g. Delivery or Sample prep), 
@@ -271,25 +315,43 @@ def post_process_values(fields):
     process_contact_billing(fields, "Institution", "Contact institution", "Billing institution")
     process_contact_billing(fields, "Email", "Contact email", "Billing email")
     process_contact_billing(fields, "Telephone", "Contact telephone", "Billing telephone")
+    process_hazardous(fields)
     remove_duplicates(fields)
+
+def add_defaults(fields):
+    field_name_set = set(f[0] for f in fields)
+    for key, value in DEFAULTS:
+        if not key in field_name_set:
+            fields.append((key, value))
 
 
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
-    docx_file_output = next(
-            f for f in process.shared_result_files()
-            if f.name.endswith("SubForm")
-            )
-    if len(docx_file_output.files) == 1:
-        docx_file = docx_file_output.files[0]
-        docx_data = docx_file.download()
-    else:
+    docx_data = None
+    try:
+        docx_file_output = next(
+                f for f in process.all_outputs()
+                if f.name.endswith("SubForm") and
+                f.type == 'ResultFile'
+                )
+        if len(docx_file_output.files) == 1:
+            docx_file = docx_file_output.files[0]
+            docx_data = docx_file.download()
+    except StopIteration:
+        pass
+    if not docx_data:
+        # Don't do anything if no submission form...
         print "Sample submission form not found"
-        sys.exit(1)
 
-    fields = get_values_from_doc(docx_data)
+    fields = get_values_from_doc(StringIO.StringIO(docx_data))
     post_process_values(fields)
+    if not any(f[0] == "Delivery method" for f in fields):
+        # If no delivery method, can't do anything
+        return
+
+    add_defaults(fields)
+
     for uname, uvalue in fields:
         process.udf[uname] = uvalue
 
