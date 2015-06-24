@@ -203,6 +203,7 @@ UDF_LABEL_PARSER = [
         ("Kontostreng", 'Kontostreng (Internal orders only)', get_text_single)
         ]
 
+
 def get_values_from_doc(docx_data):
     document = zipfile.ZipFile(docx_data)
     xml_content = document.read('word/document.xml')
@@ -244,12 +245,22 @@ def process_contact_billing(fields, field_name, contact_name, billing_name):
             (i, f) 
             for i, f in reversed(list(enumerate(fields))) # reversed, so we can del w/o changing indexes
             if f[0] == field_name]
-    print len(index_instances)
     for (i, f), udfname in zip(index_instances, (billing_name, contact_name)):
         del fields[i]
         if len(index_instances) == 2:
             fields.append((udfname, f[1])) 
     
+
+def remove_duplicates(fields):
+    # If there are two entries for a given field (e.g. Delivery or Sample prep), 
+    # this is an inconsistent input, and we remove them.
+    field_names = [f[0] for f in fields]
+    for i, f in reversed(list(enumerate(fields))):
+        try:
+            index = field_names.index(f[0], 0, i)
+            # TODO
+        if f[0] in field_names[:i]:
+            del fields[i]
 
 
 def post_process_values(fields):
@@ -257,6 +268,7 @@ def post_process_values(fields):
     process_contact_billing(fields, "Institution", "Contact institution", "Billing institution")
     process_contact_billing(fields, "Email", "Contact email", "Billing email")
     process_contact_billing(fields, "Telephone", "Contact telephone", "Billing telephone")
+    remove_duplicates(fields)
 
 
 def main(process_id):
@@ -281,6 +293,9 @@ def main(process_id):
     process.put()
 
 
-main(sys.argv[1])
+#main(sys.argv[1])
+vals = get_values_from_doc("/home/fa2k/tmp/sample-submission.docx")
+post_process_values(vals)
+print vals
 
 
