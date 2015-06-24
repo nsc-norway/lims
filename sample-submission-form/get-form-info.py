@@ -343,6 +343,7 @@ def main(process_id):
     if not docx_data:
         # Don't do anything if no submission form...
         print "Sample submission form not found"
+        return
 
     fields = get_values_from_doc(StringIO.StringIO(docx_data))
     post_process_values(fields)
