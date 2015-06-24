@@ -256,11 +256,14 @@ def remove_duplicates(fields):
     # this is an inconsistent input, and we remove them.
     field_names = [f[0] for f in fields]
     for i, f in reversed(list(enumerate(fields))):
-        try:
-            index = field_names.index(f[0], 0, i)
-            # TODO
-        if f[0] in field_names[:i]:
-            del fields[i]
+        index = i
+        while index:
+            try:
+                index = field_names.index(f[0], 0, i)
+                del fields[index]
+                del field_names[index]
+            except ValueError:
+                index = None
 
 
 def post_process_values(fields):
@@ -293,9 +296,5 @@ def main(process_id):
     process.put()
 
 
-#main(sys.argv[1])
-vals = get_values_from_doc("/home/fa2k/tmp/sample-submission.docx")
-post_process_values(vals)
-print vals
-
+main(sys.argv[1])
 
