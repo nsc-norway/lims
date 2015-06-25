@@ -3,6 +3,7 @@ import zipfile
 import datetime
 from functools import partial
 import StringIO
+import requests
 from xml.etree.ElementTree import XML
 from genologics import config
 from genologics.lims import *
@@ -70,6 +71,7 @@ DEFAULTS = [
         ("Contact email", "-- Not provided --"),
         ("Contact institution", "-- Not provided --"),
         ("Billing institution", "-- Not provided --"),
+        ("Billing address", "-- Not provided --"),
         ]
 
 # Helper: is checkbox checked
@@ -93,7 +95,7 @@ def is_checked(checkbox_elem):
 # Parsing various inputs
 def get_text_single(cell):
     val = "".join(t.text for t in cell.getiterator(TEXT))
-    if val == PLACEHOLDER_STRING:
+    if val.strip() == PLACEHOLDER_STRING:
         return None
     else:
         return val.strip()
@@ -169,7 +171,7 @@ def get_text_multi(cell):
         elif node.tag == TEXT:
             text += node.text
 
-    if text == PLACEHOLDER_TEXT:
+    if text.strip() == PLACEHOLDER_STRING:
         return None
     else:
         return text
@@ -360,8 +362,11 @@ def main(process_id):
     for uname, uvalue in fields:
         process.udf[uname] = uvalue
 
-    process.put()
-
+    try:
+        process.put()
+    except requests.exceptions.HTTPError, e:
+        # Don't crash on errors
+        print e
 
 main(sys.argv[1])
 
