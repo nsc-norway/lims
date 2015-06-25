@@ -58,7 +58,8 @@ def make_tube_label(analyte, sample_type, outputfile):
     params['type'] = sample_type
     container_id = analyte.location[0].name
     well = analyte.location[1].replace(":","")
-    params['location'] = "{0}-{1}".format(container_id, well)
+    params['container'] = container_id
+    params['well'] = well
 
     prepare_odt('tube.odt', params, outputfile)
 
