@@ -168,7 +168,11 @@ def get_text_multi(cell):
             text += "\n"
         elif node.tag == TEXT:
             text += node.text
-    return text
+
+    if text == PLACEHOLDER_TEXT:
+        return None
+    else:
+        return text
 
 
 def is_library(cell):
