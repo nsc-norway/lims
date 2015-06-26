@@ -12,9 +12,11 @@ import sys
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
 def get_all_candidates():
-    return lims.get(
+    """Load all reagent types with name only, from the API resource.
+    (this is a lot faster than doing them one by one)"""
+    return lims.get(params=)
 
-def get_search_candidates(analytes):
+def get_candidates_per_analyte(analytes, candidates):
 
 
 
