@@ -1,0 +1,11 @@
+###### Normalisation setup
+
+The normalisation step uses the Molarity UDF set by the Tapestation and qPCR processes
+to determine the instructions for how to normalise a library to X nM concentration.
+
+The protocol is to aliquot a predefined volume out of the "input" library and then add
+a variable amount of buffer liquid. The script in this directory computes the amount of
+buffer that is required to reach a target molar concentration.
+
+
+
