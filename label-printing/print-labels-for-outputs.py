@@ -52,14 +52,17 @@ def make_tube_label(analyte, sample_type, outputfile):
     params['project_label'] = project_label
     params['project_date'] = project_date
 
-    params['sample_name'] = sample.name
+    params['sample_name'] = analyte.name
 
     params['date'] = datetime.date.today().strftime("%y-%m-%d")
     params['type'] = sample_type
-    container_id = analyte.location[0].name
+    container = analyte.location[0]
     well = analyte.location[1].replace(":","")
-    params['container'] = container_id
-    params['well'] = well
+    params['container'] = container.name
+    if container.type.name == "Tube":
+        params['well'] = ""
+    else:
+        params['well'] = well
 
     prepare_odt('tube.odt', params, outputfile)
 
