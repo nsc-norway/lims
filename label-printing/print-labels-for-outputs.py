@@ -82,7 +82,15 @@ def main(sample_type, process_id):
     for ana in sorted(analytes, key=key_func):
         outputfile = tempfile.NamedTemporaryFile(suffix='.odt')
         outputfile.close()
-        make_tube_label(ana, sample_type, outputfile.name)
+        if sample_type == "--print-norm-conc": # can be "Pool", "s10nM", or this keyword to use conc.
+            try:
+                sample_type_label = "%4.1fnM" % ana.udf['Normalized conc. (nM)']
+            except KeyError:
+                print "Normalised concentration not known for", ana.name, "(use Compute first)"
+                sys.exit(1)
+        else:
+            sample_type_label = sample_type
+        make_tube_label(ana, sample_type_label, outputfile.name)
         files.append(outputfile.name)
 
     ooopy = OOoPy(infile = files[0], outfile=transfer_output_path)
