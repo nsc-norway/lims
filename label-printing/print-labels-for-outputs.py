@@ -88,6 +88,12 @@ def main(sample_type, process_id):
             except KeyError:
                 print "Normalised concentration not known for", ana.name, "(use Compute first)"
                 sys.exit(1)
+        elif sample_type == "--print-molarity":
+            try:
+                sample_type_label = "%4.1fnM" % ana.udf['Molarity']
+            except KeyError:
+                print "Requestsed to print molarity, but not available"
+                sys.exit(1)
         else:
             sample_type_label = sample_type
         make_tube_label(ana, sample_type_label, outputfile.name)
