@@ -74,6 +74,8 @@ DEFAULTS = [
         ("Billing address", "-- Not provided --"),
         ]
 
+ERROR_UDF = "Submission form processing errors"
+
 # Helper: is checkbox checked
 def is_checked(checkbox_elem):
     checked_elem = checkbox_elem.find(CHECKED)
@@ -348,25 +350,27 @@ def main(process_id):
         pass
     if not docx_data:
         # Don't do anything if no submission form...
-        print "Sample submission form not found"
+        #process.udf[ERROR_UDF] = "Sample submission form not found"
+        #process.put()
         return
 
     fields = get_values_from_doc(StringIO.StringIO(docx_data))
     post_process_values(fields)
-    if not any(f[0] == "Delivery method" for f in fields):
-        # If no delivery method, can't do anything
-        return
-
     add_defaults(fields)
-
     for uname, uvalue in fields:
         process.udf[uname] = uvalue
+
+    if not any(f[0] == "Delivery method" for f in fields):
+        # If no delivery method, can't do anything
+        process.udf[ERROR_UDF] = "No delivery method"
+        process.put()
 
     try:
         process.put()
     except requests.exceptions.HTTPError, e:
         # Don't crash on errors
-        print e
+        print "LIMS wouldn't let us fill in the form: " + e
+        # Unfortunately, there's no way to report this...
 
 main(sys.argv[1])
 
