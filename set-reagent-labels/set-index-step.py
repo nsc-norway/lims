@@ -17,7 +17,16 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 def get_all_reagent_types():
     """Load all reagent types with name only, from the API resource.
     (this is a lot faster than getting the full representations one by
-    one)""" 
+    one).
+    
+    Preaks the name into space-separated tokens, also removing brackets
+    () at the beginning and end of the tokens. Then returns a dict indexed
+    by the token, where the values are sets of reagent types matching that
+    token. {token => (reagent1, reagent2, ...)}
+    
+    Example: The name "AD005 (ACAGTG)" becomes two tokens: AD005 
+    and ACAGTG.
+    """ 
     # Using a loop similar to Lims._get_instances()
     reagent_types = defaultdict(set)
     root = lims.get(lims.get_uri("reagenttypes"))
@@ -118,8 +127,11 @@ def main(process_id):
     process = Process(lims, id=process_id)
 
     reagents = get_all_reagent_types() 
-    analytes = process.all_inputs()
+    analytes = process.all_inputs(unique=True)
 
+    # Cache all analytes and samples
+    analytes = lims.get_batch(analytes)
+    lims.get_batch(analyte.samples[0] for analyte in analytes)
     try:
         category = process.udf[CATEGORY_UDF]
     except KeyError:
@@ -138,7 +150,8 @@ def main(process_id):
         sequence = analyte.samples[0].udf[SAMPLE_INDEX_UDF]
         analyte.reagent_labels.clear()
         analyte.reagent_labels.add(reagent_name)
-        analyte.put()
+
+    lims.put_batch(analytes)
 
     print "Successfully set the indexes"
 
