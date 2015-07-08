@@ -13,18 +13,25 @@ from genologics import config
 def main(process_id, fields):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
     process = Process(lims, id=process_id)
+    input_measurement = []
     for i, o in process.input_output_maps:
         if o and o['output-type'] == 'ResultFile' and o['output-generation-type'] == 'PerInput':
             input = i['uri']
             measurement = o['uri']
-            try:
-                for field in fields:
-                    input.get()
-                    input.udf[field] = measurement.udf[field]
-                    input.put()
-            except KeyError:
-                print "Missing value for", field, "on sample", input.name.encode('utf-8'), "."
-                sys.exit(1)
+            input_measurement.append((input, measurement))
+
+    lims.get_batch([measurement for input,measurement in input_measurement])
+    lims.get_batch([input for input,measurement in input_measurement])
+
+    for input, measurement in input_measurement:
+        try:
+            for field in fields:
+                input.udf[field] = measurement.udf[field]
+        except KeyError:
+            print "Missing value for", field, "on sample", input.name.encode('utf-8'), "."
+            sys.exit(1)
+
+    lims.put_batch([input for input, measurement in input_measurement])
 
 main(sys.argv[1], sys.argv[2:])
 

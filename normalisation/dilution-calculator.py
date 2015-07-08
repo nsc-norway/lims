@@ -13,7 +13,7 @@ def get_row_key(row):
     container = row[2]
     well = row[3]
     row, col = well.split(":")
-    return (container, col, row)
+    return (container, int(col), row)
     
 
 def main(process_id, output_file_id):
@@ -33,44 +33,57 @@ def main(process_id, output_file_id):
             "Buffer volume"
             ]
 
-    rows = []
+    inputs = []
+    outputs = []
     for i,o in process.input_output_maps:
         output = o['uri']
         if o and o['output-type'] == 'Analyte' and o['output-generation-type'] == 'PerInput':
             input = i['uri']
-            project_name = input.samples[0].project.name.encode('utf-8')
-            sample_name = input.samples[0].name.encode('utf-8')
-            dest_container = output.location[0].name
-            dest_well = output.location[1]
+            inputs.append(input)
+            outputs.append(output)
 
-            update_output = False
-            try:
-                norm_conc = output.udf['Normalized conc. (nM)']
-            except KeyError:
-                norm_conc = process.udf['Default normalised concentration (nM)']
-                output.udf['Normalized conc. (nM)'] = norm_conc
-                update_output = True
-            try:
-                input_vol = output.udf['Volume of input']
-            except KeyError:
-                input_vol = process.udf['Volume to take from inputs']
-                output.udf['Volume of input'] = input_vol
-                update_output = True
-            if update_output:
-                output.put()
-             
-            input_mol_conc = input.udf['Molarity']
-            buffer_vol = "%4.2f" % (get_buffer_vol(norm_conc, input_vol, input_mol_conc))
-            rows.append([
-                project_name,
-                sample_name,
-                dest_container,
-                dest_well,
-                input_mol_conc,
-                input_vol,
-                norm_conc,
-                buffer_vol
-                ])
+    lims.get_batch(inputs)
+    lims.get_batch(outputs)
+    update_outputs = []
+    
+    rows = []
+    for input, output in zip(inputs, outputs):
+        project_name = input.samples[0].project.name.encode('utf-8')
+        sample_name = input.samples[0].name.encode('utf-8')
+        dest_container = output.location[0].name
+        dest_well = output.location[1]
+
+        update_output = False
+        try:
+            norm_conc = output.udf['Normalized conc. (nM)']
+        except KeyError:
+            norm_conc = process.udf['Default normalised concentration (nM)']
+            output.udf['Normalized conc. (nM)'] = norm_conc
+            update_output = True
+        try:
+            input_vol = output.udf['Volume of input']
+        except KeyError:
+            input_vol = process.udf['Volume to take from inputs']
+            output.udf['Volume of input'] = input_vol
+            update_output = True
+        if update_output:
+            update_outputs.append(output)
+         
+        input_mol_conc = input.udf['Molarity']
+        input_mol_conc_str = "%4.2f" % (input.udf['Molarity'])
+        buffer_vol = "%4.2f" % (get_buffer_vol(norm_conc, input_vol, input_mol_conc))
+        rows.append([
+            project_name,
+            sample_name,
+            dest_container,
+            dest_well,
+            input_mol_conc_str,
+            input_vol,
+            norm_conc,
+            buffer_vol
+            ])
+
+    lims.put_batch(update_outputs)
 
     rows_sorted = sorted(rows, key=get_row_key)
 

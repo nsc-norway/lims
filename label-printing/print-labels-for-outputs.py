@@ -67,6 +67,9 @@ def make_tube_label(analyte, sample_type, outputfile):
     prepare_odt('tube.odt', params, outputfile)
 
  
+def sort_key_func(analyte):
+    row, col = analyte.location[1].split(":")
+    return (analyte.location[0].name, int(col), row)
 
 def main(sample_type, process_id):
 
@@ -77,9 +80,11 @@ def main(sample_type, process_id):
     transfer_output_path = os.path.join(print_spool_dir, "transfer", result_name)
         
     files = []
-    analytes = process.analytes()[0] # analytes() returns tuples (Analyte, 'Output')
-    key_func = lambda a: (a.location[0].name,) + tuple(reversed(a.location[1].split(":")))
-    for ana in sorted(analytes, key=key_func):
+    outputs = process.all_outputs(unique=True)
+    lims.get_batch(outputs)
+    analytes = filter(lambda a: a.type == 'Analyte', outputs)
+    lims.get_batch(list(set(analyte.samples[0] for analyte in analytes)))
+    for ana in sorted(analytes, key=sort_key_func):
         outputfile = tempfile.NamedTemporaryFile(suffix='.odt')
         outputfile.close()
         if sample_type == "--print-norm-conc": # can be "Pool", "s10nM", or this keyword to use conc.
