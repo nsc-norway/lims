@@ -4,7 +4,6 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
-
 def get_buffer_vol(normalised_concentration, input_volume, input_concentration):
     return input_volume * (input_concentration * 1.0 / normalised_concentration - 1.0)
 
@@ -24,7 +23,7 @@ def main(process_id, output_file_id):
 
     header = [
             "Project",
-            "Sample name",
+            "Sample",
             "Dest. container",
             "Well",
             "Input molarity",
@@ -43,13 +42,14 @@ def main(process_id, output_file_id):
             outputs.append(output)
 
     lims.get_batch(inputs)
+    lims.get_batch(input.samples[0] for input in inputs)
     lims.get_batch(outputs)
     update_outputs = []
     
     rows = []
     for input, output in zip(inputs, outputs):
         project_name = input.samples[0].project.name.encode('utf-8')
-        sample_name = input.samples[0].name.encode('utf-8')
+        sample_name = input.name.encode('utf-8')
         dest_container = output.location[0].name
         dest_well = output.location[1]
 

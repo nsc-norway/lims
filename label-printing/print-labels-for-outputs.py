@@ -81,7 +81,7 @@ def main(sample_type, process_id):
         
     files = []
     outputs = process.all_outputs(unique=True)
-    lims.get_batch(outputs)
+    outputs = lims.get_batch(outputs)
     analytes = filter(lambda a: a.type == 'Analyte', outputs)
     lims.get_batch(list(set(analyte.samples[0] for analyte in analytes)))
     for ana in sorted(analytes, key=sort_key_func):
