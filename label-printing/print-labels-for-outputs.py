@@ -71,6 +71,38 @@ def sort_key_func(analyte):
     row, col = analyte.location[1].split(":")
     return (analyte.location[0].name, int(col), row)
 
+
+def filter_print_range(ranges, sorted_analytes):
+    """Yield only analytes in the specified range. Ranges specified with 
+    hyphen or with single pages.
+    N-M, N2-M2, N3
+    Doesn't handle all corner cases, if our users are difficult on purpose.
+    (would use a generator, but need to throw exception when called, so 
+    returning a list instead)
+    """
+    range_specs = ranges.split(",")
+    accept_ranges = []
+    for range_spec in range_specs:
+        start_end = range_spec.split("-")
+        start = int(start_end[0]) - 1
+        if len(start_end) == 1:
+            end = int(start_end[0]) - 1
+        elif len(start_end) == 2:
+            end = int(start_end[1]) - 1
+        else:
+            raise ValueError("Invalid range specification")
+        accept_ranges.append((start, end))
+    accept_ranges.sort()
+    irange = 0
+    filtered = []
+    for i, ana in enumerate(sorted_analytes):
+        while irange < (len(accept_ranges)-1) and i > accept_ranges[irange][1]:
+            irange += 1
+        if i >= accept_ranges[irange][0] and i <= accept_ranges[irange][1]:
+            filtered.append(ana)
+    return filtered
+
+
 def main(sample_type, process_id):
 
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
@@ -84,7 +116,16 @@ def main(sample_type, process_id):
     outputs = lims.get_batch(outputs)
     analytes = filter(lambda a: a.type == 'Analyte', outputs)
     lims.get_batch(list(set(analyte.samples[0] for analyte in analytes)))
-    for ana in sorted(analytes, key=sort_key_func):
+    to_print = sorted(analytes, key=sort_key_func)
+    try:
+        to_print = filter_print_range(process.udf['Label print range'], to_print)
+    except KeyError:
+        pass
+    except ValueError:
+        print "Invalid format for the print range. Use format N1-M1, N2-M2, N3."
+        sys.exit(1)
+
+    for ana in to_print:
         outputfile = tempfile.NamedTemporaryFile(suffix='.odt')
         outputfile.close()
         if sample_type == "--print-norm-conc": # can be "Pool", "s10nM", or this keyword to use conc.
@@ -103,9 +144,12 @@ def main(sample_type, process_id):
             sample_type_label = sample_type
         make_tube_label(ana, sample_type_label, outputfile.name)
         files.append(outputfile.name)
+    else:
+        print "No labels to print"
+        sys.exit(0)
 
     ooopy = OOoPy(infile = files[0], outfile=transfer_output_path)
-    if len(analytes) > 1:
+    if len(files) > 1:
         t = Transformer \
             ( ooopy.mimetype
             , Transforms.get_meta        (ooopy.mimetype)
@@ -118,7 +162,7 @@ def main(sample_type, process_id):
         t.transform (ooopy)
     ooopy.close()
 
-    os.rename(transfer_output_path, os.path.join(print_spool_dir, result_name))
+    #os.rename(transfer_output_path, os.path.join(print_spool_dir, result_name))
 
 main(sys.argv[1], sys.argv[2])
 
