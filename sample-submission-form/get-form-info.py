@@ -369,7 +369,7 @@ def main(process_id):
         process.put()
     except requests.exceptions.HTTPError, e:
         # Don't crash on errors
-        print "LIMS wouldn't let us fill in the form: " + e
+        print "LIMS wouldn't let us fill in the form: " + str(e)
         # Unfortunately, there's no way to report this...
 
 main(sys.argv[1])
