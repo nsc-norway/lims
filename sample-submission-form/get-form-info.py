@@ -239,10 +239,6 @@ LABEL_UDF_PARSER = [
 
 
 def get_values_from_doc(docx_data):
-    document = zipfile.ZipFile(docx_data)
-    xml_content = document.read('word/document.xml')
-    document.close()
-    tree = XML(xml_content)
     results = []
     for row in tree.getiterator(TABLE_ROW):
         cells = row.getiterator(TABLE_CELL)
@@ -354,7 +350,19 @@ def main(process_id):
         #process.put()
         return
 
-    fields = get_values_from_doc(StringIO.StringIO(docx_data))
+    try:
+        document = zipfile.ZipFile(docx_data)
+        xml_content = document.read('word/document.xml')
+        xml_content = StringIO.StringIO(docx_data)
+        tree = XML(xml_content)
+        document.close()
+    except:
+        print "Could not read sample submission form."
+        print ""
+        print "Please convert it to docx format."
+        sys.exit(1)
+
+    fields = get_values_from_doc(tree)
     post_process_values(fields)
     add_defaults(fields)
     for uname, uvalue in fields:
