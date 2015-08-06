@@ -238,9 +238,9 @@ LABEL_UDF_PARSER = [
         ]
 
 
-def get_values_from_doc(docx_data):
+def get_values_from_doc(xml_tree):
     results = []
-    for row in tree.getiterator(TABLE_ROW):
+    for row in xml_tree.getiterator(TABLE_ROW):
         cells = row.getiterator(TABLE_CELL)
         if len(cells) == 2:
             label = get_text_single(cells[0])
@@ -351,9 +351,8 @@ def main(process_id):
         return
 
     try:
-        document = zipfile.ZipFile(docx_data)
+        document = zipfile.ZipFile(StringIO.StringIO(docx_data))
         xml_content = document.read('word/document.xml')
-        xml_content = StringIO.StringIO(docx_data)
         tree = XML(xml_content)
         document.close()
     except:
