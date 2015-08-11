@@ -80,6 +80,7 @@ def get_reagents_auto_category(reagents, analytes, sequence_match=False):
                         print "Ambiguous match for", analyte.name, ": in category", reagent.category,\
                                 "matches multiple reagent types:", reagent.name, "and",\
                                 category_indexes[reagent.category][-1]
+                        sys.exit(-1)
                     else:
                         new_candidates.add(reagent.category)
                         category_indexes[reagent.category].append(reagent.name)
@@ -112,8 +113,14 @@ def get_reagents_for_category(reagents, analytes, category, sequence_match=False
             reagent = ReagentType(lims, uri=reagent_uri)
             if not sequence_match or reagent.index_sequence == ana_match_string:
                 if reagent.category == category:
-                    match_reagents.append(reagent.name)
-                    match = True
+                    if match:
+                        print "Ambiguous match for", analyte.name, ": in category", reagent.category,\
+                                "matches multiple reagent types:", reagent.name, "and",\
+                                category_indexes[reagent.category][-1]
+                        sys.exit(-1)
+                    else:
+                        match_reagents.append(reagent.name)
+                        match = True
         if not match:
             ana_no_match.append(analyte.name)
 
