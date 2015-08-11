@@ -78,7 +78,7 @@ def get_reagents_auto_category(reagents, analytes, sequence_match=False):
                 if reagent.category in candidate_categories:
                     if reagent.category in new_candidates:
                         print "Ambiguous match for sample", analyte.name, ": in category", reagent.category,\
-                                "matches multiple reagent types:", reagent.name, "and",\
+                                "the specified index matches multiple reagent types:", reagent.name, "and",\
                                 category_indexes[reagent.category][-1]
                         sys.exit(-1)
                     else:
