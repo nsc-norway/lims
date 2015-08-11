@@ -116,7 +116,7 @@ def get_reagents_for_category(reagents, analytes, category, sequence_match=False
                     if match:
                         print "Ambiguous match for", analyte.name, ": specified index "\
                                 "matches multiple reagent types:", reagent.name, "and",\
-                                category_indexes[reagent.category][-1]
+                                match_reagents[-1]
                         sys.exit(-1)
                     else:
                         match_reagents.append(reagent.name)
