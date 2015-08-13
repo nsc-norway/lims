@@ -33,10 +33,11 @@ def main(process_id):
     except KeyError:
         category = None
 
+    index_analyte = [(a.samples[0].udf[SAMPLE_INDEX_UDF], a.name) for a in analytes]
     if category == "Auto-detect":
-        category, result = indexes.get_reagents_auto_category(reagents, analytes)
+        category, result = indexes.get_reagents_auto_category(reagents, index_analyte)
     else:
-        result = indexes.get_reagents_for_category(reagents, analytes, category)
+        result = indexes.get_reagents_for_category(reagents, index_analyte, category)
 
     process.udf[CATEGORY_UDF] = category
     process.put()
