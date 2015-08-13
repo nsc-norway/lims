@@ -35,33 +35,39 @@ else:
     print "Auto-detected index category:", category
 
 
+processed = set()
+
 for entry, new_reagent in zip(sample_sheet_data, result):
-    top_analyte = Artifact(lims, id=entry[col['description']])
-    old_reagent_label = next(iter(top_analyte.reagent_labels))
-    old_index = old_reagent_label.index_sequence
-    new_index = entry['index']
+    id = entry[col['description']]
+    if not id in processed:
+        processed.add(id)
+        top_analyte = Artifact(lims, id=id)
+        old_reagent_label = next(iter(top_analyte.reagent_labels))
+        new_index = entry[col['index']]
 
-    # First correct the submitted samples
-    sample = top_analyte.samples[0]
-    if not sample.udf[SAMPLE_INDEX_UDF] in [new_index, old_index]:
-        print "Error: Sample", sample.name, "had unexpected index UDF (" + SAMPLE_INDEX_UDF + "):",\
-                sample.udf[SAMPLE_INDEX_UDF]
-        sys.exit(1)
-    sample.udf[SAMPLE_INDEX_UDF] = new_index
-    sample.put()
+        # First correct the submitted samples
+        sample = top_analyte.samples[0]
 
-    analytes = lims.get_artifacts(samplelimsid=sample.id)
+        # Setting the UDF blindly, too hard to check if it matches the new/old index
+        sample.udf[SAMPLE_INDEX_UDF] = new_index
+        sample.put()
+        print "Corrected sample", sample.name, "(" + sample.id + ")"
 
-    for analyte in analytes:
-        if analyte.reagent_labels:
-            rl = next(iter(analyte.reagent_labels))
-            if rl == old_reagent_label:
-                analyte.reagent_labels.clear()
-                analyte.reagent_labels.add(new_reagent)
-                analyte.put()
-                print "Corrected analyte", analyte.name, "(" + analyte.id + ")"
-            elif rl != new_reagent:
-                print "Error: Analyte", analyte.name, "(" + analyte.id + ") has unexpected reagent type", rl
-                sys.exit(1)
+        analytes = lims.get_artifacts(samplelimsid=sample.id, type="Analyte")
+        for analyte in analytes:
+            if analyte.reagent_labels:
+                rl = next(iter(analyte.reagent_labels))
+                if len(analyte.reagent_labels) > 1:
+                    print "Skipping pool", analyte.name
+                elif rl == old_reagent_label:
+                    analyte.reagent_labels.clear()
+                    analyte.reagent_labels.add(new_reagent)
+                    analyte.put()
+                    print "Corrected analyte", analyte.name, "(" + analyte.id + ")"
+                elif rl == new_reagent:
+                    print "Analyte", analyte.name, "(" + analyte.id + ") had correct index"
+                else:
+                    print "Error: Analyte", analyte.name, "(" + analyte.id + ") has unexpected reagent type", rl
+                    sys.exit(1)
 
 
