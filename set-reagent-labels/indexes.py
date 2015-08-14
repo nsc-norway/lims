@@ -12,7 +12,7 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
 BLACKLIST = set()
 
-if re.find(r"/cees-lims.sequencing.uio.no[:/]", config.BASEURI):
+if re.search(r"/cees-lims.sequencing.uio.no[:/]", config.BASEURI):
     # Deleted index IDs
     BLACKLIST = set([1301] + range(121, 145))
 
