@@ -40,7 +40,7 @@ def get_all_reagent_types():
             name = node.attrib['name']
             uri = node.attrib['uri']
             # Get ID, copy/paste from genologics lib
-            parts = urlparse.urlsplit(self.uri)
+            parts = urlparse.urlsplit(uri)
             id = int(parts.path.split('/')[-1])
             if not id in BLACKLIST:
                 for token in (
