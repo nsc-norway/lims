@@ -1,11 +1,21 @@
 # Library for setting indexes
 
+import sys
+import re
+import urlparse
+
 from genologics.lims import *
 from genologics import config
 from collections import defaultdict
-import sys
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
+
+BLACKLIST = set()
+
+if re.search(r"/cees-lims.sequencing.uio.no[:/]", config.BASEURI):
+    # Deleted index IDs
+    BLACKLIST = set([1301] + range(121, 145))
+
 
 def get_all_reagent_types():
     """Load all reagent types with name only, from the API resource.
@@ -29,12 +39,16 @@ def get_all_reagent_types():
             # add a reagent type to the search index, indexed by all words
             name = node.attrib['name']
             uri = node.attrib['uri']
-            for token in (
-                    tk.strip("()")
-                    for tk in name.split(" ")
-                    if tk != ""
-                    ):
-                reagent_types[token].add(uri)
+            # Get ID, copy/paste from genologics lib
+            parts = urlparse.urlsplit(uri)
+            id = int(parts.path.split('/')[-1])
+            if not id in BLACKLIST:
+                for token in (
+                        tk.strip("()")
+                        for tk in name.split(" ")
+                        if tk != ""
+                        ):
+                    reagent_types[token].add(uri)
                 
         node = root.find('next-page')
         root = None
