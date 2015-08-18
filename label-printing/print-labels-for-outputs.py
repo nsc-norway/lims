@@ -144,7 +144,8 @@ def main(sample_type, process_id):
             sample_type_label = sample_type
         make_tube_label(ana, sample_type_label, outputfile.name)
         files.append(outputfile.name)
-    else:
+
+    if not files:
         print "No labels to print"
         sys.exit(0)
 
@@ -162,7 +163,7 @@ def main(sample_type, process_id):
         t.transform (ooopy)
     ooopy.close()
 
-    #os.rename(transfer_output_path, os.path.join(print_spool_dir, result_name))
+    os.rename(transfer_output_path, os.path.join(print_spool_dir, result_name))
 
 main(sys.argv[1], sys.argv[2])
 
