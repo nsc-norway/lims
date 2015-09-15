@@ -20,7 +20,7 @@ def main(category, analyte_ids):
     sequences = set(ana.samples[0].udf['Index requested/used'] for ana in analytes)
 
     reagents = dict(
-            (rt.index_sequence, rt) 
+            (rt.sequence, rt) 
             for rt in lims.get_reagent_types() 
             if rt.category==category
         )

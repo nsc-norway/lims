@@ -22,7 +22,7 @@ def get_all_reagent_types():
     (this is a lot faster than getting the full representations one by
     one).
     
-    Preaks the name into space-separated tokens, also removing brackets
+    Breaks the name into space-separated tokens, also removing brackets
     () at the beginning and end of the tokens. Then returns a dict indexed
     by the token, where the values are sets of reagent types matching that
     token. {token => (reagent1, reagent2, ...)}
