@@ -19,8 +19,8 @@ def main(analyte_ids):
 
     cat_indexes = defaultdict(set)
     for rt in reagent_types:
-        if rt.index_sequence:
-            cat_indexes[rt.category].add(rt.index_sequence)
+        if rt.sequence:
+            cat_indexes[rt.category].add(rt.sequence)
 
     categories = []
     for cat_name, indexset in cat_indexes.items():
@@ -29,7 +29,7 @@ def main(analyte_ids):
 
     if len(categories) == 1:
         index_reagent_map = dict(
-                (rt.index_sequence, rt) 
+                (rt.sequence, rt) 
                 for rt in reagent_types
                 if rt.category==categories[0]
             )
