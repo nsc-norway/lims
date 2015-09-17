@@ -39,9 +39,9 @@ def make_tube_label(analyte, sample_type, outputfile):
     if project_match:
         project_customer, project_label, project_date = project_match.groups()
     else:
-        project_customer = "Invalid"
-        project_label = "Project"
-        project_date = "Name"
+        project_customer = project.name
+        project_label = ""
+        project_date = ""
 
     params = {}
     # Norwegian keyboard map for barcode scanner, need to change symbols
@@ -138,6 +138,16 @@ def main(sample_type, lims_ids):
     for ana in to_print:
         outputfile = tempfile.NamedTemporaryFile(suffix='.odt')
         outputfile.close()
+        if sample_type == "auto":
+            if len(ana.samples) > 1:
+                sample_type = "pool"
+            else:
+                try:
+                    conc = ana.udf['Normalized conc. (nM)']
+                    sample_type = "norm_conc"
+                except KeyError:
+                    sample_type = "molarity"
+
         if sample_type == "norm_conc": # can be norm_conc, molarity, pool or a fixed name preceded by :
             try:
                 sample_type_label = "%4.1fnM" % ana.udf['Normalized conc. (nM)']
