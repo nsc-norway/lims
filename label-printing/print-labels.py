@@ -193,7 +193,7 @@ def main(sample_type, lims_ids):
         t.transform (ooopy)
     ooopy.close()
 
-    ##TODO os.rename(transfer_output_path, os.path.join(print_spool_dir, result_name))
+    os.rename(transfer_output_path, os.path.join(print_spool_dir, result_name))
 
 # Use args: sample_type process_id
 # or:       sample_type "ANALYTES" sample_id1 [sample_id2 ...]
