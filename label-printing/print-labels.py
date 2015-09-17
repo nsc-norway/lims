@@ -103,45 +103,65 @@ def filter_print_range(ranges, sorted_analytes):
     return filtered
 
 
-def main(sample_type, process_id):
+def main(sample_type, lims_ids):
 
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
-    process = Process(lims, id=process_id)
 
     result_name = "LABEL1-{0:%Y%m%d%H%M_%f}.odt".format(datetime.datetime.now())
     transfer_output_path = os.path.join(print_spool_dir, "transfer", result_name)
         
     files = []
-    outputs = process.all_outputs(unique=True)
+    if len(lims_ids) == 1:
+        process = Process(lims, id=lims_ids[0])
+        outputs = process.all_outputs(unique=True)
+    elif len(lims_ids) > 1 and lims_ids[0] == "ANALYTES":
+        process = None
+        outputs = [Artifact(lims, id=lims_id) for lims_id in lims_ids[1:]]
+    else:
+        print "Invalid argument, use either process-ID or ANALYTES and a list of analytes"
+        sys.exit(1)
+        
     outputs = lims.get_batch(outputs)
     analytes = filter(lambda a: a.type == 'Analyte', outputs)
     lims.get_batch(list(set(analyte.samples[0] for analyte in analytes)))
     to_print = sorted(analytes, key=sort_key_func)
-    try:
-        to_print = filter_print_range(process.udf['Label print range'], to_print)
-    except KeyError:
-        pass
-    except ValueError:
-        print "Invalid format for the print range. Use format N1-M1, N2-M2, N3."
-        sys.exit(1)
+
+    if process:
+        try:
+            to_print = filter_print_range(process.udf['Label print range'], to_print)
+        except KeyError:
+            pass
+        except ValueError:
+            print "Invalid format for the print range. Use format N1-M1, N2-M2, N3."
+            sys.exit(1)
 
     for ana in to_print:
         outputfile = tempfile.NamedTemporaryFile(suffix='.odt')
         outputfile.close()
-        if sample_type == "--print-norm-conc": # can be "Pool", "s10nM", or this keyword to use conc.
+        if sample_type == "norm_conc": # can be norm_conc, molarity, pool or a fixed name preceded by :
             try:
                 sample_type_label = "%4.1fnM" % ana.udf['Normalized conc. (nM)']
             except KeyError:
                 print "Normalised concentration not known for", ana.name, "(use Compute first)"
                 sys.exit(1)
-        elif sample_type == "--print-molarity":
+        elif sample_type == "pool": # can be norm_conc, molarity, pool or a fixed name preceded by :
+            try:
+                sample_type_label = "%4.1fnM P" % ana.udf['Normalized conc. (nM)']
+            except KeyError:
+                print "Normalised concentration not known for", ana.name, "(please enter in table)"
+                sys.exit(1)
+        elif sample_type == "molarity":
             try:
                 sample_type_label = "%4.1fnM" % ana.udf['Molarity']
             except KeyError:
                 print "Requestsed to print molarity, but not available"
                 sys.exit(1)
+        elif sample_type.startswith("TEXT:"):
+            sample_type_label = sample_type[5:]
         else:
-            sample_type_label = sample_type
+            print "Invalid sample type '", sample_type, "' in command line"
+            sys.exit(1)
+
         make_tube_label(ana, sample_type_label, outputfile.name)
         files.append(outputfile.name)
 
@@ -163,8 +183,10 @@ def main(sample_type, process_id):
         t.transform (ooopy)
     ooopy.close()
 
-    os.rename(transfer_output_path, os.path.join(print_spool_dir, result_name))
+    ##TODO os.rename(transfer_output_path, os.path.join(print_spool_dir, result_name))
 
-main(sys.argv[1], sys.argv[2])
+# Use args: sample_type process_id
+# or:       sample_type "ANALYTES" sample_id1 [sample_id2 ...]
+main(sys.argv[1], sys.argv[2:])
 
 
