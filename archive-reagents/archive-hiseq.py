@@ -5,7 +5,7 @@ from genologics import config
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
     step = Step(lims, id=process_id)
-    for lot in step.reagent_lots:
+    for lot in step.reagentlots.reagent_lots:
         if lot.lot_number != "Rapid dummy":
             lot.status = "ARCHIVED"
             lot.put()
