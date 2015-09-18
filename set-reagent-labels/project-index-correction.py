@@ -62,17 +62,17 @@ for sample, new_reagent in zip(samples, result):
 for pool in pools:
     print "Processing pool", pool.name
     updated = 0
+    to_add = set()
     for old, new in replace_map.items():
         try:
             pool.reagent_labels.remove(old)
-            pool.reagent_labels.add(new)
+            to_add.add(new)
             updated += 1
         except KeyError:
             continue
     if updated:
+        pool.reagent_labels.update(to_add)
         pool.put()
     print " Updated", updated, "reagents in the pool"
     print ""
-
-
 
