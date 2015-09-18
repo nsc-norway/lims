@@ -102,6 +102,12 @@ def get_text_single(cell):
     else:
         return val.strip()
 
+def get_text_lower(cell):
+    val = "".join(t.text for t in cell.getiterator(TEXT))
+    if val.strip() == PLACEHOLDER_STRING:
+        return None
+    else:
+        return val.strip().lower()
 
 def get_checkbox(cell):
     checkboxes = cell.getiterator(CHECKBOX)
@@ -227,7 +233,7 @@ LABEL_UDF_PARSER = [
         ("Contact Name", 'Contact person', get_text_single),
         ("Institution", 'Institution', get_text_single),# Needs post-processing (Contact / Billing same field name)
         ("Address", 'Contact address', get_text_multi),
-        ("Email", 'Email', get_text_single),         # Needs post-processing
+        ("Email", 'Email', get_text_lower),         # Needs post-processing
         ("Telephone", 'Telephone', get_text_single), # Needs post-processing
         ("Billing contact person", 'Billing contact person', get_text_single),
         ("Billing Address", 'Billing address', get_text_multi),
