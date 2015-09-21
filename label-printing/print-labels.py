@@ -20,7 +20,8 @@ from ooopy.Transformer  import Transformer
 import ooopy.Transforms as     Transforms
 
 template_dir = os.path.dirname(os.path.realpath(__file__)) + "/templates"
-print_spool_dir = "/remote/label-printing"
+printer_name = "BMP51PGM511129101004-LABEL1"
+libreoffice_path = "C:\\Program Files (x86)\\LibreOffice 4\\program\\soffice.exe"
 
 def prepare_odt(template, template_parameters, output_path):
     template_path = os.path.join(template_dir, template)
@@ -108,7 +109,7 @@ def main(sample_type, lims_ids):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
 
     result_name = "LABEL1-{0:%Y%m%d%H%M_%f}.odt".format(datetime.datetime.now())
-    transfer_output_path = os.path.join(print_spool_dir, "transfer", result_name)
+    output_path = result_name
         
     files = []
     if len(lims_ids) == 1:
@@ -179,7 +180,7 @@ def main(sample_type, lims_ids):
         print "No labels to print"
         sys.exit(0)
 
-    ooopy = OOoPy(infile = files[0], outfile=transfer_output_path)
+    ooopy = OOoPy(infile = files[0], outfile=output_path)
     if len(files) > 1:
         t = Transformer \
             ( ooopy.mimetype
@@ -193,7 +194,8 @@ def main(sample_type, lims_ids):
         t.transform (ooopy)
     ooopy.close()
 
-    os.rename(transfer_output_path, os.path.join(print_spool_dir, result_name))
+    subprocess.check_call([libreoffice_path, '--pt', printer_name, path])
+
 
 # Use args: sample_type process_id
 # or:       sample_type "ANALYTES" sample_id1 [sample_id2 ...]
