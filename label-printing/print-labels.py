@@ -11,17 +11,18 @@ import re
 import sys
 import datetime
 import tempfile
+import subprocess
 from appy.pod.renderer import Renderer
 from hubarcode.datamatrix import DataMatrixEncoder
 from genologics.lims import *
-from genologics import config
 from ooopy.OOoPy import OOoPy
 from ooopy.Transformer  import Transformer
 import ooopy.Transforms as     Transforms
 
-template_dir = os.path.dirname(os.path.realpath(__file__)) + "/templates"
+template_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "templates")
 printer_name = "BMP51PGM511129101004-LABEL1"
 libreoffice_path = "C:\\Program Files (x86)\\LibreOffice 4\\program\\soffice.exe"
+CA_CERT = "C:\\AiScripts\\ca.crt"
 
 def prepare_odt(template, template_parameters, output_path):
     template_path = os.path.join(template_dir, template)
@@ -104,10 +105,10 @@ def filter_print_range(ranges, sorted_analytes):
     return filtered
 
 
-def main(sample_type, lims_ids):
+def main(process_uri, username, password, sample_type, lims_ids):
 
-    lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
-
+    baseuri = re.match(r"(https?://[^/]+/)", process_uri).group(1)
+    lims = Lims(baseuri, username, password)
     result_name = "LABEL1-{0:%Y%m%d%H%M_%f}.odt".format(datetime.datetime.now())
     output_path = result_name
         
@@ -194,11 +195,11 @@ def main(sample_type, lims_ids):
         t.transform (ooopy)
     ooopy.close()
 
-    subprocess.check_call([libreoffice_path, '--pt', printer_name, path])
+    subprocess.check_call([libreoffice_path, '--pt', printer_name, output_path])
 
 
 # Use args: sample_type process_id
 # or:       sample_type "ANALYTES" sample_id1 [sample_id2 ...]
-main(sys.argv[1], sys.argv[2:])
+main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5:])
 
 
