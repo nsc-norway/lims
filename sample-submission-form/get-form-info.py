@@ -368,11 +368,15 @@ def main(process_id):
         print "Please convert it to docx format."
         sys.exit(1)
 
-    fields = get_values_from_doc(tree)
-    post_process_values(fields)
-    add_defaults(fields)
-    for uname, uvalue in fields:
-        process.udf[uname] = uvalue
+    try:
+        fields = get_values_from_doc(tree)
+        post_process_values(fields)
+        add_defaults(fields)
+        for uname, uvalue in fields:
+            process.udf[uname] = uvalue
+    except:
+        print "Something went wrong in the main parsing code"
+        sys.exit(0)
 
     try:
         process.put()
