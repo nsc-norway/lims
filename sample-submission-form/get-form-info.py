@@ -374,11 +374,6 @@ def main(process_id):
     for uname, uvalue in fields:
         process.udf[uname] = uvalue
 
-    if not any(f[0] == "Delivery method" for f in fields):
-        # If no delivery method, can't do anything
-        process.udf[ERROR_UDF] = "No delivery method"
-        process.put()
-
     try:
         process.put()
     except requests.exceptions.HTTPError, e:
