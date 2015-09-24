@@ -204,10 +204,11 @@ def library_prep_used(cell):
 def get_portable_hard_drive(cell):
     # First checkbox is User HDD, second is New HDD
     selected = [is_checked(node) for node in cell.getiterator(CHECKBOX)]
-    if selected[0] and not selected[1]:
-        return "User HDD"
-    elif selected[1] and not selected[0]:
-        return "New HDD"
+    if len(selected) == 2:
+        if selected[0] and not selected[1]:
+            return "User HDD"
+        elif selected[1] and not selected[0]:
+            return "New HDD"
 
 
 # List of (label, udf, parser_func)
