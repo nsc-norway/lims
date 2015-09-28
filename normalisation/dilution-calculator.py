@@ -39,7 +39,7 @@ def main(process_id, output_file_id):
         header = [
                 "Project",
                 "Sample",
-                "Dest. cont."
+                "Dest. cont.",
                 "Well",
                 "Input molarity",
                 "Input volume",
