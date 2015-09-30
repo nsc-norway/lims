@@ -9,7 +9,12 @@ def get_swl_data(filename):
     of (udfname, udfvalue) pairs.
     { sample name => { udfname => udfvalue } }
     """
-    wb = load_workbook('SWL_entry_test.xlsx')
+    try:
+        wb = load_workbook(filename)
+    except IOError:
+        print "Cannot read the sample table, make sure the Excel file has been uploaded"
+        sys.exit(1)
+
     ws = wb['Samples']
     udfnames = []
 
