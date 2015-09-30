@@ -15,7 +15,9 @@ BLACKLIST = set()
 if re.search(r"/cees-lims.sequencing.uio.no[:/]", config.BASEURI):
     # Deleted index IDs
     BLACKLIST = set([1301] + range(121, 145))
-
+elif re.search(r"/ous-lims.sequencing.uio.no[:/]", config.BASEURI):
+    # Deleted index IDs
+    BLACKLIST = set(range(709, 721))
 
 def get_all_reagent_types():
     """Load all reagent types with name only, from the API resource.
