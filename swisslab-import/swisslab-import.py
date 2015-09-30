@@ -15,7 +15,7 @@ def get_swl_data(filename):
     
     Returns a dict indexed by sample name, where each value is a list 
     of (udfname, udfvalue) pairs.
-    { sample name => { udfname => udfvalue } }
+    { sample name => [ (udfname, udfvalue), ... ] }
     """
     try:
         wb = load_workbook(filename)
