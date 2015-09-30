@@ -204,10 +204,11 @@ def library_prep_used(cell):
 def get_portable_hard_drive(cell):
     # First checkbox is User HDD, second is New HDD
     selected = [is_checked(node) for node in cell.getiterator(CHECKBOX)]
-    if selected[0] and not selected[1]:
-        return "User HDD"
-    elif selected[1] and not selected[0]:
-        return "New HDD"
+    if len(selected) == 2:
+        if selected[0] and not selected[1]:
+            return "User HDD"
+        elif selected[1] and not selected[0]:
+            return "New HDD"
 
 
 # List of (label, udf, parser_func)
@@ -367,16 +368,15 @@ def main(process_id):
         print "Please convert it to docx format."
         sys.exit(1)
 
-    fields = get_values_from_doc(tree)
-    post_process_values(fields)
-    add_defaults(fields)
-    for uname, uvalue in fields:
-        process.udf[uname] = uvalue
-
-    if not any(f[0] == "Delivery method" for f in fields):
-        # If no delivery method, can't do anything
-        process.udf[ERROR_UDF] = "No delivery method"
-        process.put()
+    try:
+        fields = get_values_from_doc(tree)
+        post_process_values(fields)
+        add_defaults(fields)
+        for uname, uvalue in fields:
+            process.udf[uname] = uvalue
+    except:
+        print "Something went wrong in the main parsing code"
+        sys.exit(0)
 
     try:
         process.put()
