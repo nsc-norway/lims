@@ -12,7 +12,7 @@ from genologics import config
 # python swisslab-import.py PROCESS-ID SWL-FILE
 # Arguments:
 #  PROCESS-ID: LIMS-ID of a process on which this script is run.
-#  SWL-FILE:   path to the Excel file containing the data to import.
+#  SWL-FILE:   LIMS-ID of Artifact object for Excel file
 
 def get_swl_data(filename):
     """Parsing of sample information table in Excel format.
