@@ -1,6 +1,10 @@
 import sys
 import itertools
 from openpyxl import load_workbook
+import StringIO
+import requests
+from genologics.lims import *
+from genologics import config
 
 # SwissLab data import script
 
@@ -18,16 +22,16 @@ def get_swl_data(filename):
     { sample name => [ (udfname, udfvalue), ... ] }
     """
     try:
-        wb = load_workbook(filename)
+        wb = load_workbook(filename, data_only=True)
     except IOError:
-        print "Cannot read the sample table, make sure the Excel file has been uploaded"
+        print "Cannot read the SwissLab file, make sure it is in Excel format"
         sys.exit(1)
 
     ws = wb['Samples']
     udfnames = []
 
     assert ws['A1'].value == "Sample/Name"
-    for i in itertools.count(start=2):
+    for i in itertools.count(2):
         h = ws.cell(column=i, row=1).value
         if h:
             udfnames.append(h)
@@ -36,20 +40,32 @@ def get_swl_data(filename):
 
     done = False
     data = {}
-    for row in itertools.count(start=2):
+    for row in itertools.count(2):
         sample_name = ws.cell(column=1, row=row).value
-        sample_values = []
-        for i, udfname in enumerate(udfnames):
-            v = ws.cell(column=i+2, row=row).value
-            sample_values.append((udfname, v))
+        if sample_name:
+            sample_values = []
+            for i, udfname in enumerate(udfnames):
+                v = ws.cell(column=i+2, row=row).value
+                sample_values.append((udfname, v))
+            data[sample_name] = sample_values
+        else:
+            break
 
     return data
             
 
-def main(process_id, swl_file):
-    swisslab_data = get_swl_data(swl_file)
-
+def main(process_id, swl_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
+
+    swl_file_art_obj = Artifact(lims, id=swl_file_id)
+    if len(swl_file_art_obj.files) == 1:
+        swl_io_obj = StringIO.StringIO(swl_file_art_obj.files[0].download())
+    else:
+        print "Could not access the SwissLab file, check that it has been uploaded"
+        sys.exit(1)
+
+    swisslab_data = get_swl_data(swl_io_obj)
+
     process = Process(lims, id=process_id)
     inputs = process.all_inputs(unique=True, resolve=True)
     assert all(len(input.samples) == 1 for input in inputs)
@@ -63,7 +79,8 @@ def main(process_id, swl_file):
             sys.exit(1)
 
         for udfname, udfval in fields:
-            sample.udf[udfname] = udfval
+            print "on", sample.name, "setting", udfname, "to", udfval
+            sample.udf[udfname] = str(udfval)
 
     lims.put_batch(samples)
     print "Imported data for", len(samples), "samples"
