@@ -68,12 +68,24 @@ def get_swl_data(filename):
     for row in itertools.count(2):
         sample_name = ws.cell(column=1, row=row).value
         if sample_name:
-            sample_data = get_all_fields(sample_name, ws, row, headers, GENERAL_COLUMNS, True)
+
+            sample_data = get_all_fields(
+                    sample_name,
+                    ws, row, headers,
+                    GENERAL_COLUMNS, 
+                    True
+                    )
+
             trio_fields_required = any(
                     val == "trio" and name == "Analysis type Diag"
                     for name, val in sample_data
                     )
-            sample_data += get_all_fields(sample_name, ws, row, headers, TRIO_COLUMNS, trio_fields_required)
+            sample_data += get_all_fields(
+                    sample_name,
+                    ws, row, headers,
+                    TRIO_COLUMNS,
+                    trio_fields_required
+                    )
             data[sample_name] = sample_data
         else:
             break
@@ -82,8 +94,7 @@ def get_swl_data(filename):
 
 
 def get_all_fields(sample_name, ws, row, headers, columns, required):
-    """Get a list of tuples, one for each column in the list columns"""
-
+    """Get a list of tuples, one for each column in the columns parameter."""
     result = []
     for col, value_type in columns.items():
         v = ws.cell(column=headers[col], row=row).value
@@ -91,7 +102,8 @@ def get_all_fields(sample_name, ws, row, headers, columns, required):
             try:
                 result.append((col, value_type(v)))
             except ValueError:
-                print "Cannot convert '" +  str(v) + "' to a", value_type, "for sample", sample_name, ", column", col
+                print "Cannot convert '" +  str(v) + "' to a", value_type,\
+                        "for sample", sample_name, ", column", col
                 sys.exit(1)
         elif required:
             print "Missing required value for '", col, "' for sample", sample_name
