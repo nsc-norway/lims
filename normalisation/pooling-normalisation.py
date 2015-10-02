@@ -15,6 +15,10 @@ def main(process_id, output_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
 
+    # Clear the file, to make sure old data don't remain
+    with open(output_file_id, 'wb') as f:
+        f.write("")
+
     out_buf = StringIO.StringIO()   
 
     header = [
@@ -47,6 +51,8 @@ def main(process_id, output_file_id):
         print str(e), "not specified"
         sys.exit(1)
 
+    error = False # "Soft" error, still will upload the file
+
     rows = []
     for pool in step.pools.pooled_inputs:
         output = pool.output # output already fetched in batch, as process input
@@ -62,7 +68,7 @@ def main(process_id, output_file_id):
                     print "Molarity of", input.name, "in pool", pool.name, "is",
                     print input.udf['Molarity'], ", which is less than the target per-sample molarity",
                     print target_sample_conc, "."
-                    sys.exit(1)
+                    error = True
                 sample_volumes.append(
                         pool_volume * target_sample_conc / input.udf['Molarity']
                         )
@@ -81,7 +87,7 @@ def main(process_id, output_file_id):
             print "uL, which exceeds the target pool volume", pool_volume, ".",
             print "Reduce the pool molarity or the number of samples per pool, and",
             print "try again."
-            sys.exit(1)
+            error = True
 
         dest_container = output.location[0].name
         dest_well = output.location[1]
@@ -131,6 +137,8 @@ def main(process_id, output_file_id):
         out = csv.writer(out_file)
         out.writerow(header)
         out.writerows(rows)
+
+    sys.exit(1 if error else 0)
 
 
 main(sys.argv[1], sys.argv[2])
