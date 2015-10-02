@@ -26,9 +26,9 @@ def main(process_id, output_file_id):
             "Sample",
             "Source cont.",
             "Well",
-            "Sample conc.",
+            "Sample molarity",
             "Sample volume",
-            "Normalised conc.",
+            "Sample normalised conc.",
             ]
 
 
