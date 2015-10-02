@@ -3,6 +3,7 @@ import itertools
 from openpyxl import load_workbook
 import StringIO
 import requests
+import datetime
 from genologics.lims import *
 from genologics import config
 
@@ -18,7 +19,7 @@ GENERAL_COLUMNS = {
         "Test SWL Diag": str,
         "Referral reason Diag": str,
         "Archive position Diag": str,
-        "Analysis registered Diag": str,
+        "Analysis registered Diag": datetime.datetime.date,
         "Gene panel Diag": str,
         "Kit version Diag": str,
         "Analysis type Diag": str
@@ -114,12 +115,18 @@ def main(process_id, swl_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
     swl_file_art_obj = Artifact(lims, id=swl_file_id)
-    if len(swl_file_art_obj.files) == 1:
-        swl_io_obj = StringIO.StringIO(swl_file_art_obj.files[0].download())
-    else:
+    file_data = None
+    try:
+        if len(swl_file_art_obj.files) == 1:
+            file_data = swl_file_art_obj.files[0].download()
+    except requests.exceptions.HTTPError:
+        pass
+
+    if file_data is None:
         print "Could not access the SwissLab file, check that it has been uploaded"
         return # This is not a fatal error: some projects may not have SwissLab files
 
+    swl_io_obj = StringIO.StringIO(file_data)
     swisslab_data = get_swl_data(swl_io_obj)
 
     process = Process(lims, id=process_id)
