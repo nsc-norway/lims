@@ -18,7 +18,6 @@ GENERAL_COLUMNS = {
         "Test SWL Diag": str,
         "Referral reason Diag": str,
         "Archive position Diag": str,
-        "Sample conc. (ng/ul)": float,
         "Analysis registered Diag": str,
         "Gene panel Diag": str,
         "Kit version Diag": str,
