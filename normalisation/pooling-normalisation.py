@@ -64,7 +64,7 @@ def main(process_id, output_file_id):
         unknown_molarity = []
         for input in pool.inputs:
             try:
-                if input.udf['Molarity'] < target_sample_conc:
+                if not error and input.udf['Molarity'] < target_sample_conc:
                     print "Molarity of", input.name, "in pool", pool.name, "is",
                     print input.udf['Molarity'], ", which is less than the target per-sample molarity",
                     print target_sample_conc, "."
@@ -77,12 +77,12 @@ def main(process_id, output_file_id):
 
         if unknown_molarity:
             print "In pool", pool.name, ", the molarity not known for pool constituents",
-            print ",".join(unknown_molarity)
+            print ", ".join(unknown_molarity)
             sys.exit(1)
 
         buffer_volume = pool_volume - sum(sample_volumes)
 
-        if buffer_volume < 0:
+        if not error and buffer_volume < 0:
             print "Total sample volume in pool", pool.name, "is", sum(sample_volumes),
             print "uL, which exceeds the target pool volume", pool_volume, ".",
             print "Reduce the pool molarity or the number of samples per pool, and",
