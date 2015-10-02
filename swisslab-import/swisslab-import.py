@@ -118,7 +118,7 @@ def main(process_id, swl_file_id):
         swl_io_obj = StringIO.StringIO(swl_file_art_obj.files[0].download())
     else:
         print "Could not access the SwissLab file, check that it has been uploaded"
-        sys.exit(1)
+        return # This is not a fatal error: some projects may not have SwissLab files
 
     swisslab_data = get_swl_data(swl_io_obj)
 
