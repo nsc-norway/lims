@@ -41,7 +41,7 @@ def main(process_id, output_file_id):
     lims.get_batch(input.samples[0] for input in process.all_inputs(unique=True))
 
     try:
-        norm_conc = process.udf['Pool concentration (nM)']
+        norm_conc = process.udf['Pool molarity']
         pool_volume = process.udf['Pool volume']
     except KeyError, e:
         print str(e), "not specified"
