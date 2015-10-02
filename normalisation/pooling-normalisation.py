@@ -54,12 +54,33 @@ def main(process_id, output_file_id):
 
         target_sample_conc = norm_conc * 1.0 / len(pool.inputs)
         target_sample_conc_str = "%4.2f" % target_sample_conc
-        sample_volumes = [pool_volume * target_sample_conc / input.udf['Molarity'] for input in pool.inputs]
+        sample_volumes = []
+        unknown_molarity = []
+        for input in pool.inputs:
+            try:
+                if input.udf['Molarity'] < target_sample_conc:
+                    print "Molarity of", input.name, "in pool", pool.name, "is",
+                    print input.udf['Molarity'], ", which is less than the target per-sample molarity",
+                    print target_sample_conc, "."
+                    sys.exit(1)
+                sample_volumes.append(
+                        pool_volume * target_sample_conc / input.udf['Molarity']
+                        )
+            except KeyError:
+                unknown_molarity.append(input.name)
+
+        if unknown_molarity:
+            print "In pool", pool.name, ", the molarity not known for pool constituents",
+            print ",".join(unknown_molarity)
+            sys.exit(1)
+
         buffer_volume = pool_volume - sum(sample_volumes)
 
         if buffer_volume < 0:
-            print "Total sample volume in pool exceeds", pool_volume, "uL. Reduce the Pool volume and try "\
-                   "again."
+            print "Total sample volume in pool", pool.name, "is", sum(sample_volumes),
+            print "uL, which exceeds the target pool volume", pool_volume, ".",
+            print "Reduce the pool molarity or the number of samples per pool, and",
+            print "try again."
             sys.exit(1)
 
         dest_container = output.location[0].name
