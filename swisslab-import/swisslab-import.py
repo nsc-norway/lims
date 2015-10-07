@@ -111,7 +111,7 @@ def get_all_fields(sample_name, ws, row, headers, columns, required):
     return result
             
 
-def main(process_id, swl_file_id):
+def main(process_id, swl_file_id, ignore_duplicates=False):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
     swl_file_art_obj = Artifact(lims, id=swl_file_id)
@@ -134,6 +134,17 @@ def main(process_id, swl_file_id):
     assert all(len(input.samples) == 1 for input in inputs)
     samples = lims.get_batch(input.samples[0] for input in inputs)
 
+    uniques = set(sample.name for sample in samples)
+    if len(uniques) < len(samples):
+        dupes = []
+        for sample in samples:
+            try:
+                uniques.remove(sample.name)
+            except KeyError:
+                dupes.append(sample)
+        print "Duplicate sample IDs detected for:", ", ".join(dupes)
+        sys.exit(1)
+    
     for sample in samples:
         try:
             fields = swisslab_data[sample.name]
@@ -143,6 +154,34 @@ def main(process_id, swl_file_id):
 
         for udfname, udfval in fields:
             sample.udf[udfname] = udfval
+
+    # Check for duplicates if requested
+    if not ignore_duplicates:
+        existing_samples = lims.get_samples(name=[sample.name for sample in samples])
+        if len(existing_samples) > len(samples):
+            # existings_samples will always be >= samples as a set, because samples are 
+            # contained in existing samples.
+            # Only inspect further in the rare case when there is a dupe. There is still not 
+            # necessarily a duplicate, since even if there's a sample with the same name, it
+            # may have a different gene panel.
+            existing_samples = lims.get_batch(existing_samples) # This will not refresh the ones which are already
+                                                                # cached (and modified)
+            existing_sample_keys = [(sample.name, sample.udf['Gene panel Diag']) for sample in existing_samples]
+            step_sample_keys = ((sample.name, sample.udf['Gene panel Diag']) for sample in samples)
+            dupes = []
+            # Identify all items that occur more than once in existing samples
+            for sample_key in step_sample_keys:
+                try:
+                    existing_sample_keys.remove(sample_key)
+                    existing_sample_keys.remove(sample_key)
+                    dupes.append(sample_key)
+                except KeyError:
+                    pass
+
+            if dupes:
+                print "Existing sample(s) with same name and gene panel found for:",
+                print ",".join(dupes)
+                sys.exit(1)
 
     lims.put_batch(samples)
     print "Imported data for", len(samples), "samples"
