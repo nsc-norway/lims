@@ -11,6 +11,13 @@ def get_row_key(row):
     return (container, int(col), row)
     
 
+def get_or_set(entity, udf, default_value):
+    try:
+        return entity.udf[udf]
+    except KeyError:
+        entity.udf[udf] = default_value
+        return default_value
+
 def main(process_id, output_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
@@ -48,7 +55,8 @@ def main(process_id, output_file_id):
         norm_conc = process.udf['Pool molarity']
         pool_volume = process.udf['Pool volume']
     except KeyError, e:
-        print str(e), "not specified"
+        print "Global option for",  str(e), "not specified"
+        print "This is used in case the per-pool value is not given for some pools"
         sys.exit(1)
 
     error = False # "Soft" error, still will upload the file
@@ -56,9 +64,10 @@ def main(process_id, output_file_id):
     rows = []
     for pool in step.pools.pooled_inputs:
         output = pool.output # output already fetched in batch, as process input
-        output.udf['Normalized conc. (nM)'] = norm_conc
+        pool_norm_conc = get_or_set(output, 'Normalized conc. (nM)', norm_conc)
+        pool_pool_volume = get_or_set(output, 'Pool volume (uL)', pool_volume)
 
-        target_sample_conc = norm_conc * 1.0 / len(pool.inputs)
+        target_sample_conc = pool_norm_conc * 1.0 / len(pool.inputs)
         target_sample_conc_str = "%4.2f" % target_sample_conc
         sample_volumes = []
         unknown_molarity = []
@@ -70,7 +79,7 @@ def main(process_id, output_file_id):
                     print target_sample_conc, "."
                     error = True
                 sample_volumes.append(
-                        pool_volume * target_sample_conc / input.udf['Molarity']
+                        pool_pool_volume * target_sample_conc / input.udf['Molarity']
                         )
             except KeyError:
                 unknown_molarity.append(input.name)
@@ -80,11 +89,11 @@ def main(process_id, output_file_id):
             print ", ".join(unknown_molarity)
             sys.exit(1)
 
-        buffer_volume = pool_volume - sum(sample_volumes)
+        buffer_volume = pool_pool_volume - sum(sample_volumes)
 
         if not error and buffer_volume < 0:
             print "Total sample volume in pool", pool.name, "is", sum(sample_volumes),
-            print "uL, which exceeds the target pool volume", pool_volume, ".",
+            print "uL, which exceeds the target pool volume", pool_pool_volume, ".",
             print "Reduce the pool molarity or the number of samples per pool, and",
             print "try again."
             error = True
@@ -105,7 +114,7 @@ def main(process_id, output_file_id):
                     pool.name,
                     dest_container,
                     dest_well,
-                    "%4.2f" % pool_volume,
+                    "%4.2f" % pool_pool_volume,
                     "%4.2f" % buffer_volume,
                     sample_name,
                     source_container,
