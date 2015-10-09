@@ -68,6 +68,7 @@ def get_swl_data(filename):
     for row in itertools.count(2):
         sample_name = ws.cell(column=1, row=row).value
         if sample_name:
+            sample_name = str(sample_name)
 
             sample_data = get_all_fields(
                     sample_name,
@@ -166,7 +167,11 @@ def main(process_id, swl_file_id, ignore_duplicates=False):
             # may have a different gene panel.
             existing_samples = lims.get_batch(existing_samples) # This will not refresh the ones which are already
                                                                 # cached (and modified)
-            existing_sample_keys = [(sample.name, sample.udf['Gene panel Diag']) for sample in existing_samples]
+            try:
+                existing_sample_keys = [(sample.name, sample.udf['Gene panel Diag']) for sample in existing_samples]
+            except KeyError:
+                print "A sample", sample.name, "is already in the system, but has no gene panel"
+                sys.exit(1)
             step_sample_keys = ((sample.name, sample.udf['Gene panel Diag']) for sample in samples)
             dupes = []
             # Identify all items that occur more than once in existing samples
