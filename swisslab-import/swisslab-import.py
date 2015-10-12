@@ -15,14 +15,17 @@ from genologics import config
 #  PROCESS-ID: LIMS-ID of a process on which this script is run.
 #  SWL-FILE:   LIMS-ID of Artifact object for Excel file
 
-GENERAL_COLUMNS = {
+REQUIRED_COLUMNS = {
         "Test SWL Diag": str,
         "Referral reason Diag": str,
         "Archive position Diag": str,
-        "Analysis registered Diag": datetime.datetime.date,
         "Gene panel Diag": str,
         "Kit version Diag": str,
         "Analysis type Diag": str
+        }
+
+OPTIONAL_COLUMNS = {
+        "Analysis registered Diag": datetime.datetime.date
         }
 
 TRIO_COLUMNS = {
@@ -31,7 +34,7 @@ TRIO_COLUMNS = {
         "Sex Diag": str
         }
 
-ALL_COLUMNS = frozenset(GENERAL_COLUMNS.keys() + TRIO_COLUMNS.keys())
+ALL_COLUMNS = frozenset(REQUIRED_COLUMNS.keys() + OPTIONAL_COLUMNS.keys() + TRIO_COLUMNS.keys())
 
 def get_swl_data(filename):
     """Parsing of sample information table in Excel format.
@@ -73,8 +76,15 @@ def get_swl_data(filename):
             sample_data = get_all_fields(
                     sample_name,
                     ws, row, headers,
-                    GENERAL_COLUMNS, 
+                    REQUIRED_COLUMNS, 
                     True
+                    )
+
+            sample_data += get_all_fields(
+                    sample_name,
+                    ws, row, headers,
+                    OPTIONAL_COLUMNS, 
+                    False
                     )
 
             trio_fields_required = any(
