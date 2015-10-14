@@ -65,7 +65,7 @@ def main(process_id, output_file_id):
     for pool in step.pools.pooled_inputs:
         output = pool.output # output already fetched in batch, as process input
         pool_norm_conc = get_or_set(output, 'Normalized conc. (nM)', norm_conc)
-        pool_pool_volume = get_or_set(output, 'Pool volume (uL)', pool_volume)
+        pool_pool_volume = get_or_set(output, 'Volume (uL)', pool_volume)
 
         target_sample_conc = pool_norm_conc * 1.0 / len(pool.inputs)
         target_sample_conc_str = "%4.2f" % target_sample_conc
