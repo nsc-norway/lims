@@ -57,9 +57,8 @@ def main(process_id, output_file_id):
             inputs.append(input)
             outputs.append(output)
 
-    lims.get_batch(inputs)
+    lims.get_batch(inputs + outputs)
     lims.get_batch(input.samples[0] for input in inputs)
-    lims.get_batch(outputs)
     update_outputs = []
     
     rows = []
