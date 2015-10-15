@@ -4,6 +4,13 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
+# { Concentration => volume } mapping
+DEFAULT_OUTPUT_VOL = {
+        3000: 130,
+        200: 50
+        }
+
+
 def sort_key(elem):
     input, output, sample = elem
     container, well = input.location
@@ -25,7 +32,8 @@ def main(process_id, output_file_id):
             "To well",
             "Sample volume",
             "Buffer volume",
-            "Normalised conc.",
+            "Norm. conc.",
+            "Norm. volume",
             ]
 
     inputs = []
@@ -57,11 +65,16 @@ def main(process_id, output_file_id):
         except KeyError:
             print "Missing value for Normalized conc. (ng/uL) on", output.name, "(and possibly others)"
             sys.exit(1)
-        try:
-            output_vol = output.udf['Volume (uL)']
-        except KeyError:
-            print "Missing value for Volume (uL) on", output.name, "(and possibly others)"
-            sys.exit(1)
+
+        output_vol = output.udf.get('Volume (uL)')
+        if output_vol is None:
+            try:
+                output_vol = DEFAULT_OUTPUT_VOL[norm_conc]
+                output.udf['Volume (uL)'] = output_vol
+                updated_outputs.append(output)
+            except KeyError:
+                print "No default volume available for concentration", norm_conc, "uL"
+                sys.exit(1)
          
         input_conc = sample.udf['Sample conc. (ng/ul)']
         sample_volume = norm_conc * output_vol / input_conc
@@ -81,8 +94,11 @@ def main(process_id, output_file_id):
             dest_well,
             "%4.2f" % sample_volume,
             "%4.2f" % buffer_volume,
-            "%4.2f" % norm_conc
+            "%4.2f" % norm_conc,
+            "%4.2f" % output_vol
             ])
+
+    lims.put_batch(updated_outputs)
 
     output_file_name = output_file_id + "_norm.csv"
     with open(output_file_name, 'wb') as out_file:
