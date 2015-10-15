@@ -7,15 +7,20 @@ from genologics.lims import *
 # Copy UDF value from derived sample to sample objects. 
 # Used to copy the target concentration into the Sample 
 
+INPUT_UDFNAME = "Normalized conc. (ng/uL)"
+OUTPUT_UDFNAME = "Normalized conc. (ng/uL) Diag"
 
-def main(process_id, udfname):
+def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
-    process = Process(lims, id=process_id)
-    outputs = process.all_outputs(unique=True, resolve=True)
+    step = Step(lims, id=process_id)
+    # We need the next actions anyway, so get the list of outputs from the
+    # next actions resource
+    outputs = lims.get_batch(Artifact(lims, id=na['artifact-uri']) for na in step.actions.next_actions)
     samples = lims.get_batch(output.samples[0] for output in outputs)
+    missing = []
     for output in outputs:
         try:
-            output.samples[0].udf[udfname] = output.udf[udfname]
+            output.samples[0].udf[OUTPUT_UDFNAME] = output.udf[INPUT_UDFNAME]
         except KeyError:
             missing.append(output.name)
 
@@ -24,6 +29,7 @@ def main(process_id, udfname):
         sys.exit(1)
 
     lims.put_batch(samples)
+    lims.set_default_next_step(step, outputs)
 
-main(*sys.argv[1:3])
+main(sys.argv[1])
 
