@@ -22,9 +22,9 @@ def main(process_id, high_conc_step, low_conc_step=None):
 
     # Get next steps
     for transition in step.configuration.transitions:
-        if transition['name'] == high_conc_step:
+        if transition.get('name') == high_conc_step:
             high_conc_step_uri = transition['next-step-uri']
-        if transition['name'] == low_conc_step:
+        if transition.get('name') == low_conc_step:
             low_conc_step_uri = transition['next-step-uri']
 
     if not high_conc_step_uri or not low_conc_step_uri:
@@ -33,15 +33,15 @@ def main(process_id, high_conc_step, low_conc_step=None):
 
     next_actions = step.actions.next_actions
     # Pre-cache everything
-    artifacts = [Artifact(lims, uri=na['artifact-uri']) for na in next_actions]
-    lims.get_batch(artifacts)
+    artifacts = lims.get_batch(Artifact(lims, uri=na['artifact-uri']) for na in next_actions)
+    samples = lims.get_batch(artifact.samples[0] for artifact in artifacts)
 
     # For error reporting
     missing_values = []
 
     for na, artifact in zip(next_actions, artifacts):
         try:
-            conc_udf = artifact.udf['Normalized conc. (ng/uL)']
+            conc_udf = artifact.samples[0].udf['Normalized conc. (ng/uL) Diag']
         except KeyError:
             missing_values.append(artifact.name)
             continue
@@ -57,11 +57,11 @@ def main(process_id, high_conc_step, low_conc_step=None):
             sys.exit(1)
 
     if missing_values:
-        print "Target concentration not specified for samples: ", ", ".join(missing_values)
+        print "Normalized concentration not specified for samples: ", ", ".join(missing_values)
         sys.exit(1)
 
     step.actions.put()
 
 
-main(*sys.argv)
+main(*sys.argv[1:])
 
