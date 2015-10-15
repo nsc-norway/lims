@@ -2,23 +2,28 @@ import sys
 from genologics import config
 from genologics.lims import *
 
+# Diag SureSelect workflow
+
+# Copy UDF value from derived sample to sample objects. 
+# Used to copy the target concentration into the Sample 
+
+
 def main(process_id, udfname):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
-    ios = []
-    for i, o in process.input_output_maps:
-        if o['output-generation-type'] == 'PerInput' and o['output-type'] == 'Analyte':
-            ios.append(i['uri'], o['uri'])
-
-    lims.get_batch(el for io in ios for el in io)
-    missing = []
-    for i, o in ios:
+    outputs = process.all_outputs(unique=True, resolve=True)
+    samples = lims.get_batch(output.samples[0] for output in outputs)
+    for output in outputs:
         try:
-            o.udf[udfname] = i.udf[udfname]
+            output.samples[0].udf[udfname] = output.udf[udfname]
         except KeyError:
-            missing.append(i)
+            missing.append(output.name)
 
-    lims.put_batch(io[1] for io in ios)
+    if missing:
+        print "Missing values for:", ", ".join(missing)
+        sys.exit(1)
 
-main(*sys.argv[1:4])
+    lims.put_batch(samples)
+
+main(*sys.argv[1:3])
 
