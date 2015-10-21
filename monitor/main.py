@@ -49,6 +49,9 @@ DATA_PROCESSING = [
 
 PROJECT_EVALUATION = "Project Evaluation Step"
 
+RECENTLY_COMPLETED_UDF = "Recently completed"
+PROCESSED_DATE_UDF = "Processing completed date"
+
 recent_run_cache = {}
 sequencing_process_type = []
 
@@ -255,7 +258,7 @@ def get_recent_run(fc, instrument_index):
             demultiplexing_url,
             runid,
             list(projects),
-            fc.udf[nsc.PROCESSED_DATE_UDF]
+            fc.udf[PROCESSED_DATE_UDF]
             )
     
 
@@ -263,7 +266,7 @@ def get_recent_run(fc, instrument_index):
 def get_recently_completed_runs():
     # Look for any flowcells which have a value for this udf
     flowcells = lims.get_containers(
-            udf={nsc.RECENTLY_COMPLETED_UDF: True},
+            udf={RECENTLY_COMPLETED_UDF: True},
             type=FLOWCELL_INSTRUMENTS.keys()
             )
 
@@ -271,11 +274,11 @@ def get_recently_completed_runs():
     results = [[],[],[]]
     for fc in reversed(flowcells):
         try:
-            date = fc.udf[nsc.PROCESSED_DATE_UDF]
+            date = fc.udf[PROCESSED_DATE_UDF]
         except KeyError:
             fc.get(force=True)
             try:
-                date = fc.udf[nsc.PROCESSED_DATE_UDF]
+                date = fc.udf[PROCESSED_DATE_UDF]
             except KeyError:
                 date = cutoff_date
 
@@ -285,7 +288,7 @@ def get_recently_completed_runs():
             except KeyError:
                 pass
             fc.get(force=True)
-            fc.udf[nsc.RECENTLY_COMPLETED_UDF] = False
+            fc.udf[RECENTLY_COMPLETED_UDF] = False
             fc.put()
         else:
             run_info = recent_run_cache.get(fc.id)
