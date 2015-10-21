@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>NSC overview</title>
+<link rel="stylesheet" href="static/style.css" type="text/css"/>
+</head>
+<body>
+
+<div class="header">
+	<img src="static/logo.png" class="logo" alt="NSC"/>
+	<div class="header-text">
+		<h1 class="title">Sequencing data status</h1>
+       		Server: {{ server }}</div>
+	</div>
+	<div style="clear: both;"/>
+</div>
+
+<div class="section">
+<h2 class="section-header">Sequencing</h2>
+<table class="main-table">
+<tr>
+{% for instr in instruments %}
+<th class="main">{{ instr }}</th>
+{% endfor %}
+</tr>
+
+<tr>
+{% for data in sequencing %}
+<td class="main">
+
+{% for proc in data %}
+	<div class="box">
+	<h4 class="box-header">
+		<a href="{{ proc.url }}">{{ proc.flowcell_id }}</a>
+	</h4>
+	<table><tr>
+			<td class="label-col">Run:</td><td>
+			{% if proc.runid %}
+			<a href="{{ proc.url }}">{{ proc.runid }}</a>
+			{% endif %}</td>
+		</tr><tr>
+			<td>Project:</td><td>
+				<a href="{{ proc.projects[0].url }}">
+				{{ proc.projects[0].name }}</a> 
+				<a href="{{ proc.projects[0].eval_url }}">[E]</a>
+			</td>
+		</tr>
+		{% for proj in proc.projects[1:] %}
+		<tr>
+			<td></td><td>
+				<a href="{{ proj.url }}">{{ proj.name }}</a> 
+				<a href="{{ proj.eval_url }}">[E]</a>
+				</td>
+		</tr>
+		{% endfor %}
+		<tr>
+			<td>Status:</td><td>{{ proc.status }}</td>
+		</tr>
+		<tr>
+			<td>Finished:</td><td>{{ proc.finished }}</td>
+		</tr>
+	</table>
+	</div>
+{% endfor %}
+</td>
+{% endfor %}
+</tr>
+</table>
+
+</div>
+
+<h2 class="section-header">Data processing/analysis</h2>
+
+<table class="main-table">
+<tr>
+{% for boxes in post_sequencing %}
+<td class="main">
+
+{% for item in boxes %}
+
+<div class="box">
+<h4 class="box-header">
+	<a href="{{ item.url }}">{{ item.name }}</a>
+</h4>
+<table><tr>
+		<td class="label-col">Run:</td><td>
+		{% if item.runid %}
+		<a href="{{ item.seq_url }}">{{ item.runid }}</a>
+		{% else %}
+		<a href="{{ item.seq_url }}">(unknown)</a>
+		{% endif %}</td>
+	</tr><tr>
+		<td>Project:</td><td>
+			<a href="{{ item.projects[0].url }}">
+			{{ item.projects[0].name }}</a> 
+			<a href="{{ item.projects[0].eval_url }}">[E]</a>
+		</td>
+	</tr>
+	{% for proj in item.projects[1:] %}
+	<tr>
+		<td></td><td>
+			<a href="{{ proj.url }}">{{ proj.name }}</a> 
+			<a href="{{ proj.eval_url }}">[E]</a></td>
+	</tr>
+	{% endfor %}
+	<tr>
+		<td>Job:</td><td>{{ item.current_job }}</td>
+	</tr>
+	<tr>
+		<td>Status:</td><td>{{ item.status }}</td>
+	</tr>
+</table>
+</div>
+
+{% endfor %}
+</td>
+{% endfor %}
+</tr>
+</table>
+
+
+<h2 class="section-header">Recently completed runs</h2>
+
+<table class="main-table">
+<tr>
+{% for boxes in recently_completed %}
+<td class="main">
+
+{% for item in boxes %}
+
+<div class="box">
+<h4 class="box-header">
+	<a href="{{ item.url }}">{{ item.runid }}</a>
+</h4>
+<table>  <tr>
+		<td class="label-col">Demult.:</td>
+		<td><a href="{{ item.demultiplexing_url }}">Go to page...</a><td>
+	</tr>
+	<tr>
+		<td class="label-col">Processed date:</td>
+		<td>{{ item.date }}<td>
+	</tr>
+	<tr>
+		<td>Project:</td><td>
+			<a href="{{ item.projects[0].url }}">
+			{{ item.projects[0].name }}</a> 
+			<a href="{{ item.projects[0].eval_url }}">[E]</a>
+		</td>
+	</tr>
+	{% for proj in item.projects[1:] %}
+	<tr>
+		<td></td><td>
+			<a href="{{ proj.url }}">{{ proj.name }}</a> 
+			<a href="{{ proj.eval_url }}">[E]</a>
+			</td>
+	</tr>
+	{% endfor %}
+</table>
+</div>
+
+{% endfor %}
+</td>
+{% endfor %}
+</tr>
+</table>
+
+</body>
+</html>

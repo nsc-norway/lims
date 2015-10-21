@@ -1,0 +1,9 @@
+### Debugging
+
+Troubleshooting hints: 
+ - The server can be run as a stand-alone application by executing main.py with
+   Python.
+ - Flask debug mode is enabled by default when in development mode (TAG=="dev"), 
+   but can also be enabled in production by altering the test at the top of the
+   file, setting app.debug. 
+
