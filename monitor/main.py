@@ -3,7 +3,7 @@ from genologics.lims import *
 from genologics import config
 import re
 import requests
-from common import nsc, utilities
+from common import utilities
 import datetime
 import threading
 from functools import partial
@@ -47,10 +47,16 @@ DATA_PROCESSING = [
         ("Demultiplexing and QC NSC 2.0"),
         ]
 
+# Process type for project eval.
 PROJECT_EVALUATION = "Project Evaluation Step"
 
+# General, for tracking completed runs
 RECENTLY_COMPLETED_UDF = "Recently completed"
 PROCESSED_DATE_UDF = "Processing completed date"
+
+# Used by pipeline repo
+JOB_STATUS_UDF = "Job status"
+CURRENT_JOB_UDF = "Current job"
 
 recent_run_cache = {}
 sequencing_process_type = []
@@ -209,12 +215,12 @@ def read_post_sequencing_process(process_name, process, sequencing_process):
     projects = get_projects(process)
 
     try:
-        status = process.udf[nsc.JOB_STATUS_UDF]
+        status = process.udf[JOB_STATUS_UDF]
     except KeyError:
         status = "Open"
 
     try:
-        current_job = process.udf[nsc.CURRENT_JOB_UDF]
+        current_job = process.udf[CURRENT_JOB_UDF]
     except KeyError:
         current_job = ""
 
