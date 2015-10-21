@@ -1,5 +1,6 @@
 from flask import Flask, render_template, url_for, request, Response, redirect
 from genologics.lims import *
+from genologics import config
 import re
 import requests
 from common import nsc, utilities
@@ -20,8 +21,8 @@ from collections import defaultdict
 #              step is closed in the LIMS.
 
 app = Flask(__name__)
-if nsc.TAG == "dev":
-    app.debug=True
+
+
 
 INSTRUMENTS = ["HiSeq", "NextSeq", "MiSeq"]
 
@@ -50,7 +51,6 @@ PROJECT_EVALUATION = "Project Evaluation Step"
 
 recent_run_cache = {}
 sequencing_process_type = []
-
 
 class Project(object):
     def __init__(self, url, name, eval_url):
@@ -109,7 +109,7 @@ def is_step_completed(step):
 
 def proc_url(process_id):
     global ui_server
-    step = Step(nsc.lims, id=process_id)
+    step = Step(lims, id=process_id)
     state = step.current_state.upper()
     if state == 'COMPLETED':
         page = "work-complete"
@@ -157,7 +157,7 @@ def read_sequencing(process_name, process):
     flowcell = process.all_inputs()[0].location[0]
     flowcell_id = flowcell.name
     if "NextSeq" in process_name:
-        step = Step(nsc.lims, id=process.id)
+        step = Step(lims, id=process.id)
         for lot in step.reagentlots.reagent_lots:
             if lot.reagent_kit.name == "NextSeq 500 FC v1":
                 flowcell_id = lot.name
@@ -229,14 +229,14 @@ def get_recent_run(fc, instrument_index):
     
     Caching should be done by the caller."""
 
-    sequencing_process = next(iter(nsc.lims.get_processes(
+    sequencing_process = next(iter(lims.get_processes(
             type=SEQUENCING[instrument_index],
             inputartifactlimsid=fc.placements.values()[0].id
             )))
 
     url = proc_url(sequencing_process.id)
     try:
-        demux_process = next(iter(nsc.lims.get_processes(
+        demux_process = next(iter(lims.get_processes(
                 type=DATA_PROCESSING[instrument_index],
                 inputartifactlimsid=fc.placements.values()[0].id
                 )))
@@ -262,7 +262,7 @@ def get_recent_run(fc, instrument_index):
 
 def get_recently_completed_runs():
     # Look for any flowcells which have a value for this udf
-    flowcells = nsc.lims.get_containers(
+    flowcells = lims.get_containers(
             udf={nsc.RECENTLY_COMPLETED_UDF: True},
             type=FLOWCELL_INSTRUMENTS.keys()
             )
@@ -323,22 +323,22 @@ def get_main():
             "http://dev-lims.ous.nsc.local:8080/": "https://dev-lims.ous.nsc.local/",
             "http://ous-lims.ous.nsc.local:8080/": "https://ous-lims.ous.nsc.local/"
             }
-    ui_server = ui_servers.get(nsc.lims.baseuri, nsc.lims.baseuri)
+    ui_server = ui_servers.get(lims.baseuri, lims.baseuri)
 
     all_process_types = SEQUENCING + DATA_PROCESSING
 
     # Get a list of all processes 
     # Of course it can't be this efficient :( Multiple process types not supported
-    #monitored_process_list = nsc.lims.get_processes(udf={'Monitor': True}, type=all_process_types)
+    #monitored_process_list = lims.get_processes(udf={'Monitor': True}, type=all_process_types)
     monitored_process_list = []
     for ptype in set(all_process_types):
-        monitored_process_list += nsc.lims.get_processes(udf={'Monitor': True}, type=ptype)
+        monitored_process_list += lims.get_processes(udf={'Monitor': True}, type=ptype)
 
     # Refresh data for all processes (need this for almost all monitored procs, so
     # doing a batch request)
     processes_with_data = get_batch(monitored_process_list)
     # Need Steps to see if COMPLETED, this loads them into cache
-    steps = [Step(nsc.lims, id=p.id) for p in processes_with_data]
+    steps = [Step(lims, id=p.id) for p in processes_with_data]
     get_batch(steps)
 
     seq_processes = defaultdict(list)
@@ -389,7 +389,7 @@ def get_main():
 
     body = render_template(
             'processes.xhtml',
-            server=nsc.lims.baseuri,
+            server=lims.baseuri,
             sequencing=sequencing,
             post_sequencing=post_sequencing,
             recently_completed=recently_completed,
@@ -401,7 +401,7 @@ def get_main():
 @app.route('/go-eval')
 def go_eval():
     project_name = request.args.get('project_name')
-    processes = nsc.lims.get_processes(projectname=project_name, type=PROJECT_EVALUATION)
+    processes = lims.get_processes(projectname=project_name, type=PROJECT_EVALUATION)
     if len(processes) > 0:
         process = processes[-1]
         return redirect(proc_url(process.id))
@@ -410,5 +410,6 @@ def go_eval():
 
 
 if __name__ == '__main__':
+    app.debug=True
     app.run(host="0.0.0.0", port=5001)
 
