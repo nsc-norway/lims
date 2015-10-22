@@ -33,8 +33,9 @@ def main(process_id, high_conc_step, low_conc_step=None):
 
     next_actions = step.actions.next_actions
     # Pre-cache everything
-    artifacts = lims.get_batch(Artifact(lims, uri=na['artifact-uri']) for na in next_actions)
-    samples = lims.get_batch(artifact.samples[0] for artifact in artifacts)
+    artifacts = [Artifact(lims, uri=na['artifact-uri']) for na in next_actions]
+    lims.get_batch(artifacts)
+    lims.get_batch(artifact.samples[0] for artifact in artifacts)
 
     # For error reporting
     missing_values = []

@@ -175,7 +175,7 @@ def main(process_id, swl_file_id, ignore_duplicates=False):
             # Only inspect further in the rare case when there is a dupe. There is still not 
             # necessarily a duplicate, since even if there's a sample with the same name, it
             # may have a different gene panel.
-            existing_samples = lims.get_batch(existing_samples) # This will not refresh the ones which are already
+            lims.get_batch(existing_samples) # This will not refresh the ones which are already
                                                                 # cached (and modified)
             try:
                 existing_sample_keys = [(sample.name, sample.udf['Gene panel Diag']) for sample in existing_samples]
