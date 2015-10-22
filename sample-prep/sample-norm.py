@@ -13,7 +13,7 @@ DEFAULT_OUTPUT_VOL = {
 
 def sort_key(elem):
     input, output, sample = elem
-    container, well = input.location
+    container, well = output.location
     row, col = well.split(":")
     return (container, int(col), row)
     
