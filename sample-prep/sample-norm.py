@@ -32,8 +32,7 @@ def main(process_id, output_file_id):
             "To well",
             "Sample volume",
             "Buffer volume",
-            "Norm. conc.",
-            "Norm. volume",
+            "Norm. conc."
             ]
 
     inputs = []
@@ -61,23 +60,23 @@ def main(process_id, output_file_id):
         dest_well = output.location[1]
 
         try:
-            norm_conc = output.udf['Normalized conc. (ng/uL)']
+            norm_mass = output.udf['Normalized amount of DNA (ng)']
         except KeyError:
-            print "Missing value for Normalized conc. (ng/uL) on", output.name, "(and possibly others)"
+            print "Missing value for Normalized amount of DNA (ng) on", output.name, "(and possibly others)"
             sys.exit(1)
 
         output_vol = output.udf.get('Volume (uL)')
         if output_vol is None:
             try:
-                output_vol = DEFAULT_OUTPUT_VOL[norm_conc]
+                output_vol = DEFAULT_OUTPUT_VOL[norm_mass]
                 output.udf['Volume (uL)'] = output_vol
                 updated_outputs.append(output)
             except KeyError:
-                print "No default volume available for concentration", norm_conc, "uL"
+                print "No default volume available for mass", norm_mass, "ng"
                 sys.exit(1)
          
         input_conc = sample.udf['Sample conc. (ng/ul)']
-        sample_volume = norm_conc * output_vol / input_conc
+        sample_volume = norm_mass / input_conc
         buffer_volume = output_vol - sample_volume
 
         if buffer_volume < 0:
@@ -94,8 +93,7 @@ def main(process_id, output_file_id):
             dest_well,
             "%4.2f" % sample_volume,
             "%4.2f" % buffer_volume,
-            "%4.2f" % norm_conc,
-            "%4.2f" % output_vol
+            "%4.2f" % (norm_mass * 1.0 / output_vol)
             ])
 
     lims.put_batch(updated_outputs)

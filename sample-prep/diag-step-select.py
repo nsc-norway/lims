@@ -41,7 +41,7 @@ def main(process_id, high_conc_step, low_conc_step=None):
 
     for na, artifact in zip(next_actions, artifacts):
         try:
-            conc_udf = artifact.samples[0].udf['Normalized conc. (ng/uL) Diag']
+            conc_udf = artifact.samples[0].udf['Normalized amount of DNA (ng) Diag']
         except KeyError:
             missing_values.append(artifact.name)
             continue
