@@ -3,6 +3,10 @@ import re
 from genologics.lims import *
 from genologics import config
 
+# Use:
+# python run-parameters.py [-p] RUN_ID
+# Use -p to change the output into pipe separated key/values
+
 def main(run_id, parsable):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     for instrument, ptype in [
@@ -28,4 +32,10 @@ def main(run_id, parsable):
             else:
                 print "%-25s %s" % (udfname, udfval)
 
-main(next(x for x in sys.argv[1:] if x[0] != "-"), '-p' in sys.argv)
+try:
+    run_id = next(x for x in sys.argv[1:] if x[0] != "-")
+except StopIteration:
+    print "use: python run-parameters.py [-p] RUN_ID"
+    sys.exit(1)
+main(run_id, '-p' in sys.argv)
+
