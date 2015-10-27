@@ -20,6 +20,7 @@
 	cd ../lims &&
 	tar x && 
 	cd .. &&
-	rm -rf genologics.2 lims.2 )'"
+	rm -rf genologics.2 lims.2
+	rsync -rl genologics lims /var/www/html/ )'"
 
 
