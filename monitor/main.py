@@ -9,6 +9,7 @@ from functools import partial
 from collections import defaultdict
 
 # Dependencies:
+# mod_wsgi yum package
 # python-flask yum packages
 # python-jinja2, but requires newer version than yum, use pip
 
