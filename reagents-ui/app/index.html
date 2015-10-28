@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="reagentsUi">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Reagent scanning</title>
+  <meta name="description" content="Reagents scanning UI">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="bower_components/html5-boilerplate/dist/css/normalize.css">
+  <link rel="stylesheet" href="bower_components/html5-boilerplate/dist/css/main.css">
+  <link rel="stylesheet" href="reagents.css">
+  <script src="bower_components/html5-boilerplate/dist/js/vendor/modernizr-2.8.3.min.js"></script>
+  <script src="bower_components/angular/angular.js"></script>
+  <script src="bower_components/angular-resource/angular-resource.js"></script>
+  <script src="js/controllers.js"></script>
+  
+</head>
+<body>
+
+
+<table class="scanning">
+	<tr>
+	<td>
+		REF: 
+	</td> <td>
+		<input ng-model="ref" ng-disabled="saving" focus-on="focusRef" />
+		{{ kit.name }}
+	</td>
+	</tr>
+	<tr>
+	<td>
+		LOT: 
+	</td> <td>
+		<input ng-model="lot" ng-disabled="saving" focus-on="focusLot" />
+	</td>
+	</tr>
+	<tr ng-hide="rgt == '' || !kit.hasRgt">
+	<td>
+		RGT: 
+	</td><td>
+		<input ng-model="rgt" ng-disabled="saving" focus-on="focusRgt" />
+	</td>
+	</tr>
+	<tr>
+	<td>
+		Expiry date:
+	</td> <td>
+		<input type="date" ng-model="lotinfo.expiryDate" ng-hide="lotInfo.known" focus-on="focusDate" />
+		<span ng-hide="lotInfo.known">{{ lotinfo.expiryDate }}</span>
+	</td>
+	</tr>
+	</table>
+	<p ng-hide="!saving">Saving...</p>
+</div>
+
+</body>
+</html>
