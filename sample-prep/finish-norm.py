@@ -7,8 +7,8 @@ from genologics.lims import *
 # Copy UDF value from derived sample to sample objects. 
 # Used to copy the target concentration into the Sample 
 
-INPUT_UDFNAME = "Normalized conc. (ng/uL)"
-OUTPUT_UDFNAME = "Normalized conc. (ng/uL) Diag"
+INPUT_UDFNAME = "Normalized amount of DNA (ng)"
+OUTPUT_UDFNAME = "Normalized amount of DNA (ng) Diag"
 
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)

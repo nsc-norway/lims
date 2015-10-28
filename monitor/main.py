@@ -3,11 +3,15 @@ from genologics.lims import *
 from genologics import config
 import re
 import requests
-from common import utilities
 import datetime
 import threading
 from functools import partial
 from collections import defaultdict
+
+# Dependencies:
+# mod_wsgi yum package
+# python-flask yum packages
+# python-jinja2, but requires newer version than yum, use pip
 
 # Project / Sample progress
 # ---------------------------------
@@ -21,8 +25,9 @@ from collections import defaultdict
 #              step is closed in the LIMS.
 
 app = Flask(__name__)
+app.debug = True
 
-
+lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
 INSTRUMENTS = ["HiSeq", "NextSeq", "MiSeq"]
 
@@ -57,9 +62,24 @@ PROCESSED_DATE_UDF = "Processing completed date"
 # Used by pipeline repo
 JOB_STATUS_UDF = "Job status"
 CURRENT_JOB_UDF = "Current job"
+SEQ_PROCESSES=[
+        ('hiseq', 'Illumina Sequencing (Illumina SBS) 5.0'),
+        ('nextseq', 'NextSeq Run (NextSeq) 1.0'),
+        ('miseq', 'MiSeq Run (MiSeq) 5.0')
+        ]
 
 recent_run_cache = {}
 sequencing_process_type = []
+
+def get_sequencing_process(process):
+    """As seen in pipeline/common/utilities.py."""
+    first_io = process.input_output_maps[0]
+    first_in_artifact = first_io[0]['uri']
+    processes = process.lims.get_processes(inputartifactlimsid=first_in_artifact.id)
+    for proc in processes:
+        if proc.type.name in [p[1] for p in SEQ_PROCESSES]:
+            return proc
+
 
 class Project(object):
     def __init__(self, url, name, eval_url):
@@ -387,8 +407,8 @@ def get_main():
     for index, step_name in enumerate(DATA_PROCESSING):
         machine_items = [] # all processes for a type of sequencing machine
         for process in post_processes[step_name]:
-            sequencing_process = utilities.get_sequencing_process(process)
-            if sequencing_process.type.name == SEQUENCING[index]:
+            sequencing_process = get_sequencing_process(process)
+            if sequencing_process and sequencing_process.type.name == SEQUENCING[index]:
                 machine_items.append(read_post_sequencing_process(
                     step_name, process, sequencing_process
                     ))

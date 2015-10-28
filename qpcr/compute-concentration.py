@@ -19,8 +19,8 @@ def main(process_id):
             inputs.append(input)
             measurements.append(measurement)
 
-    inputs = lims.get_batch(inputs)
-    measurements = lims.get_batch(measurements)
+    lims.get_batch(inputs)
+    lims.get_batch(measurements)
 
     for input, measurement in zip(inputs, measurements):
         try:
