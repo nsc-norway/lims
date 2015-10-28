@@ -25,7 +25,7 @@ def main(run_id, parsable):
         sys.exit(1)
 
     for process in processes: # There is just one
-        data = [("Instrument", instrument)] + list(process.udf.items())
+        data = [("Instrument", instrument)] + list(k, v for k, v in process.udf.items() if k != "Monitor")
         for udfname, udfval in data:
             if parsable:
                 print udfname + "|" + str(udfval)
