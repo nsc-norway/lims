@@ -11,7 +11,7 @@ from collections import defaultdict
 # Dependencies:
 # mod_wsgi yum package
 # python-flask yum packages
-# python-jinja2, but requires newer version than yum, use pip
+# python-jinja2
 
 # Project / Sample progress
 # ---------------------------------
@@ -25,7 +25,6 @@ from collections import defaultdict
 #              step is closed in the LIMS.
 
 app = Flask(__name__)
-app.debug = True
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
