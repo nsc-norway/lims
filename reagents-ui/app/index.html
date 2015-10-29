@@ -15,7 +15,7 @@
   <script src="js/controllers.js"></script>
   
 </head>
-<body>
+<body ng-controller="scanningController">
 
 
 <table class="scanning">
@@ -23,7 +23,7 @@
 	<td>
 		REF: 
 	</td> <td>
-		<input ng-model="ref" ng-disabled="saving" focus-on="focusRef" />
+		<input ng-model="ref" ng-disabled="busy" focus-on="focusRef" ng-change="ref_change()" />
 		{{ kit.name }}
 	</td>
 	</tr>
@@ -31,14 +31,14 @@
 	<td>
 		LOT: 
 	</td> <td>
-		<input ng-model="lot" ng-disabled="saving" focus-on="focusLot" />
+		<input ng-model="lotnumber" ng-disabled="busy" focus-on="focusLot" />
 	</td>
 	</tr>
 	<tr ng-hide="rgt == '' || !kit.hasRgt">
 	<td>
 		RGT: 
 	</td><td>
-		<input ng-model="rgt" ng-disabled="saving" focus-on="focusRgt" />
+		<input ng-model="rgt" ng-disabled="busy" focus-on="focusRgt" />
 	</td>
 	</tr>
 	<tr>
@@ -46,11 +46,11 @@
 		Expiry date:
 	</td> <td>
 		<input type="date" ng-model="lotinfo.expiryDate" ng-hide="lotInfo.known" focus-on="focusDate" />
-		<span ng-hide="lotInfo.known">{{ lotinfo.expiryDate }}</span>
+		<span ng-hide="lotinfo.known">{{ lotinfo.expiryDate }}</span>
 	</td>
 	</tr>
 	</table>
-	<p ng-hide="!saving">Saving...</p>
+	<p ng-hide="!busy">Saving...</p>
 </div>
 
 </body>
