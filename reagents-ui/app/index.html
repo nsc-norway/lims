@@ -13,44 +13,69 @@
   <script src="bower_components/angular/angular.js"></script>
   <script src="bower_components/angular-resource/angular-resource.js"></script>
   <script src="js/controllers.js"></script>
-  
+
 </head>
 <body ng-controller="scanningController">
 
 
+<div class="scanning-pane">
+  <h1>Scanning</h1>
 <table class="scanning">
 	<tr>
 	<td>
-		REF: 
+		REF:
 	</td> <td>
-		<input ng-model="ref" ng-disabled="busy" focus-on="focusRef" ng-change="ref_change()" />
-		{{ kit.name }}
+		<input ng-model="ref" focus-on="focusRef" select-on="selectRef" ng-change="refChanged()" />
 	</td>
 	</tr>
 	<tr>
 	<td>
-		LOT: 
+		LOT:
 	</td> <td>
-		<input ng-model="lotnumber" ng-disabled="busy" focus-on="focusLot" />
+		<input ng-model="lotnumber" focus-on="focusLot" ng-change="lotChanged()" />
 	</td>
 	</tr>
-	<tr ng-hide="rgt == '' || !kit.hasRgt">
+	<tr ng-hide="!kit.requestLotName">
 	<td>
-		RGT: 
+		RGT:
 	</td><td>
-		<input ng-model="rgt" ng-disabled="busy" focus-on="focusRgt" />
+		<input ng-model="rgt" focus-on="focusRgt" ng-change="rgtChanged()"/>
 	</td>
 	</tr>
-	<tr>
-	<td>
-		Expiry date:
-	</td> <td>
-		<input type="date" ng-model="lotinfo.expiryDate" ng-hide="lotInfo.known" focus-on="focusDate" />
-		<span ng-hide="lotinfo.known">{{ lotinfo.expiryDate }}</span>
-	</td>
-	</tr>
+</table>
+</div>
+<div class="deleted-pane" ng-hide="!deleted">
+  <h1>Deleted</h1>
+</div>
+<div class="detail-pane" ng-hide="!kit.found || deleted">
+	<h1>Kit: {{ kit.name }}</h1>
+	<table>
+		<tr>
+      <td>Lot:</td>
+			<td>{{ lot.lotnumber }}</td>
+		</tr>
+    <tr>
+      <td>Rgt/unique ID:</td>
+			<td>{{ lot.uid }}</td>
+    </tr>
+  	<td>
+  		Expiry date:
+  	</td> <td>
+  		<input type="text" ng-model="lot.expiryDate" ng-hide="lot.known" focus-on="focusDate" />
+  		<span ng-hide="!lot.known">{{ lot.expiryDate }}</span>
+  	</td>
+  	</tr>
 	</table>
-	<p ng-hide="!busy">Saving...</p>
+  <div class="confirm-save" ng-hide="!(kit.found && lot.lotnumber && lot.uid && lot.expiryDate) || submitted">
+    <button class="save" ng-click="saveLot()">&#x2795; Save</button>
+    <div>(scan a new REF to cancel)</div>
+  </div>
+  <div class="submitted" ng-hide="!(submitted && !saved)">
+    &#x2794; Storing...
+  </div>
+  <div class="saved" ng-hide="!(submitted && saved)">
+    <div>&#x2705; Saved</div>
+  </div>
 </div>
 
 </body>
