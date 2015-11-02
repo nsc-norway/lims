@@ -16,7 +16,7 @@ function resetDetails($scope) {
 
 app.factory('Kit', function($resource) {
 	return $resource(
-		"kits/:ref"
+		"/kits/:ref"
 	);
 });
 
@@ -35,14 +35,12 @@ function dateConverterInterceptor(response) {
 
 app.factory('Lot', function($resource) {
 	return $resource(
-		"lots/:lotnumber", {}, {
+		"/lots/:ref/:lotnumber", {}, {
 			'get': {interceptor: {response: dateConverterInterceptor}},
 			'put': {}
 		}
 	);
 });
-
-
 
 app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 
@@ -89,7 +87,7 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 			$scope.scanMode = false;
 		}
 		if ($scope.lotnumber != "") {
-			$scope.lot = Lot.get({'lotnumber': $scope.lotnumber}, function() {
+			$scope.lot = Lot.get({'ref': $scope.ref, 'lotnumber': $scope.lotnumber}, function() {
 				if (!$scope.kit.requestLotName && $scope.lot.known) {
 					if ($scope.scanMode) {
 						$scope.saveLot($scope);
@@ -115,10 +113,13 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 		$scope.ref = "";
 		$scope.$broadcast("focusRef");
 		$scope.submitted = true;
-		lot.$save({'lotnumber': $scope.lotnumber}, function() {
+		lot.$save({
+				'ref': $scope.ref,
+				'lotnumber': $scope.lotnumber},
+		function() {
 			$scope.saved = true;
 		}, function(error) {
-			alert("There was an error saving the lot: " + error);
+			alert("There was an error saving the lot: "  + error.status + ": " + error.data);
 			$scope.submitted = false;
 			$scope.confirmSave = true;
 		});

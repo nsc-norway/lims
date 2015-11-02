@@ -23,8 +23,8 @@ kit_naming = {}
 def get_next_seq_number(kitname, lotcode):
     for i in itertools.count():
         name = "{0}-{1}{2}".format(seq_number_date, lotcode, i)
-        lot = lims.get_reagent_lots(kitname=kitname, name=name)
-        if not lot:
+        lots = lims.get_reagent_lots(kitname=kitname, name=name)
+        if not lots:
             return i
 
 def get_date_string():
@@ -50,7 +50,7 @@ def refresh():
         lots = lims.get_reagent_lots(kitname=kit.name)
         for i, lot in enumerate(lots):
             if lot.name.startswith("RGT"):
-                kit_mode[kit] = None
+                kit_naming[kit] = None
                 break
             else:
                 m = re.match(r"\d{6}-([A-Z]+)\d+$", lot.name)
@@ -59,6 +59,8 @@ def refresh():
                     next_seq_number = get_next_seq_number(kit.name, code)
                     kit_naming[kit] = [code, next_seq_number]
                     break
+        else:
+            kit_naming[kit] = None
 
     print "Done."
 
@@ -73,23 +75,70 @@ class Kit(object):
 def get_kit(ref):
     try:
         kit = cat_kit[ref]
-        kit_obj = Kit("Hello", True, ref)
-        return jsonify(kit_obj)
+        return jsonify({
+                "name": kit.name,
+                "requestLotName": kit_naming[kit] is None,
+                "found": True,
+                "ref": ref
+                })
     except KeyError:
-        return ("Kit not found", 404, {})
+        return ("Kit not found", 404)
 
-@app.route('/lots/<lotnumber>', methods=['GET'])
-def get_lot(lotnumber):
+def get_next_name(kit):
+    naming = kit_naming[kit]
+    if naming:
+        return "{0}-{1}{2}".format(seq_number_date, *naming)
+    else:
+        return ""
+
+@app.route('/lots/<ref>/<lotnumber>', methods=['GET'])
+def get_lot(ref, lotnumber):
     """Get information about lots with the requested
     lot number. There may be multiple lots in the system
     with the same lot number, if they have different lot
-    names. This method returns the next sequential lot
-    name, if applicable, and the expiry date if available."""
-    pass
+    names. This method returns the expiry date if available."""
 
-@app.route('/lots/<lotnumber>', methods=['POST'])
-def create_lot(lotnumber):
-    pass
+    try:
+        kit = cat_kit[ref]
+    except KeyError:
+        return ("Kit not found", 404)
+    lots = lims.get_reagent_lots(kitname=kit.name, number=lotnumber)
+    if not lots:
+        return ("Lot not found", 404)
+    lot = next(iter(lots))
+
+    return jsonify({
+        "expiryDate": lot.expiry_date,
+        "uid": get_next_name(kit),
+        "known": True,
+        "lotnumber": lotnumber
+        })
+
+@app.route('/lots/<ref>/<lotnumber>', methods=['POST'])
+def create_lot(ref, lotnumber):
+    try:
+        kit = cat_kit[ref]
+    except KeyError:
+        return ("Kit not found", 404)
+    lots = lims.get_reagent_lots(kitname=kit.name, number=lotnumber)
+    if not lots:
+        return ("Lot not found", 404)
+    lot = next(iter(lots))
+    data = request.json
+    try:
+        if lotnumber != data['lotnumber']:
+            return ("Lot number does not match URI", 400)
+        lot = lims.create_lot(
+            kit,
+            data['uid'],
+            lotnumber,
+            data['expiryDate'],
+            status='ACTIVE'
+        )
+    except KeyError, e:
+        return ("Missing required field " + str(e), 400)
+
+    return request.json
 
 refresh()
 
