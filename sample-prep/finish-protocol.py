@@ -5,6 +5,11 @@ import subprocess
 from genologics import config
 from genologics.lims import *
 
+# This script is no longer in use. It is only necessary when a protocol can 
+# finish on two or more steps, such that there is no single step at the end.
+# In that case, one can add a dummy step, and this script will forward all 
+# samples to that and complete the dummy step.
+
 def main(process_id, is_subprocess = False):
     """Finishes the current step and the next one.
 
