@@ -1,0 +1,19 @@
+{
+  "name": "angular-loader",
+  "version": "1.4.7",
+  "main": "./angular-loader.js",
+  "ignore": [],
+  "dependencies": {
+    "angular": "1.4.7"
+  },
+  "homepage": "https://github.com/angular/bower-angular-loader",
+  "_release": "1.4.7",
+  "_resolution": {
+    "type": "version",
+    "tag": "v1.4.7",
+    "commit": "323b4ce86c39926edb4efec5630c04677da20567"
+  },
+  "_source": "git://github.com/angular/bower-angular-loader.git",
+  "_target": "~1.4.0",
+  "_originalSource": "angular-loader"
+}
