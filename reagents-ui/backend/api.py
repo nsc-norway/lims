@@ -63,6 +63,7 @@ def refresh():
             kit_naming[kit] = None
 
     print "Done."
+    return "Refreshed"
 
 class Kit(object):
     def __init__(self, name, requestLotName, ref):

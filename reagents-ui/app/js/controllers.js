@@ -42,6 +42,13 @@ app.factory('Lot', function($resource) {
 	);
 });
 
+app.factory('Refresh', function($resource) {
+	return $resource("../refresh", {}, {
+			'refresh': {method: 'POST'}
+		}
+	);
+});
+
 app.factory('Defer', function($timeout) {
 	return function(delay, deferred) {
 		var promise = null;
@@ -58,7 +65,7 @@ app.factory('Defer', function($timeout) {
 	}
 });
 
-app.controller('scanningController', function ($scope, $timeout, Kit, Lot, Defer) {
+app.controller('scanningController', function ($scope, $timeout, Kit, Lot, Refresh, Defer) {
 
 	resetInputFields($scope);
 	resetDetails($scope);
@@ -152,6 +159,8 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot, Defer
 				document.getElementById('error-frame').src = "data:text/html;charset=utf-8," + escape(error.data);
 			});
 	};
+
+	$scope.refresh = Refresh.refresh;
 
 });
 

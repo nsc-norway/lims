@@ -1,5 +1,11 @@
 /* app css stylesheet */
 
+div.top {
+	width: 100%;
+	text-align: right;
+	padding 0.5em;
+}
+
 div.scanning-pane {
 	width: 20em;
 	height: 20em;
