@@ -44,9 +44,6 @@
 	</tr>
 </table>
 </div>
-<div class="deleted-pane" ng-hide="!deleted">
-  <h1>Deleted</h1>
-</div>
 <div class="detail-pane" ng-hide="!kit.found || deleted">
 	<h4>Kit: {{ kit.name }}</h4>
 	<table>
@@ -61,7 +58,7 @@
   	<td>
   		Expiry date:
   	</td> <td>
-  		<input type="text" ng-model="lot.expiryDate" ng-hide="lot.known" focus-on="focusDate" />
+  		<input type="date" ng-model="lot.expiryDate" ng-hide="lot.known" focus-on="focusDate" />
   		<span ng-hide="!lot.known">{{ lot.expiryDate }}</span>
   	</td>
   	</tr>
@@ -77,6 +74,8 @@
     <div>&#x2705; Saved</div>
   </div>
 </div>
+<h2 ng-hide="!error">Error:</h2>
+<iframe src="about:blank" ng-hide="!error" id="error-frame" width="1000" height="200"/>
 
 </body>
 </html>

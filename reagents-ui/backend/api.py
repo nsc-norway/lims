@@ -85,6 +85,11 @@ def get_kit(ref):
         return ("Kit not found", 404)
 
 def get_next_name(kit):
+    if seq_number_date != datetime.date.today():
+        for value in kit_naming:
+            if value:
+                value[1] = 1
+    seq_number_date = datetime.date.today()
     naming = kit_naming[kit]
     if naming:
         return "{0}-{1}{2}".format(seq_number_date, *naming)
@@ -103,16 +108,23 @@ def get_lot(ref, lotnumber):
     except KeyError:
         return ("Kit not found", 404)
     lots = lims.get_reagent_lots(kitname=kit.name, number=lotnumber)
-    if not lots:
-        return ("Lot not found", 404)
-    lot = next(iter(lots))
-
-    return jsonify({
-        "expiryDate": lot.expiry_date,
-        "uid": get_next_name(kit),
-        "known": True,
-        "lotnumber": lotnumber
-        })
+    if lots:
+        lot = next(iter(lots))
+        return jsonify({
+            "expiryDate": lot.expiry_date,
+            "uid": get_next_name(kit),
+            "known": True,
+            "lotnumber": lotnumber,
+            "ref": ref
+            })
+    else:
+        return jsonify({
+            "expiryDate": None,
+            "uid": get_next_name(kit),
+            "known": False,
+            "lotnumber": lotnumber,
+            "ref": ref
+            })
 
 @app.route('/lots/<ref>/<lotnumber>', methods=['POST'])
 def create_lot(ref, lotnumber):
@@ -120,25 +132,32 @@ def create_lot(ref, lotnumber):
         kit = cat_kit[ref]
     except KeyError:
         return ("Kit not found", 404)
-    lots = lims.get_reagent_lots(kitname=kit.name, number=lotnumber)
-    if not lots:
-        return ("Lot not found", 404)
-    lot = next(iter(lots))
     data = request.json
+    print "literal expiry date received: ", repr(data['expiryDate'])
     try:
         if lotnumber != data['lotnumber']:
             return ("Lot number does not match URI", 400)
+        try:
+            date = datetime.date(*(int(c) for c in data['expiryDate'].split("-")))
+        except ValueError:
+            return ("Invalid expiry date", 400)
         lot = lims.create_lot(
             kit,
             data['uid'],
             lotnumber,
-            data['expiryDate'],
+            date,
             status='ACTIVE'
         )
     except KeyError, e:
         return ("Missing required field " + str(e), 400)
 
-    return request.json
+    return jsonify({
+        "expiryDate": lot.expiry_date,
+        "uid": lot.name,
+        "known": True,
+        "lotnumber": lotnumber,
+        "ref": ref
+        })
 
 refresh()
 

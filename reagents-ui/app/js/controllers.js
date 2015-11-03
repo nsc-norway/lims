@@ -4,10 +4,10 @@ function resetInputFields($scope) {
 	$scope.lotnumber = "";
 	$scope.rgt = "";
 	$scope.scanMode = true;
+	$scope.error = false;
 }
 
 function resetDetails($scope) {
-	$scope.deleted = false;
 	$scope.saved = false;
 	$scope.submitted = false;
 	$scope.kit = {ref: "", found:false, requestLotName: false};
@@ -35,9 +35,9 @@ function dateConverterInterceptor(response) {
 
 app.factory('Lot', function($resource) {
 	return $resource(
-		"/lots/:ref/:lotnumber", {}, {
+		"/lots/:ref/:lotnumber", {'ref':'@ref', 'lotnumber': '@lotnumber'}, {
 			'get': {interceptor: {response: dateConverterInterceptor}},
-			'put': {}
+			'put': {method: 'POST'}
 		}
 	);
 });
@@ -65,7 +65,7 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 							},
 							function (httpResponse) {
 								if (httpResponse.status == 404) {
-									kit.found = false;
+									$scope.kit.found = false;
 								}
 								else {
 									alert("Communication error or bug, sorry.");
@@ -87,13 +87,17 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 			$scope.scanMode = false;
 		}
 		if ($scope.lotnumber != "") {
-			$scope.lot = Lot.get({'ref': $scope.ref, 'lotnumber': $scope.lotnumber}, function() {
+			$scope.lot = Lot.get({'ref': $scope.ref, 'lotnumber': $scope.lotnumber},
+			function() {
 				if (!$scope.kit.requestLotName && $scope.lot.known) {
 					if ($scope.scanMode) {
 						$scope.saveLot($scope);
 					}
 				}
 			});
+		}
+		else {
+			$scope.lot = {lotnumber: "", known: false};
 		}
 	};
 
@@ -103,7 +107,7 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 		}
 		$scope.lot.uid = $scope.rgt;
 		if ($scope.rgt != "" && $scope.scanMode) {
-			saveLot($scope);
+			$scope.saveLot($scope);
 		}
 	};
 
@@ -113,18 +117,17 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 		$scope.ref = "";
 		$scope.$broadcast("focusRef");
 		$scope.submitted = true;
-		lot.$save({
-				'ref': $scope.ref,
-				'lotnumber': $scope.lotnumber},
-		function() {
-			$scope.saved = true;
-		}, function(error) {
-			alert("There was an error saving the lot: "  + error.status + ": " + error.data);
-			$scope.submitted = false;
-			$scope.confirmSave = true;
-		});
-
-	}
+		lot.$save({},
+			function() {
+				$scope.saved = true;
+			}, function(error) {
+				alert("There was an error saving the lot.");
+				$scope.submitted = false;
+				$scope.confirmSave = true;
+				$scope.error = true;
+				document.getElementById('error-frame').src = "data:text/html;charset=utf-8," + escape(error.data);
+			});
+	};
 
 });
 
