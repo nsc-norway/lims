@@ -135,6 +135,9 @@ def create_lot(ref, lotnumber):
         return ("Kit not found", 404)
     data = request.json
     try:
+        lots = lims.get_reagent_lots(kitname=kit.name, number=lotnumber, name=data['uid'])
+        if lots:
+            return ("Lot with same name and number already exists", 400)
         if lotnumber != data['lotnumber']:
             return ("Lot number does not match URI", 400)
         lot = lims.create_lot(
