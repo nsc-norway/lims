@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, '/opt/gls/clarity/customextensions/lims/reagents-ui')
+sys.path.insert(0, '/opt/gls/clarity/customextensions/lims/reagents-ui/backend')
 
-from main import app as application
+from api import app as application
 
