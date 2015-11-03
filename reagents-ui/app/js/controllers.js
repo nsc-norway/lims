@@ -89,10 +89,13 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 		if ($scope.lotnumber != "") {
 			$scope.lot = Lot.get({'ref': $scope.ref, 'lotnumber': $scope.lotnumber},
 			function() {
-				if (!$scope.kit.requestLotName && $scope.lot.known) {
+				if ($scope.lot.known && !$scope.kit.requestLotName) {
 					if ($scope.scanMode) {
 						$scope.saveLot($scope);
 					}
+				}
+				if ($scope.lot.known && $scope.kit.requestLotName) {
+					$scope.$broadcast("focusRgt");
 				}
 			});
 		}
