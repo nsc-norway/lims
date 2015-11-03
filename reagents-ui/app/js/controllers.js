@@ -16,7 +16,7 @@ function resetDetails($scope) {
 
 app.factory('Kit', function($resource) {
 	return $resource(
-		"/kits/:ref"
+		"../kits/:ref"
 	);
 });
 
@@ -35,7 +35,7 @@ function dateConverterInterceptor(response) {
 
 app.factory('Lot', function($resource) {
 	return $resource(
-		"/lots/:ref/:lotnumber", {'ref':'@ref', 'lotnumber': '@lotnumber'}, {
+		"../lots/:ref/:lotnumber", {'ref':'@ref', 'lotnumber': '@lotnumber'}, {
 			'get': {interceptor: {response: dateConverterInterceptor}},
 			'put': {method: 'POST'}
 		}
