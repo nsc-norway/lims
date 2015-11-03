@@ -42,7 +42,23 @@ app.factory('Lot', function($resource) {
 	);
 });
 
-app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
+app.factory('Defer', function($timeout) {
+	return function(delay, deferred) {
+		var promise = null;
+		
+		return function() {
+			if (promise != null) {
+				$timeout.cancel(promise);
+			}
+			promise = $timeout(function () {
+				promise = null;
+				deferred();
+			}, delay);
+		}
+	}
+});
+
+app.controller('scanningController', function ($scope, $timeout, Kit, Lot, Defer) {
 
 	resetInputFields($scope);
 	resetDetails($scope);
@@ -52,7 +68,7 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 		$scope.$broadcast("focusRef");
 	});
 
-	$scope.refChanged = function() {
+	$scope.refChanged = Defer(20, function() {
 		resetInputFields($scope);
 		if ($scope.ref != "") {
 			resetDetails($scope);
@@ -72,9 +88,9 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 								}
 							});
 		}
-	};
+	});
 
-	$scope.lotChanged = function() {
+	$scope.lotChanged = Defer(20, function() {
 		if ($scope.lot.lotnumber == "" && $scope.lotnumber.length > 3) {
 					if ($scope.kit.requestLotName) {
 						$scope.$broadcast("focusRgt");
@@ -102,14 +118,13 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 		else {
 			$scope.lot = {lotnumber: "", known: false};
 		}
-	};
+	});
 
-	$scope.rgtChanged = function() {
+	$scope.rgtChanged = Defer(20, function() {
 		if (! ($scope.lot.uid == "" && $scope.rgt.length > 3)) {
 			$scope.scanMode = false;
 		}
 		$scope.lot.uid = $scope.rgt;
-		$scope.kit.ref += "|" + $scope.rgt;
 		if ($scope.rgt != "" && $scope.scanMode) {
 			if ($scope.lot.known) {
 				$scope.saveLot($scope);
@@ -118,7 +133,7 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 				$scope.$broadcast("focusDate");
 			}
 		}
-	};
+	});
 
 	$scope.saveLot = function() {
 		var lot = $scope.lot;
