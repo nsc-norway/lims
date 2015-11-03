@@ -109,8 +109,14 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot) {
 			$scope.scanMode = false;
 		}
 		$scope.lot.uid = $scope.rgt;
+		$scope.kit.ref += "|" + $scope.rgt;
 		if ($scope.rgt != "" && $scope.scanMode) {
-			$scope.saveLot($scope);
+			if ($scope.lot.known) {
+				$scope.saveLot($scope);
+			}
+			else {
+				$scope.$broadcast("focusDate");
+			}
 		}
 	};
 
