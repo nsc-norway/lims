@@ -21,23 +21,23 @@ seq_number_date = datetime.date.today()
 kit_naming = {}
 
 def get_next_seq_number(kitname, lotcode):
-    for i in itertools.count():
-        name = "{0}-{1}{2}".format(seq_number_date, lotcode, i)
+    for i in itertools.count(1):
+        name = "{0}-{1}{2}".format(get_date_string(seq_number_date), lotcode, i)
         lots = lims.get_reagent_lots(kitname=kitname, name=name)
         if not lots:
             return i
 
-def get_date_string():
-    return datetime.date.today().strftime("%y%m%d")
+def get_date_string(date):
+    return date.strftime("%y%m%d")
 
 @app.route('/refresh', methods=['POST'])
 def refresh():
-    global lims
+    global lims, seq_number_date
 
     # Clear client cache
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-    seq_number_date = get_date_string()
+    seq_number_date = datetime.date.today()
 
     print "Initializing (kits)..."
     kits = lims.get_reagent_kits()
@@ -85,14 +85,15 @@ def get_kit(ref):
         return ("Kit not found", 404)
 
 def get_next_name(kit):
+    global seq_number_date
     if seq_number_date != datetime.date.today():
-        for value in kit_naming:
+        for value in kit_naming.values():
             if value:
                 value[1] = 1
     seq_number_date = datetime.date.today()
     naming = kit_naming[kit]
     if naming:
-        return "{0}-{1}{2}".format(seq_number_date, *naming)
+        return "{0}-{1}{2}".format(get_date_string(seq_number_date), *naming)
     else:
         return ""
 
@@ -111,20 +112,20 @@ def get_lot(ref, lotnumber):
     if lots:
         lot = next(iter(lots))
         return jsonify({
-            "expiryDate": lot.expiry_date,
-            "uid": get_next_name(kit),
-            "known": True,
-            "lotnumber": lotnumber,
-            "ref": ref
-            })
+		"expiryDate": lot.expiry_date,
+		"uid": get_next_name(kit),
+		"known": True,
+		"lotnumber": lotnumber,
+		"ref": ref
+    	})
     else:
         return jsonify({
-            "expiryDate": None,
-            "uid": get_next_name(kit),
-            "known": False,
-            "lotnumber": lotnumber,
-            "ref": ref
-            })
+		"expiryDate": None,
+		"uid": get_next_name(kit),
+		"known": False,
+		"lotnumber": lotnumber,
+		"ref": ref
+    	})
 
 @app.route('/lots/<ref>/<lotnumber>', methods=['POST'])
 def create_lot(ref, lotnumber):
@@ -133,19 +134,14 @@ def create_lot(ref, lotnumber):
     except KeyError:
         return ("Kit not found", 404)
     data = request.json
-    print "literal expiry date received: ", repr(data['expiryDate'])
     try:
         if lotnumber != data['lotnumber']:
             return ("Lot number does not match URI", 400)
-        try:
-            date = datetime.date(*(int(c) for c in data['expiryDate'].split("-")))
-        except ValueError:
-            return ("Invalid expiry date", 400)
         lot = lims.create_lot(
             kit,
             data['uid'],
             lotnumber,
-            date,
+            data['expiryDate'],
             status='ACTIVE'
         )
     except KeyError, e:
