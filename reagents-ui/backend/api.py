@@ -1,4 +1,4 @@
-from flask import Flask, request, Response, jsonify
+from flask import Flask, request, Response, jsonify, redirect
 from genologics.lims import *
 from genologics import config
 import re
@@ -158,6 +158,10 @@ def create_lot(ref, lotnumber):
         "lotnumber": lotnumber,
         "ref": ref
         })
+
+@app.route('/')
+def redir_index():
+    return redirect("app/index.html")
 
 refresh()
 
