@@ -7,10 +7,23 @@ from genologics import config
 DEFAULT_QUANTITY = 750
 
 def sort_key(elem):
-    input, output, sample = elem
+    input, output, sample, qc = elem
     container, well = output.location
     row, col = well.split(":")
     return (container, int(col), row)
+
+def get_qc_results(lims, analytes, qc_process_name):
+    limsids = [a.id for a in analytes]
+    qc_processes = lims.get_processes(inputartifactlimsid=limsids, type=qc_process_name)
+
+    qc_results = {}
+    # Uses most recent QC result for each sample
+    for qc_process in sorted(qc_processes, key=lambda x: x.date_run):
+        for i, o in qc_process.input_output_maps:
+            if o and o['output-type'] == "ResultFile" and o['output-generation-type'] == 'PerInput':
+                qc_results[i['uri']] = o['uri']
+
+    return [qc_results[a] for a in analytes]
     
 
 def main(process_id, output_file_id):
@@ -22,10 +35,10 @@ def main(process_id, output_file_id):
     header = [
             "Project",
             "Sample",
-            "Conc.",
+            "Conc. (ng/uL)",
             "From well",
             "To well",
-            "Volume to aliquote (ul)",
+            "Volume to aliquote (uL)",
             "DNA quantity (ng)"
             ]
 
@@ -41,12 +54,13 @@ def main(process_id, output_file_id):
     lims.get_batch(inputs + outputs)
     samples = [input.samples[0] for input in inputs]
     lims.get_batch(samples)
+    qc_results = get_qc_results(lims, inputs, "Quant-iT QC Diag 1.0")
 
     updated_outputs = []
     warning = []
     rows = []
-    i_o_s = zip(inputs, outputs, samples)
-    for input, output, sample in sorted(i_o_s, key=sort_key):
+    i_o_s_q = zip(inputs, outputs, samples, qc_results)
+    for input, output, sample, qc_result in sorted(i_o_s_q, key=sort_key):
         project_name = input.samples[0].project.name.encode('utf-8')
         sample_name = input.name.encode('utf-8')
         dest_container = output.location[0].name
@@ -59,8 +73,8 @@ def main(process_id, output_file_id):
             output.udf['Normalized amount of DNA (ng)'] = norm_mass
             updated_outputs.append(output)
 
-        input_conc = # TODO
-        sample_volume = norm_mass / input_conc
+        input_conc = qc_result.udf['Concentration']
+        sample_volume = norm_mass * 1.0 / input_conc
 
         source_container = input.location[0].name
         source_well = input.location[1]
@@ -68,11 +82,11 @@ def main(process_id, output_file_id):
         rows.append([
             project_name,
             sample_name,
-            input_conc,
+            "%4.2f" % input_conc,
             source_well,
             dest_well,
             "%4.2f" % sample_volume,
-            "%4.2f" % (norm_mass)
+            "%4.2f" % norm_mass
             ])
 
     lims.put_batch(updated_outputs)
