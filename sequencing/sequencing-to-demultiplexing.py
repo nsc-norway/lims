@@ -12,13 +12,10 @@ def start_step(lims, analytes, workflow):
     queue = ps.queue()
     for attempt in xrange(3):
         if set(analytes) <= set(queue.artifacts):
-            return lims.create_step(ps, analytes)
+            lims.create_step(ps, analytes)
         else:
             time.sleep(1)
             queue.get(force=True)
-    else: # if not break
-        print "Can't find the analytes in the queue."
-        sys.exit(1)
 
 
 def main(process_id, workflow_name):
@@ -29,7 +26,7 @@ def main(process_id, workflow_name):
     workflow = workflows[0]
     analytes = process.all_inputs(unique=True)
     lims.route_analytes(analytes, workflow)
-    step = start_step(lims, analytes, workflow)
+    start_step(lims, analytes, workflow)
 
 main(*sys.argv[1:])
 
