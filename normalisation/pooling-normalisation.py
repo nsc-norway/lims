@@ -32,14 +32,14 @@ def main(process_id, output_file_id):
             "Pool",
             "Dest. cont.",
             "Well",
+            "Pool molarity",
             "Pool volume",
             "Buffer volume",
             "Sample",
             "Source cont.",
             "Well",
             "Sample molarity",
-            "Sample volume",
-            "Sample normalised conc.",
+            "Sample volume"
             ]
 
 
@@ -114,6 +114,7 @@ def main(process_id, output_file_id):
                     pool.name,
                     dest_container,
                     dest_well,
+                    "%4.2f" % pool_norm_conc,
                     "%4.2f" % pool_pool_volume,
                     "%4.2f" % buffer_volume,
                     sample_name,
@@ -121,7 +122,6 @@ def main(process_id, output_file_id):
                     source_well,
                     input_mol_conc_str,
                     sample_vol_str,
-                    target_sample_conc_str,
                     ])
                 first_in_pool = False
             else:
@@ -131,12 +131,12 @@ def main(process_id, output_file_id):
                     "",
                     "",
                     "",
+                    "",
                     sample_name,
                     source_container,
                     source_well,
                     input_mol_conc_str,
                     sample_vol_str,
-                    target_sample_conc_str,
                     ])
 
 
