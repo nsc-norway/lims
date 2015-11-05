@@ -12,19 +12,6 @@ def sort_key(elem):
     row, col = well.split(":")
     return (container, int(col), row)
 
-def get_qc_results(lims, analytes, qc_process_name):
-    limsids = [a.id for a in analytes]
-    qc_processes = lims.get_processes(inputartifactlimsid=limsids, type=qc_process_name)
-
-    qc_results = {}
-    # Uses most recent QC result for each sample
-    for qc_process in sorted(qc_processes, key=lambda x: x.date_run):
-        for i, o in qc_process.input_output_maps:
-            if o and o['output-type'] == "ResultFile" and o['output-generation-type'] == 'PerInput':
-                qc_results[i['uri']] = o['uri']
-
-    return [qc_results[a] for a in analytes]
-    
 
 def main(process_id, output_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
@@ -54,7 +41,8 @@ def main(process_id, output_file_id):
     lims.get_batch(inputs + outputs)
     samples = [input.samples[0] for input in inputs]
     lims.get_batch(samples)
-    qc_results = get_qc_results(lims, inputs, "Quant-iT QC Diag 1.0")
+    qc_results = lims.get_qc_results(inputs, "Quant-iT QC Diag 1.0")
+    lims.get_batch(qc_results)
 
     updated_outputs = []
     warning = []
