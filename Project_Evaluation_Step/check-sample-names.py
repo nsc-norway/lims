@@ -1,4 +1,6 @@
-# Script to populate fields in process for Project Evaluation workflow.
+# Check the sample names of the provided samples
+# Returns an error if sample names have invalid characters or
+# if there are duplicate sample names.
 
 import sys
 import re
