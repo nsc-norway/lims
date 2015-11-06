@@ -31,8 +31,7 @@ def main(process_id, copy_udfs):
             inputs.append(input)
             outputs.append(output)
 
-    lims.get_batch(inputs)
-    lims.get_batch(outputs)
+    lims.get_batch(inputs + outputs)
 
     for input, output in zip(inputs, outputs):
         for u in copy_udfs:
