@@ -18,7 +18,7 @@ def get_or_set(entity, udf, default_value):
         entity.udf[udf] = default_value
         return default_value
 
-def main(process_id, pool_dna_quantity, output_file_id):
+def main(process_id, def_sample_dna_quantity, output_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
 
@@ -35,9 +35,9 @@ def main(process_id, pool_dna_quantity, output_file_id):
             "Sample",
             "Source cont.",
             "Well",
-            "Sample molarity",
-            "Sample volume",
-            "Sample normalised conc.",
+            "Sample conc. (ng/uL)",
+            "Pooling volume (uL)",
+            "Sample norm. amount DNA",
             ]
 
 
@@ -56,43 +56,32 @@ def main(process_id, pool_dna_quantity, output_file_id):
     rows = []
     for pool in step.pools.pooled_inputs:
         output = pool.output # output already fetched in batch, as process input
-        pool_dna_qty = get_or_set(output, 'Normalized amount of DNA (ng)', pool_dna_qty)
-
-        target_sample_qty = pool_dna_qty * 1.0 / len(pool.inputs)
+        target_sample_qty = get_or_set(output, 'Amount of DNA per sample (ng)', float(def_sample_dna_quantity))
         target_sample_qty_str = "%4.2f" % target_sample_qty
 
-        sample_volumes = []
+        sample_concs = []
         unknown_qc = []
         for input in pool.inputs:
             try:
-                concentration = qc_result_map['Concentration']
-                sample_volumes.append(concentration)
+                concentration = qc_result_map[input].udf['Concentration']
+                sample_concs.append(concentration)
             except KeyError:
                 unknown_qc.append(input.name)
 
         if unknown_qc:
-            print "In pool", pool.name, ", the molarity not known for pool constituents",
-            print ", ".join(unknown_qc)
+            print "In pool", pool.name, ", the concentration is not known for pool constituents",
+            print ", ".join(unknown_qc), "."
             sys.exit(1)
-
-        buffer_volume = pool_pool_volume - sum(sample_volumes)
-
-        if not error and buffer_volume < 0:
-            print "Total sample volume in pool", pool.name, "is", sum(sample_volumes),
-            print "uL, which exceeds the target pool volume", pool_pool_volume, ".",
-            print "Reduce the pool molarity or the number of samples per pool, and",
-            print "try again."
-            error = True
 
         dest_container = output.location[0].name
         dest_well = output.location[1]
 
         first_in_pool = True
-        for input, sample_volume in zip(pool.inputs, sample_volumes):
+        for input, sample_conc in zip(pool.inputs, sample_concs):
             sample_name = input.name.encode('utf-8')
-            input_mol_conc = input.udf['Molarity']
-            input_mol_conc_str = "%4.2f" % (input.udf['Molarity'])
-            sample_vol_str = "%4.2f" % sample_volume
+            input_conc_str = "%4.2f" % (sample_conc)
+            pooling_volume = target_sample_qty / sample_conc
+            pooling_vol_str = "%4.2f" % pooling_volume
             source_container = input.location[0].name
             source_well = input.location[1]
             if first_in_pool:
@@ -103,9 +92,9 @@ def main(process_id, pool_dna_quantity, output_file_id):
                     sample_name,
                     source_container,
                     source_well,
-                    input_mol_conc_str,
-                    sample_vol_str,
-                    target_sample_conc_str,
+                    input_conc_str,
+                    pooling_vol_str,
+                    target_sample_qty_str,
                     ])
                 first_in_pool = False
             else:
@@ -116,9 +105,9 @@ def main(process_id, pool_dna_quantity, output_file_id):
                     sample_name,
                     source_container,
                     source_well,
-                    input_mol_conc_str,
-                    sample_vol_str,
-                    target_sample_conc_str,
+                    input_conc_str,
+                    pooling_vol_str,
+                    target_sample_qty_str,
                     ])
 
 
