@@ -13,6 +13,7 @@ def start_step(lims, analytes, workflow):
     for attempt in xrange(3):
         if set(analytes) <= set(queue.artifacts):
             lims.create_step(ps, analytes)
+            break
         else:
             time.sleep(1)
             queue.get(force=True)
