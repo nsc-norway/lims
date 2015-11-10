@@ -60,6 +60,7 @@ PROCESSED_DATE_UDF = "Processing completed date"
 
 # Used by pipeline repo
 JOB_STATUS_UDF = "Job status"
+JOB_STATE_CODE_UDF = "Job state code"
 CURRENT_JOB_UDF = "Current job"
 SEQ_PROCESSES=[
         ('hiseq', 'Illumina Sequencing (Illumina SBS) 5.0'),
@@ -221,6 +222,20 @@ def read_sequencing(process_name, process):
             process_name, url, flowcell_id, projects, status, runid, finished
             )
 
+def automation_state(process):
+    enabled = any(value for key, value in process.udf.items() if key.startswith("Auto "))
+    if enabled:
+        state_code = process.udf.get(JOB_STATE_CODE_UDF)
+        waiting = not state_code
+        completed = False
+        if state_code == "COMPLETED":
+            checkboxes = sorted(key for key,value in process.udf.items() if key.startswith("Auto "))
+            last_requested_index = int(re.match(r"Auto ([\d]+)", checkboxes[-1]).group(1))
+            last_run_index = int(re.match(r"([\d]+).", process.udf[CURRENT_JOB_UDF]).group(1))
+            completed = last_run_index >= last_requested_index
+        return enabled, waiting, completed
+    else:
+        return False, False, False
 
 def read_post_sequencing_process(process_name, process, sequencing_process):
     url = proc_url(process.id)
@@ -232,16 +247,23 @@ def read_post_sequencing_process(process_name, process, sequencing_process):
         runid = ""
         expt_name = ""
     projects = get_projects(process)
+    automated, waiting, completed = automation_state(process)
 
-    try:
-        status = process.udf[JOB_STATUS_UDF]
-    except KeyError:
-        status = "Open"
+    current_job = ""
+    if waiting:
+        status = "Waiting for sequencing..."
+    elif completed:
+        status = "All jobs completed"
+    else:
+        try:
+            status = process.udf[JOB_STATUS_UDF]
+        except KeyError:
+            status = "Open"
 
-    try:
-        current_job = process.udf[CURRENT_JOB_UDF]
-    except KeyError:
-        current_job = ""
+        if automated:
+            status = "[auto] " + status
+
+        current_job = process.udf.get(CURRENT_JOB_UDF, "")
 
 
     return DataAnalysisInfo(
