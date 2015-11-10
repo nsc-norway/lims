@@ -251,7 +251,7 @@ def read_post_sequencing_process(process_name, process, sequencing_process):
 
     current_job = ""
     if waiting:
-        status = "Waiting for sequencing..."
+        status = "Waiting for sequencing"
     elif completed:
         status = "All jobs completed"
     else:
