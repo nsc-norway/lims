@@ -229,7 +229,7 @@ def automation_state(process):
         waiting = not state_code
         completed = False
         if state_code == "COMPLETED":
-            checkboxes = sorted(key for key,value in process.udf.items() if key.startswith("Auto "))
+            checkboxes = sorted(key for key,value in process.udf.items() if key.startswith("Auto ") and value)
             last_requested_index = int(re.match(r"Auto ([\d]+)", checkboxes[-1]).group(1))
             last_run_index = int(re.match(r"([\d]+).", process.udf[CURRENT_JOB_UDF]).group(1))
             completed = last_run_index >= last_requested_index
