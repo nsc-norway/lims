@@ -55,10 +55,10 @@ def main(process_id, output_file_id):
         dest_well = output.location[1]
 
         try:
-            norm_mass = output.udf['Normalized amount of DNA (ng)']
+            norm_mass = output.udf['Amount of DNA per sample (ng)']
         except KeyError:
             norm_mass = DEFAULT_QUANTITY
-            output.udf['Normalized amount of DNA (ng)'] = norm_mass
+            output.udf['Amount of DNA per sample (ng)'] = norm_mass
             updated_outputs.append(output)
 
         input_conc = qc_result.udf['Concentration']
