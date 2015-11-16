@@ -1,3 +1,5 @@
+#!/bin/env python
+
 #------------------------------#
 # Conveyor
 # NSC data processing manager
