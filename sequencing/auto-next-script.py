@@ -159,13 +159,14 @@ def start_programs():
                 while not fail and step.current_state.upper() != "COMPLETED":
                     logging.debug("Advancing the step...")
                     step.advance()
-                    step.get(force=True)
+                    step.program_status.get(force=True)
                     while not fail and step.program_status.status != "OK":
                         logging.debug("A script is running (state: " + step.program_status.status + ")...")
                         if step.program_status not in ['QUEUED', 'RUNNING']:
                             fail = True
                         time.sleep(1)
-                        step.get(force=True)
+                        step.program_status.get(force=True)
+                    step.get(force=True)
                 logging.debug("Completed " + process.id + ".")
 
         else:
