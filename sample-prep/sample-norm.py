@@ -60,9 +60,9 @@ def main(process_id, output_file_id):
         dest_well = output.location[1]
 
         try:
-            norm_mass = output.udf['Normalized amount of DNA (ng)']
+            norm_mass = output.udf['Amount of DNA per sample (ng)']
         except KeyError:
-            print "Missing value for Normalized amount of DNA (ng) on", output.name, "(and possibly others)"
+            print "Missing value for Amount of DNA per sample (ng) on", output.name, "(and possibly others)"
             sys.exit(1)
 
         output_vol = output.udf.get('Volume (uL)')
