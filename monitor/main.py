@@ -89,13 +89,14 @@ class Project(object):
 
 
 class SequencingInfo(object):
-    def __init__(self, name, url, flowcell_id, projects, status, runid, finished=None):
+    def __init__(self, name, url, flowcell_id, projects, status, runid, runtype, finished=None):
         self.name = name
         self.url = url
         self.flowcell_id = flowcell_id
         self.projects = projects
         self.status = status
         self.runid = runid
+        self.runtype = runtype
         self.finished = finished
 
 
@@ -179,18 +180,53 @@ def estimated_time_completion(process, rapid, done_cycles, total_cycles):
     else:
         return ""
 
+def get_run_type(instrument, process):
+    if process.udf.get("Status"):
+        if instrument == "HiSeq":
+            runmode = {
+                    "HiSeq Rapid Flow Cell v1": "Rapid",
+                    "HiSeq Flow Cell v4": "High Output v4"
+                    }.get(process.udf.get("Flow Cell Version"), "Unknown")
+        elif instrument == "NextSeq":
+            runmode = process.udf.get("Chemistry", "Unknown")
+        elif instrument == "MiSeq":
+            container_name = process.all_inputs()[0].location[0].name
+            if container_name.endswith("V2"):
+                runmode = "MiSeq v2"
+            elif container_name.endswith("V3"):
+                runmode = "MiSeq v3"
+            else:
+                runmode = "Unknown"
+
+        cycles = " | (" + str(process.udf.get("Read 1 Cycles"))
+        i1 = process.udf.get("Index 1 Read Cycles")
+        if i1:
+            cycles += ", " + str(i1)
+        i2 = process.udf.get("Index 2 Read Cycles")
+        if i2:
+            cycles += ", " + str(i2)
+        r2 = process.udf.get("Read 2 Cycles")
+        if r2:
+            cycles += ", " + str(r2)
+        cycles += ")"
+
+        return runmode + cycles
+    else:
+        return ""
 
 
 def read_sequencing(process_name, process):
     url = proc_url(process.id)
     flowcell = process.all_inputs()[0].location[0]
     flowcell_id = flowcell.name
-    if "NextSeq" in process_name:
+    instrument = INSTRUMENTS[FLOWCELL_INSTRUMENTS[flowcell.type.name]]
+    run_type = get_run_type(instrument, process)
+    if instrument == "NextSeq":
         step = Step(lims, id=process.id)
         for lot in step.reagentlots.reagent_lots:
             if lot.reagent_kit.name == "NextSeq 500 FC v1":
                 flowcell_id = lot.name
-    if "MiSeq" in process_name:
+    elif instrument == "MiSeq":
         pass
     lims_projects = set(
             art.samples[0].project
@@ -219,7 +255,7 @@ def read_sequencing(process_name, process):
         finished = ""
 
     return SequencingInfo(
-            process_name, url, flowcell_id, projects, status, runid, finished
+            process_name, url, flowcell_id, projects, status, runid, run_type, finished
             )
 
 def automation_state(process):
