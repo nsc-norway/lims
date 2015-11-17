@@ -71,7 +71,8 @@ for pool in pools:
         except KeyError:
             continue
     if updated:
-        pool.reagent_labels.update(to_add)
+        for reagent_label in to_add:
+            pool.reagent_labels.add(reagent_label)
         pool.put()
     print " Updated", updated, "reagents in the pool"
     print ""
