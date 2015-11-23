@@ -8,7 +8,7 @@ from genologics import config
 def main():
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     projects = lims.get_projects()
-    lims.get_batch(projects)
+    #lims.get_batch(projects)
     exome_project_ids = [
             project.id
             for project in projects
