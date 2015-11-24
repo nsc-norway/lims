@@ -20,6 +20,8 @@ cur = conn.cursor()
 query = open("query.sql").read()
 cur.execute(query, (project,));
 format_string = "%36s %5s %20s %5s"
+
+print ""
 print format_string % ("Run ID", "Lane", "Sample/pool", "QC")
 
 total, ok = 0, 0
