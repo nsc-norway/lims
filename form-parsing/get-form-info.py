@@ -379,6 +379,7 @@ def main(process_id):
         sys.exit(0)
 
     try:
+        process.udf['Sample submission form processed'] = True
         process.put()
     except requests.exceptions.HTTPError, e:
         # Don't crash on errors
