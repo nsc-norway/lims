@@ -10,7 +10,9 @@ SELECT
 	END
 FROM processtype, process, processiotracker, artifact, process_udf_view, artifactstate, containerplacement
 WHERE
-	processtype.displayname='Illumina Sequencing (Illumina SBS) 5.0' AND
+	(processtype.displayname='Illumina Sequencing (Illumina SBS) 5.0' OR
+	processtype.displayname='MiSeq Run (MiSeq) 5.0' OR
+	processtype.displayname='NextSeq Run (NextSeq) 1.0') AND
 	process.typeid=processtype.typeid AND
 	processiotracker.processid=process.processid AND
 	artifact.artifactid=processiotracker.inputartifactid AND
