@@ -18,12 +18,12 @@ WHERE
 	artifactstate.artifactid=artifact.artifactid AND
 	containerplacement.processartifactid=artifact.artifactid AND
 	process_udf_view.udfname='Run ID' AND
-	(SELECT project.name=%s
+	(SELECT project.name
 		from project, sample, artifact_sample_map WHERE 
 		project.projectid = sample.projectid AND
 		artifact_sample_map.processid = sample.processid AND
 		artifact_sample_map.artifactid = artifact.artifactid
-		LIMIT 1)
+		LIMIT 1) = %s
 
 	ORDER BY process_udf_view.udfvalue, containerplacement.wellyposition
 
