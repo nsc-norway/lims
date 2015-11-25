@@ -22,21 +22,31 @@ def samples_received(udfs, val):
     parts = val.split("/")
     if len(parts) == 1:
         parts = val.split(".")
-    year, month, day = [int(p) for p in parts]
-
-    return datetime.date()
+    day, month, year = [int(p) for p in parts]
+    century = (datetime.date.today().year / 100) * 100 # a bit optimistic ?
+    udfs["Date samples received"] = datetime.date(century + year, month, day)
 
 def total_number_of_tubes(udfs, val):
-    udfs["Total # of tubes received"] = int(val)
+    udfs["Total # of tubes received"] = val
 
 def storage_location(udfs, val):
     udfs["Storage location"] = val
 
 def lanes(udfs, val):
-    pass
+    udfs["Number of lanes"] = int(val)
 
 def sequencing_type(udfs, val):
-    pass
+    parts = val.split()
+    if parts[1] == "bp":
+        if parts[2] == "SR":
+            udfs["Sequencing method"] = "Single Read"
+            suffix = ""
+        elif parts[2] == "PE":
+            udfs["Sequencing method"] = "Paired End Read"
+            suffix = "x2"
+        else: 
+            return
+        udfs["Read length requested"] = parts[0] + suffix
 
 # List of (label, handler)
 LABEL_HANDLER = [
@@ -58,7 +68,12 @@ def process_dog(tree):
         text = get_text_single(para)
         for label, function in LABEL_HANDLER:
             if text.startswith(label):
-                function(udf_dict, text[len(label):].strip())
+                try:
+                    function(udf_dict, text[len(label):].strip())
+                except:
+                    print "Error reading", label
+
+    return udf_dict
 
 
 def main(process_id):
@@ -75,11 +90,13 @@ def main(process_id):
             docx_file = docx_file_output.files[0]
             docx_data = docx_file.download()
     except StopIteration:
+        print "No outputs at all found"
         pass
     if not docx_data:
         # Don't do anything if no submission form...
         #process.udf[ERROR_UDF] = "Sample submission form not found"
         #process.put()
+        print "No document found"
         return
 
     try:
@@ -95,11 +112,10 @@ def main(process_id):
 
     try:
         fields = process_dog(tree)
-        #for uname, uvalue in fields:
-        #    process.udf[uname] = uvalue
+        for uname, uvalue in fields.items():
+            process.udf[uname] = uvalue
     except:
         print "Something went wrong in the main parsing code"
-        raise
         #sys.exit(0)
 
     try:
