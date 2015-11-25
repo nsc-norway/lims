@@ -17,7 +17,8 @@ if re.search(r"/cees-lims.sequencing.uio.no[:/]", config.BASEURI):
     BLACKLIST = set([1301] + range(121, 145))
 elif re.search(r"/ous-lims.ous.nsc.local[:/]", config.BASEURI):
     # Deleted index IDs
-    BLACKLIST = set(range(709, 721))
+    # Second term after | is a result of a botched import of nextera v2 indexes Nxx-Sxx
+    BLACKLIST = set(range(709, 721)) | (set(range(1692,1793)) - set(range(1697,1793,8)))
 
 def get_all_reagent_types():
     """Load all reagent types with name only, from the API resource.
