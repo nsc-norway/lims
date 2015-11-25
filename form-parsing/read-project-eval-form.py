@@ -119,7 +119,7 @@ def main(process_id):
         #sys.exit(0)
 
     try:
-        process.udf['Project evaluation form processed'] = True
+        process.udf['Project evaluation form imported'] = True
         process.put()
     except requests.exceptions.HTTPError, e:
         # Don't crash on errors

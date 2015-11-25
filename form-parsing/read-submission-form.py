@@ -379,8 +379,9 @@ def main(process_id):
         sys.exit(0)
 
     try:
-        process.udf['Sample submission form processed'] = True
+        process.udf['Sample submission form imported'] = True
         process.put()
+        print "Put successful"
     except requests.exceptions.HTTPError, e:
         # Don't crash on errors
         print "LIMS wouldn't let us fill in the form: " + str(e)
