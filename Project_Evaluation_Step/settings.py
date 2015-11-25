@@ -49,7 +49,8 @@ project_fields = [
         "Evaluation type",
         "Evaluation comments",
         "Library prep used",
-        "Prepaid account"
+        "Prepaid account",
+        "Number of lanes"
 ]
 
 email_fields = ['Contact email', 'Billing email']
