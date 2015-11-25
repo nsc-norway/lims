@@ -40,7 +40,7 @@ def sequencing_type(udfs, val):
     if parts[1] == "bp":
         if parts[2] == "SR":
             udfs["Sequencing method"] = "Single Read"
-            suffix = ""
+            suffix = "x1"
         elif parts[2] == "PE":
             udfs["Sequencing method"] = "Paired End Read"
             suffix = "x2"
