@@ -405,6 +405,9 @@ def get_batch(instances):
 def get_main():
     global ui_server
 
+    if not request.url.endswith("/"):
+        return redirect(request.url + '/')
+
     ui_servers = {
             "http://dev-lims.ous.nsc.local:8080/": "https://dev-lims.ous.nsc.local/",
             "http://ous-lims.ous.nsc.local:8080/": "https://ous-lims.ous.nsc.local/",
@@ -476,6 +479,7 @@ def get_main():
 
     body = render_template(
             'processes.xhtml',
+            static=request.url + "static",
             server=lims.baseuri,
             sequencing=sequencing,
             post_sequencing=post_sequencing,
