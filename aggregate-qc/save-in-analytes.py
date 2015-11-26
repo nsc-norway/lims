@@ -20,8 +20,7 @@ def main(process_id, fields):
             measurement = o['uri']
             input_measurement.append((input, measurement))
 
-    lims.get_batch([measurement for input,measurement in input_measurement])
-    lims.get_batch([input for input,measurement in input_measurement])
+    lims.get_batch([item for im in input_measurement for item in im])
 
     for input, measurement in input_measurement:
         try:
