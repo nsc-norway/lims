@@ -1,6 +1,7 @@
 import unittest
 import mock
 import sys
+import random
 from genologics.lims import *
 sys.path.append("../aggregate-qc")
 
@@ -8,6 +9,8 @@ save_in_analytes = __import__("save-in-analytes")
 
 class SaveInAnalytesTestCase(unittest.TestCase):
 
+    def setUp(self):
+        random.seed(33) # Set seed for repeatable test
 
     @mock.patch('save-in-analytes.Process', autospec=True)
     @mock.patch('save-in-analytes.Lims', autospec=True)
@@ -24,7 +27,7 @@ class SaveInAnalytesTestCase(unittest.TestCase):
         #  in2 -> ResultFile2
         #...
 
-        mock_process.return_value.input_output_maps = []
+        input_output_maps = []
         inputs = []
         nonshared_outputs = []
 
@@ -41,17 +44,22 @@ class SaveInAnalytesTestCase(unittest.TestCase):
                     }
             nonshared_outputs.append(output)
             
-            mock_process.return_value.input_output_maps.append((
+            input_output_maps.append((
                 {'uri': input},
                 {'uri': output, 'output-generation-type': 'PerInput', 'output-type': 'ResultFile'}
                 ))
 
         shared_result_file = mock.create_autospec(Artifact)
         for i in xrange(N):
-            mock_process.return_value.input_output_maps.append((
+            input_output_maps.append((
                 {'uri': input},
                 {'uri': shared_result_file, 'output-generation-type': 'PerAllInputs', 'output-type': 'ResultFile'}
                 ))
+
+
+        # Shuffle list
+        random.shuffle(input_output_maps)
+        mock_process.return_value.input_output_maps = input_output_maps
 
         save_in_analytes.main("TEST_LIMSID", [INT_FIELD_NAME, STRING_FIELD_NAME])
 
