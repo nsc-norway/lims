@@ -33,5 +33,7 @@ def main(process_id, fields):
 
     lims.put_batch([input for input, measurement in input_measurement])
 
-main(sys.argv[1], sys.argv[2:])
+
+if __name__ == "__main__":
+    main(sys.argv[1], sys.argv[2:])
 
