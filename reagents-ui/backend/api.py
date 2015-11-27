@@ -13,26 +13,17 @@ lims = None
 
 cat_kit = {}
 
-# Kit naming:
-# - Default is to request full kit names. Used for unknown,
-#   and RGT numbers. No entry in this dict.
-# - For date+sequential naming: values are ["PREFIX", day_index]
-seq_number_date = datetime.date.today()
-kit_naming = {}
-
-def get_next_seq_number(kitname, lotcode):
-    for i in itertools.count(1):
-        name = "{0}-{1}{2}".format(get_date_string(seq_number_date), lotcode, i)
-        lots = lims.get_reagent_lots(kitname=kitname, name=name)
-        if not lots:
-            return i
+# Kit auto naming:
+# - For date+sequential naming: values are "PREFIX"
+# - For individual naming: values are None
+kit_auto_naming = {}
 
 def get_date_string(date):
     return date.strftime("%y%m%d")
 
 @app.route('/refresh', methods=['POST'])
 def refresh():
-    global lims, seq_number_date
+    global lims
 
     # Clear client cache
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
@@ -50,17 +41,16 @@ def refresh():
         lots = lims.get_reagent_lots(kitname=kit.name)
         for i, lot in enumerate(lots):
             if lot.name.startswith("RGT"):
-                kit_naming[kit] = None
+                kit_auto_naming[kit] = None
                 break
             else:
-                m = re.match(r"\d{6}-([A-Z]+)\d+$", lot.name)
+                m = re.match(r"\d{6}-([a-zA-Z]+)\d+$", lot.name)
                 if m:
                     code = m.group(1)
-                    next_seq_number = get_next_seq_number(kit.name, code)
-                    kit_naming[kit] = [code, next_seq_number]
+                    kit_auto_naming[kit] = code
                     break
         else:
-            kit_naming[kit] = None
+            kit_auto_naming[kit] = None
 
     print "Done."
     return "Refreshed"
@@ -78,23 +68,26 @@ def get_kit(ref):
         kit = cat_kit[ref]
         return jsonify({
                 "name": kit.name,
-                "requestLotName": kit_naming[kit] is None,
+                "requestLotName": kit_auto_naming[kit] is None,
                 "found": True,
                 "ref": ref
                 })
     except KeyError:
         return ("Kit not found", 404)
 
+def get_next_seq_number(kitname, lotcode):
+    for i in itertools.count(1):
+        name = "{0}-{1}{2}".format(get_date_string(seq_number_date), lotcode, i)
+        lots = lims.get_reagent_lots(kitname=kitname, name=name)
+        if not lots:
+            return i
+
 def get_next_name(kit):
-    global seq_number_date
-    if seq_number_date != datetime.date.today():
-        for value in kit_naming.values():
-            if value:
-                value[1] = 1
     seq_number_date = datetime.date.today()
-    naming = kit_naming[kit]
+    naming = kit_auto_naming[kit]
     if naming:
-        return "{0}-{1}{2}".format(get_date_string(seq_number_date), *naming)
+        seq_number = get_next_seq_number(kit, naming)
+        return "{0}-{1}{2}".format(get_date_string(seq_number_date), naming, seq_number)
     else:
         return ""
 
@@ -141,11 +134,12 @@ def create_lot(ref, lotnumber):
             return ("Lot with same name and number already exists", 400)
         if lotnumber != data['lotnumber']:
             return ("Lot number does not match URI", 400)
+        print "sending expiry date", data['expiryDate'].replace("/", "-")
         lot = lims.create_lot(
             kit,
             data['uid'],
             lotnumber,
-            data['expiryDate'],
+            data['expiryDate'].replace("/", "-"),
             status='ACTIVE'
         )
     except KeyError, e:
@@ -168,3 +162,4 @@ refresh()
 if __name__ == '__main__':
     app.debug=True
     app.run(host="0.0.0.0", port=5001)
+

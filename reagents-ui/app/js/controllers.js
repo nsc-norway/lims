@@ -36,7 +36,7 @@ function dateConverterInterceptor(response) {
 app.factory('Lot', function($resource) {
 	return $resource(
 		"../lots/:ref/:lotnumber", {'ref':'@ref', 'lotnumber': '@lotnumber'}, {
-			'get': {interceptor: {response: dateConverterInterceptor}},
+			'get': {},
 			'put': {method: 'POST'}
 		}
 	);
