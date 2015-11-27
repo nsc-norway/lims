@@ -4,12 +4,6 @@ from genologics.lims import *
 
 # Diag SureSelect workflow
 
-# Copy UDF value from derived sample to sample objects. 
-# Used to copy the target concentration into the Sample 
-
-INPUT_UDFNAME = "Normalized conc. (ng/uL)"
-OUTPUT_UDFNAME = "Normalized conc. (ng/uL) Diag"
-
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     step = Step(lims, id=process_id)
