@@ -18,8 +18,9 @@ cat_kit = {}
 # - For individual naming: values are None
 kit_auto_naming = {}
 
-def get_date_string(date):
-    return date.strftime("%y%m%d")
+def get_date_string():
+    seq_number_date = datetime.date.today()
+    return seq_number_date.strftime("%y%m%d")
 
 @app.route('/refresh', methods=['POST'])
 def refresh():
@@ -27,8 +28,6 @@ def refresh():
 
     # Clear client cache
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
-
-    seq_number_date = datetime.date.today()
 
     print "Initializing (kits)..."
     kits = lims.get_reagent_kits()
@@ -77,17 +76,16 @@ def get_kit(ref):
 
 def get_next_seq_number(kitname, lotcode):
     for i in itertools.count(1):
-        name = "{0}-{1}{2}".format(get_date_string(seq_number_date), lotcode, i)
+        name = "{0}-{1}{2}".format(get_date_string(), lotcode, i)
         lots = lims.get_reagent_lots(kitname=kitname, name=name)
         if not lots:
             return i
 
 def get_next_name(kit):
-    seq_number_date = datetime.date.today()
     naming = kit_auto_naming[kit]
     if naming:
-        seq_number = get_next_seq_number(kit, naming)
-        return "{0}-{1}{2}".format(get_date_string(seq_number_date), naming, seq_number)
+        seq_number = get_next_seq_number(kit.name, naming)
+        return "{0}-{1}{2}".format(get_date_string(), naming, seq_number)
     else:
         return ""
 
@@ -134,7 +132,6 @@ def create_lot(ref, lotnumber):
             return ("Lot with same name and number already exists", 400)
         if lotnumber != data['lotnumber']:
             return ("Lot number does not match URI", 400)
-        print "sending expiry date", data['expiryDate'].replace("/", "-")
         lot = lims.create_lot(
             kit,
             data['uid'],
