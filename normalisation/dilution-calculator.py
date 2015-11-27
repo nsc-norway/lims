@@ -125,5 +125,6 @@ def main(process_id, output_file_id):
         out.writerows(rows_sorted)
 
 
-main(sys.argv[1], sys.argv[2])
+if __name__ == "__main__":
+    main(sys.argv[1], sys.argv[2])
 
