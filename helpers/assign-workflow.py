@@ -14,5 +14,6 @@ def main(process_id, workflow_name):
         lims.route_analytes(process.all_inputs(unique=True), workflow)
 
 
-main(sys.argv[1], sys.argv[2])
+if __name__ == "__main__":
+    main(sys.argv[1], sys.argv[2])
 
