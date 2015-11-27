@@ -116,7 +116,6 @@ class SaveInAnalytesTestCase(unittest.TestCase):
                 ))
 
         self.assertRaises(SystemExit, save_in_analytes.main, "TEST_LIMSID", [STRING_FIELD_NAME])
-        
-        assert not mock_lims.return_value.put_batch.called
+        self.assertFalse(mock_lims.return_value.put_batch.called)
 
 

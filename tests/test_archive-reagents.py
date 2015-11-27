@@ -64,4 +64,4 @@ class ArchiveHiseqTestCase(unittest.TestCase):
                 lot.put.assert_called_once_with()
             else:
                 self.assertNotEquals(lot.status, "ARCHIVED")
-                assert not lot.put.called
+                self.assertFalse(lot.put.called)
