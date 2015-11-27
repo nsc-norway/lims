@@ -7,7 +7,7 @@ sys.path.append("../helpers")
 
 assign_workflow = __import__("assign-workflow")
 
-class SaveInAnalytesTestCase(unittest.TestCase):
+class AssignWorkflowTestCase(unittest.TestCase):
 
     @mock.patch('assign-workflow.Process', autospec=True)
     @mock.patch('assign-workflow.Lims', autospec=True)
