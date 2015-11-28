@@ -31,9 +31,21 @@ class DilutionCalculatorTestCase(unittest.TestCase):
                 "Show source location": True
                 }
 
+        output_container = mock.create_autospec(Container, instance=True)
+        output_container.name = "Container0"
+        input_container = mock.create_autospec(Container, instance=True)
+        input_container.name = "InputContainer0"
+
         for i in xrange(N):
+            if i % 11 == 10:
+                output_container = mock.create_autospec(Container, instance=True)
+                output_container.name = "Container%d" % (i / 11)
+                input_container = mock.create_autospec(Container, instance=True)
+                input_container.name = "InputContainer%d" % (i / 11)
             output = mock.create_autospec(Artifact, instance=True)
+            output.location = (output_container, "%c:%d" % (ord('A') % 12, ))
             input = mock.create_autospec(Artifact, instance=True)
+            input.location = (input_container, "%c:%d" % (ord('A') % 12, ))
             input.udf = {
                     "": ""
                     }
@@ -62,4 +74,5 @@ class DilutionCalculatorTestCase(unittest.TestCase):
 
         dilution_calculator.main("TEST_LIMSID", FILENAME_PREFIX)
 
+        
         
