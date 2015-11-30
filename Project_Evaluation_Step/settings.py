@@ -50,7 +50,8 @@ project_fields = [
         "Evaluation comments",
         "Library prep used",
         "Prepaid account",
-        "Number of lanes"
+        "Number of lanes",
+        "Test project"
 ]
 
 email_fields = ['Contact email', 'Billing email']
