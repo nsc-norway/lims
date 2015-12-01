@@ -6,8 +6,9 @@ from xlrd import open_workbook
 from scipy import stats
 import xml.etree.ElementTree as ET
 import os
+import socket
 
-HOSTNAME = 'http://192.168.8.10:8080'
+HOSTNAME = 'http://' + socket.gethostname() + ':8080'
 VERSION = "v2"
 BASE_URI = HOSTNAME + "/api/" + VERSION + "/"
 
