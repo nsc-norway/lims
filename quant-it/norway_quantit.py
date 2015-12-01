@@ -173,8 +173,6 @@ def downloadFile():
 		filename = fDOM.getElementsByTagName( "original-location")
 		fURI = BASE_URI + "files/" + fLUID + "/download"
 
-		os.system('sox input.wav -b 24 output.aiff rate -v -L -b 90 48k')
-
 		cmd = "/usr/bin/curl --header" + " Content-Disposition:'attachment; filename=" + filename[0].firstChild.nodeValue + "'"  + " -u " + args[ "username" ] + ":" + args[ "password" ] + " -o qPCR.xls  " + fURI
 		os.system(cmd )
 
