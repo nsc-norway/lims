@@ -1,0 +1,22 @@
+Project,Sample,Source cont.,Well,Dest. cont.,Well,Input molarity,Input volume,Normalised molarity,Buffer volume
+Pr0ject,ISam0ple,InputContainer0,B:1,Container0,H:12,5.18,11.23,5.31,-0.27
+Pr0ject,ISam1ple,InputContainer0,C:1,Container0,G:12,13.71,11.23,5.31,17.75
+Pr0ject,ISam2ple,InputContainer0,D:1,Container0,F:12,13.68,11.23,5.31,17.70
+Pr0ject,ISam3ple,InputContainer0,E:1,Container0,E:12,16.99,11.23,5.31,24.69
+Pr0ject,ISam4ple,InputContainer0,F:1,Container0,D:12,3.71,11.23,5.31,-3.37
+Pr0ject,ISam5ple,InputContainer0,G:1,Container0,C:12,4.61,11.23,5.31,-1.48
+Pr0ject,ISam6ple,InputContainer0,H:1,Container0,B:12,2.94,11.23,5.31,-5.01
+Pr0ject,ISam7ple,InputContainer0,A:2,Container0,A:12,4.50,11.23,5.31,-1.71
+Pr0ject,ISam8ple,InputContainer0,B:2,Container0,H:11,14.68,11.23,5.31,19.82
+Pr0ject,ISam9ple,InputContainer0,C:2,Container0,G:11,2.60,11.23,5.31,-5.72
+Pr1ject,ISam10ple,InputContainer0,D:2,Container0,F:11,10.63,11.23,5.31,11.24
+Pr1ject,ISam11ple,InputContainer0,E:2,Container0,E:11,4.28,11.23,5.31,-2.18
+Pr1ject,ISam12ple,InputContainer0,F:2,Container0,D:11,5.89,11.23,5.31,1.23
+Pr1ject,ISam13ple,InputContainer0,G:2,Container0,C:11,8.63,11.23,5.31,7.02
+Pr1ject,ISam14ple,InputContainer0,H:2,Container0,B:11,16.75,11.23,5.31,24.20
+Pr1ject,ISam15ple,InputContainer0,A:3,Container0,A:11,12.17,11.23,5.31,14.50
+Pr1ject,ISam16ple,InputContainer0,B:3,Container0,H:10,0.29,11.23,5.31,-10.62
+Pr1ject,ISam17ple,InputContainer0,C:3,Container0,G:10,5.52,11.23,5.31,0.44
+Pr1ject,ISam18ple,InputContainer1,B:1,Container1,H:12,2.93,11.23,5.31,-5.02
+Pr1ject,ISam19ple,InputContainer1,C:1,Container1,G:12,17.43,11.23,5.31,25.62
+Pr2ject,ISam20ple,InputContainer1,D:1,Container1,F:12,16.19,11.23,5.31,23.02
