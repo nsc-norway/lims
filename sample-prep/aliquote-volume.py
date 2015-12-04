@@ -25,13 +25,13 @@ ROBOT_HEADER = [
         ]
 
 def sort_key(elem):
-    input, output, sample, qc = elem
+    input, output, qc = elem
     container, well = output.location
     row, col = well.split(":")
     return (container, int(col), row)
 
 
-def main(process_id, mode):
+def main(process_id, output_file_id, mode):
 
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
@@ -42,7 +42,7 @@ def main(process_id, mode):
             }
 
     ROW = {
-            "robot": get_robot_lime,
+            "robot": get_robot_line,
             "worksheet": get_worksheet_line
             }
 
@@ -57,11 +57,12 @@ def main(process_id, mode):
 
     qc_results = lims.get_qc_results(inputs, "Quant-iT QC Diag 1.0")
     lims.get_batch(inputs + outputs + qc_results)
-    lims.get_batch(samples)
+    lims.get_batch(input.samples[0] for sample in inputs)
 
+    rows = []
     updated_outputs = []
     warning = []
-    i_o_s_q = zip(inputs, outputs, samples, qc_results)
+    i_o_s_q = zip(inputs, outputs, qc_results)
     for input, output, qc_result in sorted(i_o_s_q, key=sort_key):
         
         # Update the UDF of the output to the default, if it's not set
@@ -114,7 +115,7 @@ def get_worksheet_line(input, output, qc_result, quantity, volume):
     return [
             project_name,
             sample_name,
-            "%4.2f" % input_conc,
+            "%4.2f" % qc_result.udf['Concentration'],
             source_well,
             dest_well,
             "%4.2f" % volume,
