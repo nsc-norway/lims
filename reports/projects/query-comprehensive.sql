@@ -6,7 +6,7 @@ SELECT
 	CASE
 		WHEN (artifactstate.qcflag = 0) THEN 'None'
 		WHEN (artifactstate.qcflag = 1) THEN 'PASS'
-		WHEN (artifactstate.qcflag = 0) THEN 'FAIL'
+		WHEN (artifactstate.qcflag = 2) THEN 'FAIL'
 	END,
 	project.name,
 	MAX(CASE artifact_udf_view.udfname WHEN 'Yield PF (Gb) R1' THEN artifact_udf_view.udfvalue ELSE '' END) AS "Yield PF (Gb) R1",

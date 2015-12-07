@@ -6,7 +6,7 @@ SELECT
 	CASE
 		WHEN (artifactstate.qcflag = 0) THEN 'None'
 		WHEN (artifactstate.qcflag = 1) THEN 'PASS'
-		WHEN (artifactstate.qcflag = 0) THEN 'FAIL'
+		WHEN (artifactstate.qcflag = 2) THEN 'FAIL'
 	END
 FROM processtype, process, processiotracker, artifact, process_udf_view, artifactstate, containerplacement
 WHERE
