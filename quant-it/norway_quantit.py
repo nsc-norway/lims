@@ -143,7 +143,10 @@ def parseFile( filename ):
 	RFU_keys = sorted( control_dict.keys())
 	RFU_values = []
 	# expected standard values are hard coded right now.
-	RFU_expected = [0, .5, 1, 2, 4, 6, 8, 10]
+	RFU_conc = [0, .5, 1, 2, 4, 6, 8, 10]
+	standard_volume = 10.0
+	sample_volume = 1.0
+	RFU_expected = [conc * standard_volume / sample_volume for conc in RFU_conc] 
 	# convert values to float and add to list
 	for key in RFU_keys:
 		RFU_values.append(float (control_dict[key] ))
