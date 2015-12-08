@@ -20,7 +20,7 @@ def main(analyte_ids):
     and the specified category. If category is not given, any category could be used.
     """
     reagents = indexes.get_all_reagent_types() 
-    analytes = [Artifact(id=analyte_id) for analyte_id in analyte_ids]
+    analytes = [Artifact(lims, id=analyte_id) for analyte_id in analyte_ids]
 
     # Cache all analytes and samples
     analytes = lims.get_batch(analytes)
