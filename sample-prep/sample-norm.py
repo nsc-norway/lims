@@ -27,6 +27,7 @@ def main(process_id, output_file_id):
     header = [
             "Project",
             "Sample",
+            "Archive pos.",
             "Sample conc.",
             "From well",
             "To well",
@@ -88,6 +89,7 @@ def main(process_id, output_file_id):
         rows.append([
             project_name,
             sample_name,
+            sample.udf.get('Archive position Diag',''),
             input_conc,
             source_well,
             dest_well,
