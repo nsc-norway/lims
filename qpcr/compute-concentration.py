@@ -20,16 +20,23 @@ def main(process_id):
             measurements.append(measurement)
 
     lims.get_batch(inputs + measurements)
-
+    zeros = []
     for input, measurement in zip(inputs, measurements):
-        try:
-            mol_conc = calculate_molarity(input.udf['Average Fragment Size'], measurement.udf['Quantity mean'])
-        except KeyError, e:
-            print "Missing ", e, "on", input.name.encode('utf-8')
-            sys.exit(1)
+        frag_size = input.udf['Average Fragment Size']
+        if frag_size == 0:
+            zeros.append(input.name.encode('utf-8'))
+        else:
+            try:
+                mol_conc = calculate_molarity(frag_size, measurement.udf['Quantity mean'])
+            except KeyError, e:
+                print "Missing ", e, "on", input.name.encode('utf-8')
+                sys.exit(1)
         measurement.udf['Molarity'] = mol_conc
 
     lims.put_batch(measurements)
+    if zeros:
+        print "These samples have zero fragment size:", ",".join(zeros)
+        sys.exit(1)
 
 main(sys.argv[1])
 
