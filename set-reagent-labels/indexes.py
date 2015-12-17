@@ -19,6 +19,9 @@ elif re.search(r"/ous-lims.ous.nsc.local[:/]", config.BASEURI):
     # Deleted index IDs
     # Second term after | is a result of a botched import of nextera v2 indexes Nxx-Sxx
     BLACKLIST = set(range(709, 721)) | (set(range(1692,1793)) - set(range(1697,1793,8)))
+    BLACKLIST |= set(501, 597)
+elif re.search(r"/dev-lims.ous.nsc.local[:/]", config.BASEURI):
+    BLACKLIST = set(range(501, 597))
 
 def get_all_reagent_types():
     """Load all reagent types with name only, from the API resource.
