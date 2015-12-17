@@ -19,6 +19,7 @@ REQUIRED_COLUMNS = {
         "Test SWL Diag": str,
         "Referral reason Diag": str,
         "Archive position Diag": str,
+        "Alternative sample ID Diag": str,
         "Gene panel Diag": str,
         "Kit version Diag": str,
         "Analysis type Diag": str
