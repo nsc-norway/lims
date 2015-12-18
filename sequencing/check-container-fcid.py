@@ -20,9 +20,9 @@ def main(process_id):
         pre_existing = set(all_known) - flowcells
         print "Error: These flowcells already exist in the system:",\
             ", ".join(container.name for container in pre_existing),\
-            ". To continue, rename the exising flowcell (or, if in a",\
+            ". To continue, rename the exising flowcell in operations interface, or if in a",\
             "hurry, append \"-NEW\" to the current flowcell and fix it",\
-            "later)."
+            "later."
         sys.exit(1)
 
 main(sys.argv[1])
