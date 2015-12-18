@@ -248,7 +248,10 @@ def read_sequencing(process_name, process):
                     )
 
     except KeyError:
-        status = "Pending/running"
+        if instrument == "HiSeq":
+            status = "Not yet started"
+        else:
+            status = "Pending/running"
     try:
         finished = process.udf['Finish Date']
     except KeyError:
