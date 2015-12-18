@@ -348,7 +348,8 @@ def main(process_id):
                 )
         if len(docx_file_output.files) == 1:
             docx_file = docx_file_output.files[0]
-            docx_data = docx_file.download()
+            if docx_file.original_location.endswith(".docx"):
+                docx_data = docx_file.download()
     except StopIteration:
         pass
     if not docx_data:
