@@ -1,4 +1,5 @@
 import sys
+import re
 import zipfile
 import datetime
 from functools import partial
@@ -38,23 +39,14 @@ SEQUENCING_TYPES = {
         "Paired End": "Paired End Read"
         }
 SEQUENCING_INSTRUMENTS = {
+        "HiSeq 2500, high output mode": "HiSeq high output",
+        "HiSeq 2500, rapid mode": "HiSeq high output",
         "HiSeq 2000": "HiSeq high output",
-        "NextSeq 500 (Mid output reagents)": "NextSeq mid output", # WARNING: NextSeq string broken up in docx
+        "NextSeq 500 (mid output reagents)": "NextSeq mid output", # WARNING: NextSeq string broken up in docx
+        "NextSeq 500 (Mid output reagents)": "NextSeq mid output",
+        "NextSeq 500 (high output reagents)": "NextSeq high output",
         "NextSeq 500 (High output reagents)": "NextSeq high output",
         "MiSeq": "MiSeq"
-        }
-
-# Read lengths in LIMS also specify single read / paired end, 
-# so this requires post-processing. 
-READ_LENGTHS = {
-        "35 bp (N, high output only)": 35,
-        "50 bp (H, M)": 50,
-        "75 bp (N)": 75,
-        "100 bp (H, v3 reagents)": 100,
-        "125 bp  (H, v4 reagents)": 125,
-        "150 bp (M, N)": 150, # unfortunately, broken off at "1"
-        "250 bp (M)": 250,
-        "300 bp (M)": 300
         }
 
 DEFAULTS = [
@@ -139,7 +131,6 @@ def get_yes_no_checkbox(cell):
 
     return None
 
-
 def single_choice_checkbox(values, cell):
     yes = False
     choice = None
@@ -160,6 +151,27 @@ def single_choice_checkbox(values, cell):
                 choice = node.text.strip()
     return choice
 
+def read_length(cell):
+    yes = False
+    choice = None
+    for node in cell.getiterator():
+        if node.tag == CHECKBOX:
+            _yes = is_checked(node)
+            if yes and _yes:
+                return None # Don't allow multiple
+            else:
+                yes = _yes
+            text = ""
+
+        elif yes and node.tag == TEXT:
+            print text
+            text += node.text
+            match = re.match(r" *(\d+) bp", text)
+            if match:
+                choice = int(match.group(1))
+                yes = False # no need to read more
+
+    return choice
 
 def single_checkbox(value, cell):
     if get_checkbox(cell):
@@ -225,7 +237,7 @@ LABEL_UDF_PARSER = [
         ("Desired insert size", 'Desired insert size', get_text_single),
         ("Sequencing Instrument requested", 'Sequencing instrument requested', 
             partial(single_choice_checkbox, SEQUENCING_INSTRUMENTS)),
-        ("Read Length", 'Read length requested', partial(single_choice_checkbox, READ_LENGTHS)), # Needs post-proc'ing
+        ("Read Length", 'Read length requested', read_length), # Needs post-proc'ing
         ("Total number lanes", 'Total # of lanes requested', get_text_single),
         ("Project Goal", 'Project goal', get_text_multi),
         ("REK approval number", 'REK approval number', get_text_single),
@@ -375,8 +387,9 @@ def main(process_id):
         add_defaults(fields)
         for uname, uvalue in fields:
             process.udf[uname] = uvalue
-    except:
+    except Exception, e:
         print "Something went wrong in the main parsing code"
+        print e
         sys.exit(0)
 
     try:
