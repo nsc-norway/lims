@@ -40,7 +40,7 @@ SEQUENCING_TYPES = {
         }
 SEQUENCING_INSTRUMENTS = {
         "HiSeq 2500, high output mode": "HiSeq high output",
-        "HiSeq 2500, rapid mode": "HiSeq high output",
+        "HiSeq 2500, rapid mode": "HiSeq rapid mode",
         "HiSeq 2000": "HiSeq high output",
         "NextSeq 500 (mid output reagents)": "NextSeq mid output", # WARNING: NextSeq string broken up in docx
         "NextSeq 500 (Mid output reagents)": "NextSeq mid output",
