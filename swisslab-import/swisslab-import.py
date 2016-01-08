@@ -50,7 +50,7 @@ def get_swl_data(filename):
         print "Cannot read the SwissLab file, make sure it is in Excel format"
         sys.exit(1)
 
-    ws = wb['Samples']
+    ws = wb['SWL-entry']
 
     assert ws['A1'].value == "Sample/Name"
     # Get { header name => column index }
