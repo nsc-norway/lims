@@ -4,6 +4,10 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
+# Computation for SSXT Aliquote DNA step at the beginning of Target Enrichment protocol
+# Because of the hard-coded DEFAULT_QUANTITY, it requires modification before it should
+# be used anywhere else.  
+
 DEFAULT_QUANTITY = 750
 
 

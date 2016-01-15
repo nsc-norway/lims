@@ -4,6 +4,10 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
+# Standard normalisation calculation based on properties of the derived sample
+# Used in the library validation protocols. 
+
+
 def get_buffer_vol(normalised_concentration, input_volume, input_concentration):
     return input_volume * (input_concentration * 1.0 / normalised_concentration - 1.0)
 

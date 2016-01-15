@@ -4,6 +4,11 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
+
+# Sample normalisation for first step on SSXT protocol. 
+
+
+
 # { Concentration => volume } mapping
 DEFAULT_OUTPUT_VOL = {
         3000: 130,

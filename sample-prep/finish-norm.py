@@ -2,7 +2,7 @@ import sys
 from genologics import config
 from genologics.lims import *
 
-# Diag SureSelect workflow
+# Diag SureSelect workflow, first step (Normalisation)
 
 # Copy UDF value from derived sample to sample objects. 
 # Used to copy the target concentration into the Sample 
