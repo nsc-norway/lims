@@ -5,31 +5,45 @@ from genologics.lims import *
 from genologics import config
 
 DEFAULT_OUTPUT_VOL = 10 # uL
-DEFAULT_OUTPUT_CONC = 5  # ng/uL
+DEFAULT_OUTPUT_CONC = 10  # ng/uL
 
 def sort_key(elem):
     input, output, sample = elem
     container, well = output.location
     row, col = well.split(":")
     return (container, int(col), row)
+
+def worksheet_line():
+    pass
+
+def robot_line():
+    pass
     
 
-def main(process_id, output_file_id):
+def main(process_id, output_file_id, file_type):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
 
     out_buf = StringIO.StringIO()   
 
-    header = [
-            "Project",
-            "Sample",
-            "Sample conc.",
-            "From well",
-            "To well",
-            "Sample volume",
-            "Buffer volume",
-            "Norm. conc."
-            ]
+    if file_type == "robot":
+        header = [
+                "Project",
+                "Sample",
+                "Sample conc.",
+                "From well",
+                "To well",
+                "Sample volume",
+                "Buffer volume",
+                "Norm. conc."
+                ]
+    else:
+        header = [
+                "FromWell",
+                "ToWell",
+                "Sample volume",
+                "Buffer volume"
+                ]
 
     inputs = []
     outputs = []
@@ -105,5 +119,6 @@ def main(process_id, output_file_id):
         print "Warning: too low input concentration for samples:", ", ".join(warning)
         sys.exit(1)
 
-main(sys.argv[1], sys.argv[2])
+# Use:  PROCESS_ID OUTPUT_FILE_ID FILE_FORMAT
+main(sys.argv[1], sys.argv[2], sys.argv[3])
 
