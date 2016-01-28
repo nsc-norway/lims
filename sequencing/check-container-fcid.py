@@ -3,7 +3,7 @@
 import sys
 from genologics.lims import *
 from genologics import config
-
+import re
 
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
@@ -13,6 +13,10 @@ def main(process_id):
     flowcells = set(lims.get_batch(ana.location[0] for ana in lims.get_batch(process.analytes()[0])))
     if any(fc.name == fc.id for fc in flowcells):
         print "Please make sure container names are changed before continuing."
+        sys.exit(1)
+
+    if any(re.match(r"MS.*-\d+v\d$", fc.name) for fc in flowcells):
+        print 'Use capital "v" at the end of the MiSeq carteridge ID, e.g. "MS00000000-600V3"'
         sys.exit(1)
 
     all_known = lims.get_containers(name=(container.name for container in flowcells))
