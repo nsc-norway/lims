@@ -59,7 +59,11 @@ def main(process_id, output_file_id, mode):
             inputs.append(input)
             outputs.append(output)
 
-    qc_results = lims.get_qc_results(inputs, "Quant-iT QC Diag 1.0")
+    try:
+        qc_results = lims.get_qc_results(inputs, "Quant-iT QC Diag 1.0")
+    except KeyError, e:
+        print "Missing QC result for:", e
+        sys.exit(1)
     lims.get_batch(inputs + outputs + qc_results)
     lims.get_batch(input.samples[0] for sample in inputs)
 
@@ -68,15 +72,8 @@ def main(process_id, output_file_id, mode):
     warning = []
     i_o_s_q = zip(inputs, outputs, qc_results)
     for input, output, qc_result in sorted(i_o_s_q, key=sort_key):
-        
-        # Update the UDF of the output to the default, if it's not set
-        try:
-            quantity = output.udf['Amount of DNA per sample (ng)']
-        except KeyError:
-            quantity = DEFAULT_QUANTITY
-            output.udf['Amount of DNA per sample (ng)'] = quantity
-            updated_outputs.append(output)
 
+        quantity = process.udf['DNA per sample (ng)']
         input_conc = qc_result.udf['Concentration']
         volume = quantity * 1.0 / input_conc
 
