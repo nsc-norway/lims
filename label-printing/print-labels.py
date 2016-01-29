@@ -115,16 +115,16 @@ def main(process_uri, username, password, sample_type, lims_ids):
     files = []
     if len(lims_ids) == 1:
         process = Process(lims, id=lims_ids[0])
-        outputs = process.all_outputs(unique=True)
+        all_analytes = process.all_outputs(unique=True)
     elif len(lims_ids) > 1 and lims_ids[0] == "ANALYTES":
         process = None
-        outputs = [Artifact(lims, id=lims_id) for lims_id in lims_ids[1:]]
+        all_analytes = [Artifact(lims, id=lims_id) for lims_id in lims_ids[1:]]
     else:
         print "Invalid argument, use either process-ID or ANALYTES and a list of analytes"
         sys.exit(1)
         
-    outputs = lims.get_batch(outputs)
-    analytes = filter(lambda a: a.type == 'Analyte', outputs)
+    all_analytes = lims.get_batchall_analytes
+    analytes = filter(lambda a: a.type == 'Analyte', all_analytes
     lims.get_batch(list(set(analyte.samples[0] for analyte in analytes)))
     to_print = sorted(analytes, key=sort_key_func)
 
