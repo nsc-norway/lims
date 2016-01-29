@@ -4,9 +4,6 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
-DEFAULT_OUTPUT_VOL = 10 # uL
-DEFAULT_OUTPUT_CONC = 10  # ng/uL
-
 def sort_key(elem):
     input, output, sample = elem
     container, well = output.location
@@ -20,30 +17,24 @@ def robot_line():
     pass
     
 
-def main(process_id, output_file_id, file_type):
+def main(process_id, output_file_id, concentration_source):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
 
     out_buf = StringIO.StringIO()   
 
-    if file_type == "robot":
-        header = [
-                "Project",
-                "Sample",
-                "Sample conc.",
-                "From well",
-                "To well",
-                "Sample volume",
-                "Buffer volume",
-                "Norm. conc."
-                ]
-    else:
-        header = [
-                "FromWell",
-                "ToWell",
-                "Sample volume",
-                "Buffer volume"
-                ]
+    header = [
+            "Prove",
+            "BufferPosisjon",
+            "BufferBronn",
+            "96-plate",
+            "Bronn_Posisjon_96plate",
+            "Rack_Pos_DNAror",
+            "Pos_i_rack_DNA",
+            "DNA_Kons",
+            "DNA_Vol",
+            "Buffer_Vol",
+            ]
 
     inputs = []
     outputs = []
@@ -55,56 +46,69 @@ def main(process_id, output_file_id, file_type):
             outputs.append(output)
 
     lims.get_batch(inputs + outputs)
-    samples = [input.samples[0] for input in inputs]
-    lims.get_batch(samples)
+    if concentration_source == "sample":
+        samples = [input.samples[0] for input in inputs]
+        lims.get_batch(samples)
+        concentrations = [sample.udf.get('Sample conc. (ng/ul)') for sample in samples]
+        print concentrations
+    elif concentration_source == "quantit":
+        try:
+            qc_results = lims.get_qc_results(inputs, "Quant-iT QC Diag 1.0")
+        except KeyError, e:
+            print "Missing QC result for", e
+            sys.exit(1)
+        concentrations = [result.udf.get('Concentration') for result in qc_results]
 
-    updated_outputs = set()
+    missing_udf = [input.name for input, conc in zip(inputs, concentrations) if conc is None]
+    if missing_udf:
+        print "Error: input concentration not known for samples", ", ".join(missing_udf)
+        sys.exit(1)
     
+    updated_outputs = set()
     warning = []
+    missing_udf = []
     rows = []
-    i_o_s = zip(inputs, outputs, samples)
-    for input, output, sample in sorted(i_o_s, key=sort_key):
-        project_name = input.samples[0].project.name.encode('utf-8')
+    i_o_s = zip(inputs, outputs, concentrations)
+    for input, output, input_conc in sorted(i_o_s, key=sort_key):
         sample_name = input.name.encode('utf-8')
         dest_container = output.location[0].name
-        dest_well = output.location[1]
+        dest_well = output.location[1].replace(":", "")
         try:
             norm_conc = output.udf['Normalized conc. (ng/uL)']
         except KeyError:
-            norm_conc = DEFAULT_OUTPUT_CONC
+            norm_conc = process.udf['Default normalized conc. (ng/uL)']
             output.udf['Normalized conc. (ng/uL)'] = norm_conc
             updated_outputs.add(output)
         try:
             output_vol = output.udf['Volume (uL)']
         except KeyError:
-            output_vol = DEFAULT_OUTPUT_VOL
+            output_vol = process.udf['Default volume (uL)']
             output.udf['Volume (uL)'] = output_vol
             updated_outputs.add(output)
-         
-        try:
-            input_conc = sample.udf['Sample conc. (ng/ul)']
-        except KeyError:
-            print "Error: input concentration not known for sample", sample.name
-            sys.exit(1)
 
-        sample_volume = (norm_conc / input_conc) * output_vol
+        sample_volume = (norm_conc * 1.0 / input_conc) * output_vol
         buffer_volume = output_vol - sample_volume
 
         if buffer_volume < 0:
+            warning.append(output.name)
+            buffer_volume = 0
+            sample_volume = output_vol
             warning.append(output.name)
 
         source_container = input.location[0].name
         source_well = input.location[1]
 
         rows.append([
-            project_name,
             sample_name,
-            input_conc,
-            source_well,
+            "TE",
+            "1",
+            dest_container,
             dest_well,
-            "%4.2f" % sample_volume,
-            "%4.2f" % buffer_volume,
-            "%4.2f" % norm_conc
+            "DNA 1",
+            "x",
+            str(norm_conc),
+            str(sample_volume),
+            str(buffer_volume)
             ])
 
     lims.put_batch(updated_outputs)
@@ -116,9 +120,9 @@ def main(process_id, output_file_id, file_type):
         out.writerows(rows)
 
     if warning:
-        print "Warning: too low input concentration for samples:", ", ".join(warning)
+        print "Warning: too low input concentration for samples:", ", ".join(warning), "."
         sys.exit(1)
 
-# Use:  PROCESS_ID OUTPUT_FILE_ID FILE_FORMAT
+# Use:  PROCESS_ID OUTPUT_FILE_ID CONCENTRATION_SOURCE={"quantit"|"sample"}
 main(sys.argv[1], sys.argv[2], sys.argv[3])
 
