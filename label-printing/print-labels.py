@@ -115,16 +115,25 @@ def main(process_uri, username, password, sample_type, lims_ids):
     files = []
     if len(lims_ids) == 1:
         process = Process(lims, id=lims_ids[0])
-        all_analytes = process.all_outputs(unique=True)
+        print process.uri
+        if sample_type == "qc":
+            analytes = []
+            results = {}
+            for i, o in process.input_output_maps:
+                if o and o['output-type'] == 'ResultFile' and o['output-generation-type'] == 'PerInput':
+                    analytes.append(i['uri']) # Note: 'uri' subscript actually refers to Entity object
+                    results[i['uri']] = o['uri']
+            lims.get_batch(analytes + results.values())
+        else:
+            all_analytes = process.all_outputs(unique=True, resolve=True)
+            analytes = filter(lambda a: a.type == 'Analyte', all_analytes)
     elif len(lims_ids) > 1 and lims_ids[0] == "ANALYTES":
         process = None
-        all_analytes = [Artifact(lims, id=lims_id) for lims_id in lims_ids[1:]]
+        analytes = lims.get_batch(Artifact(lims, id=lims_id) for lims_id in lims_ids[1:])
     else:
         print "Invalid argument, use either process-ID or ANALYTES and a list of analytes"
         sys.exit(1)
         
-    all_analytes = lims.get_batchall_analytes
-    analytes = filter(lambda a: a.type == 'Analyte', all_analytes
     lims.get_batch(list(set(analyte.samples[0] for analyte in analytes)))
     to_print = sorted(analytes, key=sort_key_func)
 
@@ -150,7 +159,13 @@ def main(process_uri, username, password, sample_type, lims_ids):
                 except KeyError:
                     sample_type = "molarity"
 
-        if sample_type == "norm_conc": # can be norm_conc, molarity, pool or a fixed name preceded by :
+        if sample_type == "qc":
+            try:
+                sample_type_label = "%4.1fnM" % results[ana].udf['Molarity']
+            except KeyError:
+                print "Molarity not known for", ana.name
+                sys.exit(1)
+        elif sample_type == "norm_conc": # can be norm_conc, molarity, pool or a fixed name preceded by :
             try:
                 sample_type_label = "%4.1fnM" % ana.udf['Normalized conc. (nM)']
             except KeyError:
