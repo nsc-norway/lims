@@ -17,6 +17,7 @@ PARA = WORD_NAMESPACE + 'p'
 BR = WORD_NAMESPACE + 'br'
 CHECKBOX = WORD_NAMESPACE + 'checkBox'
 CHECKED = WORD_NAMESPACE + 'checked'
+CHECKED = WORD_NAMESPACE + 'default'
 VAL = WORD_NAMESPACE + 'val'
 
 PLACEHOLDER_STRING = "Click here to enter text."
@@ -71,6 +72,8 @@ ERROR_UDF = "Submission form processing errors"
 # Helper: is checkbox checked
 def is_checked(checkbox_elem):
     checked_elem = checkbox_elem.find(CHECKED)
+    if checked_elem is None:
+        checked_elem = checkbox_elem.find(DEFAULT)
     if not checked_elem is None:
         val = checked_elem.attrib.get(VAL)
         if val == "1":
@@ -104,6 +107,7 @@ def get_text_lower(cell):
 def get_checkbox(cell):
     checkboxes = cell.getiterator(CHECKBOX)
     if len(checkboxes) == 1:
+        checked_elem = checkboxes[0].find(CHECKED)
         return is_checked(checkboxes[0])
     else:
         return None
@@ -164,7 +168,6 @@ def read_length(cell):
             text = ""
 
         elif yes and node.tag == TEXT:
-            print text
             text += node.text
             match = re.match(r" *(\d+) bp", text)
             if match:
