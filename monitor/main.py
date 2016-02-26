@@ -72,14 +72,20 @@ recent_run_cache = {}
 sequencing_process_type = []
 
 def get_sequencing_process(process):
-    """As seen in pipeline/common/utilities.py."""
+    """Gets the sequencing process from a process object corresponing to a process
+    which is run after sequencing, such as demultiplexing. This function looks up
+    the sequencing step by examining the sibling processes run on one of the
+    samples in the process's inputs."""
+
+    # Each entry in input_output_maps is an input/output specification with a single
+    # input and any number of outputs. This gets the first input.
     first_io = process.input_output_maps[0]
     first_in_artifact = first_io[0]['uri']
-    processes = process.lims.get_processes(inputartifactlimsid=first_in_artifact.id)
-    for proc in processes:
-        if proc.type.name in [p[1] for p in SEQ_PROCESSES]:
-            return proc
 
+    processes = process.lims.get_processes(inputartifactlimsid=first_in_artifact.id)
+    seq_processes = [proc for proc in processes if proc.type.name in [p[1] for p in nsc.SEQ_PROCESSES]]
+    # Use the last sequencing process. In case of crashed runs, this will be the right one.
+    return seq_processes[-1]
 
 class Project(object):
     def __init__(self, url, name, eval_url):
