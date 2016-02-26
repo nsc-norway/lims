@@ -85,7 +85,10 @@ def get_sequencing_process(process):
     processes = process.lims.get_processes(inputartifactlimsid=first_in_artifact.id)
     seq_processes = [proc for proc in processes if proc.type.name in [p[1] for p in SEQ_PROCESSES]]
     # Use the last sequencing process. In case of crashed runs, this will be the right one.
-    return seq_processes[-1]
+    try:
+        return seq_processes[-1]
+    except IndexError:
+        return None
 
 class Project(object):
     def __init__(self, url, name, eval_url):
