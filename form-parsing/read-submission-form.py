@@ -17,7 +17,7 @@ PARA = WORD_NAMESPACE + 'p'
 BR = WORD_NAMESPACE + 'br'
 CHECKBOX = WORD_NAMESPACE + 'checkBox'
 CHECKED = WORD_NAMESPACE + 'checked'
-CHECKED = WORD_NAMESPACE + 'default'
+DEFAULT = WORD_NAMESPACE + 'default'
 VAL = WORD_NAMESPACE + 'val'
 
 PLACEHOLDER_STRING = "Click here to enter text."
