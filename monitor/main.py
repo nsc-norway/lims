@@ -176,18 +176,20 @@ def get_projects(process):
     return [read_project(p) for p in lims_projects]
 
 
-def estimated_time_completion(process, rapid, done_cycles, total_cycles):
+def estimated_time_completion(process, instrument, rapid, done_cycles, total_cycles):
     if total_cycles > 0 and done_cycles < total_cycles:
         now = datetime.datetime.now()
-        if instrument == "hiseq":
+        if instrument == "HiSeq":
             if rapid:
                 time_per_cycle = 430
             else:
                 time_per_cycle = 2160
-        elif instrument == "miseq":
+        elif instrument == "MiSeq":
             time_per_cycle = 336
-        elif instrument == "nextseq":
+        elif instrument == "NextSeq":
             time_per_cycle = 348
+        else:
+            time_per_cycle = 0
         time_left = seconds=(total_cycles - done_cycles) * time_per_cycle
         est_arrival = now + datetime.timedelta(seconds=time_left)
         return " (ETA: " + est_arrival.strftime("%a %d/%m %H:%M") + ")"
