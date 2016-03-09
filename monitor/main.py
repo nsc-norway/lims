@@ -179,10 +179,15 @@ def get_projects(process):
 def estimated_time_completion(process, rapid, done_cycles, total_cycles):
     if total_cycles > 0 and done_cycles < total_cycles:
         now = datetime.datetime.now()
-        if rapid:
-            time_per_cycle = 430
-        else:
-            time_per_cycle = 2160
+        if instrument == "hiseq":
+            if rapid:
+                time_per_cycle = 430
+            else:
+                time_per_cycle = 2160
+        elif instrument == "miseq":
+            time_per_cycle = 336
+        elif instrument == "nextseq":
+            time_per_cycle = 348
         time_left = seconds=(total_cycles - done_cycles) * time_per_cycle
         est_arrival = now + datetime.timedelta(seconds=time_left)
         return " (ETA: " + est_arrival.strftime("%a %d/%m %H:%M") + ")"
@@ -252,6 +257,7 @@ def read_sequencing(process_name, process):
         if cycles_re:
             status += estimated_time_completion(
                     process, 
+                    instrument,
                     "Rapid" in flowcell.type.name,
                     int(cycles_re.group(1)), int(cycles_re.group(2))
                     )
