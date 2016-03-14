@@ -256,7 +256,7 @@ def read_sequencing(process_name, process):
     try:
         status = process.udf['Status']
         cycles_re = re.match(r"Cycle (\d+) of (\d+)", status)
-        if cycles_re:
+        if cycles_re and cycles_re.group(1) != "0":
             status += estimated_time_completion(
                     process, 
                     instrument,
