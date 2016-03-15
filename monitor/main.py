@@ -264,6 +264,8 @@ def read_sequencing(process_name, process):
                         "Rapid" in flowcell.type.name,
                         int(cycles_re.group(1)), int(cycles_re.group(2))
                         )
+            elif instrument == "MiSeq" and cycles_re.group(1) == "0":
+                status = "Cycle <15 of %s" % (cycles_re.group(2))
 
     except KeyError:
         if instrument == "HiSeq":
