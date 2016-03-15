@@ -17,7 +17,7 @@ def main(process_id, workflow_name):
     qc_ok_inputs = (ana for ana in process.all_inputs(unique=True, resolve=True) if ana.qc_flag=="PASSED")
     samples = [s for ana in qc_ok_inputs for s in ana.samples]
     lims.get_batch(samples)
-    diag_samples = [s for s in samples if s.project.name.startswith("Diag-")]
+    diag_samples = [s for s in samples if s.project.udf.get('Project type') == "Diagnostics"]
     root_analytes = (s.artifact for s in diag_samples)
 
     lims.route_analytes(root_analytes, workflow)
