@@ -102,9 +102,11 @@ def main(process_id, output_file_id):
         dest_well = output.location[1]
 
         first_in_pool = True
+        sum_frag_length = 0.0
         for input, sample_volume in zip(pool.inputs, sample_volumes):
             sample_name = input.name.encode('utf-8')
             input_mol_conc = input.udf['Molarity']
+            sum_frag_length += input.udf['Average Fragment Size']
             input_mol_conc_str = "%4.2f" % (input.udf['Molarity'])
             sample_vol_str = "%4.2f" % sample_volume
             source_container = input.location[0].name
@@ -138,6 +140,8 @@ def main(process_id, output_file_id):
                     input_mol_conc_str,
                     sample_vol_str,
                     ])
+
+        pool.output.udf['Average Fragment Size'] = sum_frag_length / len(pool.inputs)
 
 
     lims.put_batch(pool.output for pool in step.pools.pooled_inputs)
