@@ -179,7 +179,7 @@ def main(process_uri, username, password, sample_type, lims_ids):
                 sys.exit(1)
         elif sample_type == "molarity":
             try:
-                sample_type_label = "%4.1fnM" % ana.udf['Molarity']
+                sample_type_label = "%4.1f" % ana.udf['Molarity']
             except KeyError:
                 print "Requestsed to print molarity, but not available"
                 sys.exit(1)
