@@ -1,0 +1,99 @@
+body {
+	font-family: Arial;
+}
+
+div.header {
+	width: 100%;
+	height: 3em;
+	padding: 0;
+	margin: 0;
+}
+
+div.header-text {
+	width: 20em;
+	float: left;
+	margin-left: 1em;
+}
+
+
+img.logo {
+	float: left;
+	width: 10em;
+	height: 3em;
+}
+
+h1.title {
+	font-size: 1.2em;
+	font-family: Arial;
+	font-weight: normal;
+	margin-top: -5px;
+}
+
+
+div.section {
+	width: 40em;
+	margin-bottom: 1em;
+	margin-top: 1em;
+}
+
+h2.section-header {
+	display: block;
+	width: 100%;
+	text-align: center;
+	border: 1px solid #CCDDFF;
+	font-weight: normal;
+	font-size: 1.3em;
+	background-color: #DDEEFF;
+	margin-bottom: 0.5em;
+}
+
+table.main-table {
+	width: 100%;
+}
+
+table.main-table th.main {
+	width: 33%;
+	background-color: #FFFFDD;
+	border: 1px solid #DDDD55;
+	margin: 0;
+}
+
+table.main-table td.main {
+	width: 33%;
+	vertical-align: top;
+	margin: 0;
+	padding: 0;
+}
+
+td.label-col {
+	width: 5em;
+}
+
+div.box {
+	border: 1px solid #999999;
+	padding: 0.4em 0.5em;
+	margin: 0.5em 0.1em;
+	min-height: 6em;
+}
+
+div.box p {
+	padding: 1px;
+}
+
+h3.col-header {
+	text-align: center;
+	font-weight: normal;
+	background-color: #DDDDFF;
+	margin-top: 0.05em;
+	margin-bottom: 0.05em;
+	border-bottom: 1px solid #444477;
+}
+
+h4.box-header {
+	text-align: center;
+	font-size: 1em;
+	margin: 0.2em;
+	margin-bottom: 0.5em;
+}
+
+

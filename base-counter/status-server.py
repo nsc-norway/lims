@@ -1,46 +1,68 @@
 #!/usr/bin/python
 
-import glob
-import os
-import illuminate
+from flask import Flask, render_template, url_for, request, Response, redirect
+from genologics.lims import *
+from genologics import config
+import datetime
+import time
 
-DB_FILE = "/tmp/rundb.txt"
-BASELINE_FILE = "/tmp/baseline.txt"
-RATE_FILE = "/tmp/rate.txt"
-RUN_STORAGE="/data/runScratch.boston"
+BASELINE_FILE = "/var/db/nsc-status/basecount.txt"
 
-def main():
-    try:
-        with open(DBFILE) as run_db_file:
-            run_db = [l.split("\t") for l in run_db_file.readlines()]
-    except IOError:
-        run_db = []
+app = Flask(__name__)
 
+lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
+
+class BaseCounter(object):
+
+    def __init__(self):
+        with open(BASELINE_FILE, "r") as basecount_file:
+            self.basecount = int(basecount_file.read().strip())
+
+        self.basecount_file = open(BASELINE_FILE, "w")
+
+    def get(self):
+        return count
+
+    def write(self):
+        self.basecount_file.seek(0)
+        self.basecount_file.write(str(self.basecount) + "\n")
+
+BASELINE_PATH = "/var/db/nsc-status/baseline.txt"
+baseline_file = None
+basecount = 0
+
+def init():
+    global baseline_file, basecount
     try:
         with open(BASELINE_FILE) as baseline_file:
-            baseline = int(baseline_file.read())
-    except IOError:
-        baseline = 0
+            basecount = int(baseline_file.read())
+    except (IOError, ValueError):
+        basecount = 0
 
-    rate = 0
-
-    files = glob.glob(os.path.join(RUN_STORAGE, "*"))
-    for path in files:
-        run_type = get_cluster_density(path)
-
-    with open(BASELINE_FILE) as baseline_file:
-        baseline_file.write(str(baseline))
-
-    with open(RATE_FILE) as rate_file:
-        rate_file.write(str(rate))
-
-def get_run_type(path):
+def update_bases():
     pass
 
-def get_hiseq_miseq_clusters(path):
-    pass
 
+@app.route("/")
+def get_main():
+    return redirect(url_for('static', filename='index.xhtml'))
+
+
+def event():
+    i=0
+    while True:
+        yield "data: %d\n\n" % (i)
+        i += 1
+        time.sleep(2)
+
+
+@app.route("/status")
+def get_status():
+    return Response(event(), mimetype="text/event-stream")
+
+init()
 
 if __name__ == "__main__":
-    main()
+    app.debug = True
+    app.run(host="0.0.0.0", port=5001, threaded=True)
 
