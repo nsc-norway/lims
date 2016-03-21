@@ -16,9 +16,10 @@ def main(process_id, fields):
     input_measurement = []
     for i, o in process.input_output_maps:
         if o and o['output-type'] == 'ResultFile' and o['output-generation-type'] == 'PerInput':
-            input = i['uri']
-            measurement = o['uri']
-            input_measurement.append((input, measurement))
+            if not i['uri'].control_type:
+                input = i['uri']
+                measurement = o['uri']
+                input_measurement.append((input, measurement))
 
     lims.get_batch([item for im in input_measurement for item in im])
 
