@@ -316,7 +316,7 @@ def process_hazardous(fields):
         if f[0] == 'Hazardous':
             if f[1]:
                 print "Warning: Hazardous samples."
-                sys.exit(1)
+                #sys.exit(1)
             else:
                 del fields[i]
 
