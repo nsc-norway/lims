@@ -11,7 +11,7 @@ def sort_key(elem):
     return (container, int(col), row)
 
 
-def main(process_id, output_file_id, concentration_source):
+def main(process_id, concentration_source):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
 
@@ -107,16 +107,27 @@ def main(process_id, output_file_id, concentration_source):
 
     lims.put_batch(updated_outputs)
 
-    output_file_name = output_file_id + "_norm.csv"
-    with open(output_file_name, 'wb') as out_file:
-        out = csv.writer(out_file)
-        out.writerow(header)
-        out.writerows(rows)
+    out_buffer = StringIO.StringIO()
+    out = csv.writer(out_buffer)
+    out.writerow(header)
+    out.writerows(rows)
+
+    outfiles = set((o['uri'] for i, o in process.input_output_maps if o['output-generation-type'] == "PerAllInputs"))
+    if len(outfiles) == 0:
+        print "No output file was configured"
+        sys.exit(1)
+    elif len(outfiles) > 1:
+        print "Too many output files were configured"
+        sys.exit(1)
+
+    gs = lims.glsstorage(outfiles.pop(), 'biomek-fortynning.csv')
+    file_obj = gs.post()
+    file_obj.upload(out_buffer.getvalue())
 
     if warning:
         print "Warning: too low input concentration for samples:", ", ".join(warning), "."
         sys.exit(1)
 
 # Use:  PROCESS_ID OUTPUT_FILE_ID CONCENTRATION_SOURCE={"quantit"|"sample"}
-main(sys.argv[1], sys.argv[2], sys.argv[3])
+main(sys.argv[1], sys.argv[2])
 
