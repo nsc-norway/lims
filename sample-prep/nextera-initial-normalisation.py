@@ -10,12 +10,6 @@ def sort_key(elem):
     row, col = well.split(":")
     return (container, int(col), row)
 
-def worksheet_line():
-    pass
-
-def robot_line():
-    pass
-    
 
 def main(process_id, output_file_id, concentration_source):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
