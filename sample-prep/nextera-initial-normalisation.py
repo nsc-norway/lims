@@ -69,7 +69,7 @@ def main(process_id, output_file_id, concentration_source):
     missing_udf = []
     rows = []
     i_o_s = zip(inputs, outputs, concentrations)
-    for input, output, input_conc in sorted(i_o_s, key=sort_key):
+    for index, (input, output, input_conc) in enumerate(sorted(i_o_s, key=sort_key)):
         sample_name = input.name.encode('utf-8')
         dest_container = output.location[0].name
         dest_well = output.location[1].replace(":", "")
@@ -104,8 +104,8 @@ def main(process_id, output_file_id, concentration_source):
             "1",
             dest_container,
             dest_well,
-            "DNA 1",
-            "x",
+            "DNA %d" % ((index // 24) + 1),
+            str((index % 24) + 1),
             str(norm_conc),
             str(sample_volume),
             str(buffer_volume)
