@@ -1,46 +1,57 @@
 #!/usr/bin/python
 
-from flask import Flask, render_template, url_for, request, Response, redirect
-from genologics.lims import *
-from genologics import config
 import datetime
 import time
+import os
 
-BASELINE_FILE = "/var/db/nsc-status/basecount.txt"
+import illuminate
+from flask import Flask, render_template, url_for, request, Response, redirect
+
+
+RUN_STORAGE = "/data/runScratch.boston"
 
 app = Flask(__name__)
 
-lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-class BaseCounter(object):
+class RunBaseCounter(object):
 
-    def __init__(self):
-        with open(BASELINE_FILE, "r") as basecount_file:
-            self.basecount = int(basecount_file.read().strip())
+    def __init__(self, run_id):
+        self.run_id = run_id
+        self.run_dir = os.path.join(RUN_STORAGE, run_id)
+        self.last_update = 0
+        self.booked = 0
+        self.rate = 0
+        self.read_config = []
+        self.current_cycle = 0
+        self.total_cycles = 0
+        self.data_cycles_lut = [0]
 
-        self.basecount_file = open(BASELINE_FILE, "w")
+    def set_metadata(self):
+        ds = illuminate.InteropDataset(self.run_dir)
+        self.read_config = list(ds.meta.read_config)
+        self.total_cycles = sum(read['cycles'] for read in self.read_config)
+        for read in self.read_config:
+            base = self.data_cycles_lut[-1]
+            if read['is_index']:
+                self.data_cycles_lut += [base] * read['cycles']
+            else:
+                self.data_cycles_lut += range(base+1, base+1+read['cycles'])
 
-    def get(self):
-        return count
+    def get_cycle(self):
+        for cycle in range(self.current_cycle, self.total_cycles):
+            test_path = os.path.join(run_dir, "Data", "Intensities", "BaseCalls", "L001", "C{0}.1" % (cycle+1))
+            if not os.path.exists(test_path):
+                return cycle
+        return self.total_cycles
 
-    def write(self):
-        self.basecount_file.seek(0)
-        self.basecount_file.write(str(self.basecount) + "\n")
+    def update(self):
+        if not self.read_config:
+            self.set_metadata()
+        self.current_cycle = self.get_cycle()
 
-BASELINE_PATH = "/var/db/nsc-status/baseline.txt"
-baseline_file = None
-basecount = 0
-
-def init():
-    global baseline_file, basecount
-    try:
-        with open(BASELINE_FILE) as baseline_file:
-            basecount = int(baseline_file.read())
-    except (IOError, ValueError):
-        basecount = 0
-
-def update_bases():
-    pass
+    @property
+    def basecount(self):
+        return self.booked + (self.rate * (time.time() - self.last_update))
 
 
 @app.route("/")
@@ -48,19 +59,19 @@ def get_main():
     return redirect(url_for('static', filename='index.xhtml'))
 
 
-def event():
+def event(rbc):
     i=0
     while True:
-        yield "data: %d\n\n" % (i)
-        i += 1
+        event = "event: run.%s\n" % (rbc.run_id)
+        event += "data: %d\n\n" % (rbc.basecount)
+        yield event
         time.sleep(2)
 
 
 @app.route("/status")
 def get_status():
-    return Response(event(), mimetype="text/event-stream")
-
-init()
+    rbc = RunBaseCounter("160329_M01132_0133_000000000-AMY9J")
+    return Response(event(rbc), mimetype="text/event-stream")
 
 if __name__ == "__main__":
     app.debug = True
