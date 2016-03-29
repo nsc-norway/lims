@@ -10,14 +10,8 @@ def sort_key(elem):
     row, col = well.split(":")
     return (container, int(col), row)
 
-def worksheet_line():
-    pass
 
-def robot_line():
-    pass
-    
-
-def main(process_id, output_file_id, concentration_source):
+def main(process_id, concentration_source):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
 
@@ -69,7 +63,7 @@ def main(process_id, output_file_id, concentration_source):
     missing_udf = []
     rows = []
     i_o_s = zip(inputs, outputs, concentrations)
-    for input, output, input_conc in sorted(i_o_s, key=sort_key):
+    for index, (input, output, input_conc) in enumerate(sorted(i_o_s, key=sort_key)):
         sample_name = input.name.encode('utf-8')
         dest_container = output.location[0].name
         dest_well = output.location[1].replace(":", "")
@@ -104,8 +98,8 @@ def main(process_id, output_file_id, concentration_source):
             "1",
             dest_container,
             dest_well,
-            "DNA 1",
-            "x",
+            "DNA %d" % ((index // 24) + 1),
+            str((index % 24) + 1),
             str(norm_conc),
             str(sample_volume),
             str(buffer_volume)
@@ -113,16 +107,27 @@ def main(process_id, output_file_id, concentration_source):
 
     lims.put_batch(updated_outputs)
 
-    output_file_name = output_file_id + "_norm.csv"
-    with open(output_file_name, 'wb') as out_file:
-        out = csv.writer(out_file)
-        out.writerow(header)
-        out.writerows(rows)
+    out_buffer = StringIO.StringIO()
+    out = csv.writer(out_buffer)
+    out.writerow(header)
+    out.writerows(rows)
+
+    outfiles = set((o['uri'] for i, o in process.input_output_maps if o['output-generation-type'] == "PerAllInputs"))
+    if len(outfiles) == 0:
+        print "No output file was configured"
+        sys.exit(1)
+    elif len(outfiles) > 1:
+        print "Too many output files were configured"
+        sys.exit(1)
+
+    gs = lims.glsstorage(outfiles.pop(), 'biomek-fortynning.csv')
+    file_obj = gs.post()
+    file_obj.upload(out_buffer.getvalue())
 
     if warning:
         print "Warning: too low input concentration for samples:", ", ".join(warning), "."
         sys.exit(1)
 
 # Use:  PROCESS_ID OUTPUT_FILE_ID CONCENTRATION_SOURCE={"quantit"|"sample"}
-main(sys.argv[1], sys.argv[2], sys.argv[3])
+main(sys.argv[1], sys.argv[2])
 
