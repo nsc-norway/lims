@@ -4,12 +4,18 @@ from genologics import config
 import re
 import itertools
 import datetime
+import threading
 
 
 # Back-end JSON REST service for reagent registration
 
 app = Flask(__name__)
 lims = None
+
+# Approximate synchronization for background refresh operation. Not going for
+# perfect thread safety, as that has a lot of complexity
+evt = threading.Event()
+evt.clear()
 
 cat_kit = {}
 
@@ -22,20 +28,18 @@ def get_date_string():
     seq_number_date = datetime.date.today()
     return seq_number_date.strftime("%y%m%d")
 
-@app.route('/refresh', methods=['POST'])
-def refresh():
+def refresh_internal():
     global lims
 
+    evt.clear()
     # Clear client cache
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-    print "Initializing (kits)..."
     kits = lims.get_reagent_kits()
     for kit in kits:
         if kit.catalogue_number:
             for cat in kit.catalogue_number.split(","):
                 cat_kit[cat.strip()] = kit
-    print "Initializing (lots)..."
     for kit in cat_kit.values():
         lots = lims.get_reagent_lots(kitname=kit.name)
         for i, lot in enumerate(lots):
@@ -50,9 +54,13 @@ def refresh():
                     break
         else:
             kit_auto_naming[kit] = None
+    evt.set()
 
-    print "Done."
-    return "Refreshed"
+
+@app.route('/refresh', methods=['POST'])
+def refresh():
+    threading.Thread(target=refresh_internal).start()
+    return "Refreshing"
 
 class Kit(object):
     def __init__(self, name, requestLotName, ref):
@@ -63,6 +71,7 @@ class Kit(object):
 
 @app.route('/kits/<ref>')
 def get_kit(ref):
+    evt.wait()
     try:
         kit = cat_kit[ref]
         return jsonify({
@@ -96,6 +105,7 @@ def get_lot(ref, lotnumber):
     with the same lot number, if they have different lot
     names. This method returns the expiry date if available."""
 
+    evt.wait()
     try:
         kit = cat_kit[ref]
     except KeyError:
@@ -121,6 +131,7 @@ def get_lot(ref, lotnumber):
 
 @app.route('/lots/<ref>/<lotnumber>', methods=['POST'])
 def create_lot(ref, lotnumber):
+    evt.wait()
     try:
         kit = cat_kit[ref]
     except KeyError:
