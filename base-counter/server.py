@@ -63,7 +63,7 @@ def event(rbc):
     i=0
     while True:
         event = "event: run.%s\n" % (rbc.run_id)
-        event += "data: %d\n\n" % (rbc.basecount)
+        event += 'data: {"basecount": %d}\n\n' % (rbc.basecount)
         yield event
         time.sleep(2)
 
