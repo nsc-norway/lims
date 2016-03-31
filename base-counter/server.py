@@ -20,16 +20,17 @@ class RunBaseCounter(object):
         self.run_dir = os.path.join(RUN_STORAGE, run_id)
         self.last_update = 0
         self.booked = 0
-        self.rate = 0
         self.read_config = []
         self.current_cycle = 0
         self.total_cycles = 0
         self.data_cycles_lut = [0]
+        self.finished = False
 
     def set_metadata(self):
         ds = illuminate.InteropDataset(self.run_dir)
         self.read_config = list(ds.meta.read_config)
         self.total_cycles = sum(read['cycles'] for read in self.read_config)
+        # Build look-up table for number of cycles -> number of data cycles
         for read in self.read_config:
             base = self.data_cycles_lut[-1]
             if read['is_index']:
@@ -53,28 +54,13 @@ class RunBaseCounter(object):
                 return cycle
         return self.total_cycles
 
-    def update_clusters_pf(ds, process, current_cycle):
+    def get_clusters(self):
+        ds = illuminate.InteropDataset(self.run_dir)
         try:
             all_df = ds.TileMetrics().df
         except ValueError:
             return # No information yet
-        df = all_df[all_df.code == 103] # Number of clusters PF
-        r1cycles = process.udf['Read 1 Cycles']
-        reads = 1
-        if current_cycle > r1cycles:
-            reads = 2
-
-        lanes = process.all_inputs(resolve=True)
-        for lane_ana in lanes:
-            lane_str = lane_ana.location[1].split(":")[0]
-            if lane_str == "A":
-                lane = 1
-            else:
-                lane = int(lane_str)
-            clusters = df[df.lane == lane].value.sum()
-            for i_read in range(1, reads+1):
-                lane_ana.udf['Clusters PF R%d' % i_read] = clusters
-        lims.put_batch(lanes)
+        return all_df[all_df.code == 103].sum().sum() # Number of clusters PF
 
     def update(self):
         if not self.read_config:
@@ -85,8 +71,8 @@ class RunBaseCounter(object):
         self.last_update = time.time()
 
     @property
-    def projected_rate(self):
-        pass
+    def rate(self):
+        return 0
 
     @property
     def basecount(self):
@@ -103,19 +89,19 @@ def event(rbc):
     while True:
         rbc.update()
         event = "event: run.%s\n" % (rbc.run_id)
-        print "bc", rbc.basecount
-        print "rate", rbc.rate
-        event += 'data: {"basecount": %d, "rate": %d}\n\n' % (
+        event += 'data: {"basecount": %d, "rate": %d, "finished": %d}\n\n' % (
                 rbc.basecount,
-                rbc.rate
+                rbc.rate,
+                int(rbc.finished)
                 )
+        #print event
         yield event
-        time.sleep(2)
+        time.sleep(10)
 
 
 @app.route("/status")
 def get_status():
-    rbc = RunBaseCounter("160329_M01132_0133_000000000-AMY9J")
+    rbc = RunBaseCounter("160329_M02980_0056_000000000-AMT90")
     return Response(event(rbc), mimetype="text/event-stream")
 
 if __name__ == "__main__":
