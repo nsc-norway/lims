@@ -4,15 +4,16 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
-# Setup script for normalisation:
+# UDF Copy script
 # - Copies UDFs from inputs to outputs
 
-# This script has been reduced to a version of the Genologics 
-# copyUDFs function in their ngs-extensions.jar, but I keep it
-# because it's faster.
+# (used to be norm-setup.py, normalisation setup)
+
+# This script is equivalent to Genologics copyUDFs function in the 
+# ngs-extensions.jar, but I keep it because it's faster.
 
 # use:
-# python norm-setup.py PROCESS-ID {COPY-UDFs}
+# python copy-udfs.py PROCESS-ID {COPY-UDFs}
 # 
 # PROCESS-ID: LIMS process ID
 # COPY-UDFS:  Any number of UDFs to copy from input to output analytes. Will skip if
