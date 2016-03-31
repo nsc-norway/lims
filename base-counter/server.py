@@ -1,19 +1,42 @@
 #!/usr/bin/python
 
+import json
 import datetime
 import time
 import os
+import threading
+
+from operator import itemgetter
 
 import illuminate
-from flask import Flask, render_template, url_for, request, Response, redirect
+from flask import Flask, url_for, redirect, jsonify, Response
 
 
 RUN_STORAGE = "/data/runScratch.boston"
 
 app = Flask(__name__)
 
+active_runs = {}
 
-class RunBaseCounter(object):
+def updater():
+    """Updater background thread"""
+
+    active_runs["160329_M02980_0056_000000000-AMT90"] =\
+                RunStatus("160329_M02980_0056_000000000-AMT90")
+    while True:
+        time.sleep(60)
+        for rs in active_runs.values():
+            rs.update()
+
+class GlobalBaseCounter(object):
+    pass
+
+
+def instrument_rate(run_id):
+    return 1000
+
+
+class RunStatus(object):
 
     def __init__(self, run_id):
         self.run_id = run_id
@@ -24,7 +47,8 @@ class RunBaseCounter(object):
         self.current_cycle = 0
         self.total_cycles = 0
         self.data_cycles_lut = [0]
-        self.finished = False
+        self.cycle_arrival = {} # (cycle, time) pairs
+        self.condition = threading.Condition()
 
     def set_metadata(self):
         ds = illuminate.InteropDataset(self.run_dir)
@@ -63,20 +87,75 @@ class RunBaseCounter(object):
         return all_df[all_df.code == 103].sum().sum() # Number of clusters PF
 
     def update(self):
+        now = time.time()
+        updated = False
         if not self.read_config:
             self.set_metadata()
+            updated = True
+        old_cycle = self.current_cycle
         self.current_cycle = self.get_cycle()
+        if self.cycle_arrival.setdefault(self.current_cycle, now) == now: # Add if not exists
+            updated = True
         self.clusters = self.get_clusters()
         self.booked = self.current_cycle * self.clusters
-        self.last_update = time.time()
+        self.last_update = now
+
+        if updated:
+            with self.condition:
+                self.condition.notify_all()
+
+        return updated
+
 
     @property
     def rate(self):
-        return 0
+        print self.cycle_arrival
+        if len(self.cycle_arrival) > 1:
+            # Difference in cycle, time
+            # Here, we look at all cycles, including index cycles, 
+            # to estimate the speed of the sequencer
+            cycle_arrival_list = sorted(self.cycle_arrival.items(), key=itemgetter(0))
+            dcs, dts = zip(*[
+                    (
+                        (a2[0] - a1[0]),
+                        (a2[1] - a1[1])
+                    )
+                for a1, a2 in 
+                zip(
+                    cycle_arrival_list,
+                    cycle_arrival_list[1:]
+                    )
+                ])
+            # Mean cycles per update for last 5 updates
+            # Typically this will be unity, unless updates are run very infrequently
+            mean_stride = sum(dcs[-5:]) / min(len(dcs), 5)
+            # Total rate (index + data cycles per time)
+            mean_cycle_rate = sum(dcs[-5:]) / sum(dts[-5:])
+
+            next_data_cycles = self.data_cycles_lut[
+                    min(self.current_cycle+int(mean_stride), self.total_cycles)
+                        ]
+            data_factor = (next_data_cycles - self.data_cycles_lut[self.current_cycle]) / mean_stride
+
+            return self.clusters * mean_cycle_rate * data_factor
+        else:
+            return instrument_rate(self.run_id)
 
     @property
     def basecount(self):
         return self.booked + (self.rate * (time.time() - self.last_update))
+
+    @property
+    def finished(self):
+        return self.current_cycle == self.total_cycles
+    
+    def wait_for_update(self):
+        with self.condition:
+            self.condition.wait()
+
+    @property
+    def data_package(self):
+        pass
 
 
 @app.route("/")
@@ -84,25 +163,36 @@ def get_main():
     return redirect(url_for('static', filename='index.xhtml'))
 
 
-def event(rbc):
+@app.route("/status/runs")
+def run_list():
+    return jsonify({"runs": active_runs.keys()})
+
+
+def event(rs):
     i=0
     while True:
-        rbc.update()
-        event = "event: run.%s\n" % (rbc.run_id)
-        event += 'data: {"basecount": %d, "rate": %d, "finished": %d}\n\n' % (
-                rbc.basecount,
-                rbc.rate,
-                int(rbc.finished)
+        rs.update()
+        event = 'data: {"basecount": %d, "rate": %d, "active": %d}\n\n' % (
+                rs.basecount,
+                rs.rate,
+                int(not rs.finished)
                 )
-        #print event
+        print event,
         yield event
-        time.sleep(10)
+        rs.wait_for_update()
 
+        
+@app.route("/status/runs/<run_id>")
+def run_status(run_id):
+    rs = active_runs.get(run_id)
+    if rs:
+        return Response(event(rs), mimetype="text/event-stream")
+    else:
+        return 404
 
-@app.route("/status")
-def get_status():
-    rbc = RunBaseCounter("160329_M02980_0056_000000000-AMT90")
-    return Response(event(rbc), mimetype="text/event-stream")
+updater_thread = threading.Thread(target=updater)
+updater_thread.daemon = True
+updater_thread.start()
 
 if __name__ == "__main__":
     app.debug = True
