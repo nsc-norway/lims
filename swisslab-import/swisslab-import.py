@@ -191,12 +191,14 @@ def main(process_id, swl_file_id, ignore_duplicates=False):
                     existing_sample_keys.remove(sample_key)
                     existing_sample_keys.remove(sample_key)
                     dupes.append(sample_key)
-                except KeyError:
+                except ValueError:
                     pass
 
             if dupes:
                 print "Existing sample(s) with same name and gene panel found for:",
-                print ",".join(dupes)
+                print "\n".join("{0} ({1})".format(*dupe) for dupe in dupes)
+		print "\nTo continue anyway, remove SwissLab file, go to Record Details, upload file"
+		print "again, and click the button marked 'Import SwissLab data (ignore duplicates)'."
                 sys.exit(1)
 
     lims.put_batch(samples)
