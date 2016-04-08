@@ -9,7 +9,7 @@ except IndexError:
     print "Use: python " + sys.argv[0] + " PROJECT_NAME"
     sys.exit(1)
 
-if socket.gethostname() == "dev-lims.ous.nsc.local":
+if socket.gethostname() == "dev-lims.sequencing.uio.no":
     user = "clarityLIMS"
 else:
     user = "clarity"
