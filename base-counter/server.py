@@ -5,6 +5,7 @@ import datetime
 import time
 import os
 import threading
+import glob
 
 from operator import itemgetter
 
@@ -18,15 +19,35 @@ app = Flask(__name__)
 
 active_runs = {}
 
+
 def updater():
     """Updater background thread"""
 
-    active_runs["160329_M02980_0056_000000000-AMT90"] =\
-                RunStatus("160329_M02980_0056_000000000-AMT90")
+    active_runs["160408_M01334_0098_000000000-AN3FD"] =\
+                RunStatus("160408_M01334_0098_000000000-AN3FD")
     while True:
         time.sleep(60)
         for rs in active_runs.values():
             rs.update()
+
+
+class Database(object):
+    """Persistent storage for base count"""
+
+    def __init__(self):
+        self.booked = set()
+        self.in_progress = set()
+
+    def update(self):
+local_runs = [
+        os.path.basename(rpath) for rpath in 
+        glob.glob("/data/runScratch.boston/??????_*_*")
+        ]
+
+    @property
+    def active_runs(self):
+        return []
+
 
 class GlobalBaseCounter(object):
     pass
@@ -38,14 +59,19 @@ def instrument_rate(run_id):
 
 class RunStatus(object):
 
+    public = ['run_id', 'run_dir', 'last_update', 'read_config',
+            'current_cycle', 'total_cycles']
+
+
     def __init__(self, run_id):
         self.run_id = run_id
         self.run_dir = os.path.join(RUN_STORAGE, run_id)
-        self.last_update = 0
-        self.booked = 0
         self.read_config = []
         self.current_cycle = 0
         self.total_cycles = 0
+
+        self.last_update = 0
+        self.booked = 0
         self.data_cycles_lut = [0]
         self.cycle_arrival = {} # (cycle, time) pairs
         self.condition = threading.Condition()
@@ -155,7 +181,7 @@ class RunStatus(object):
 
     @property
     def data_package(self):
-        pass
+        return  dict((key, getattr(self, key)) for key in RunStatus.public)
 
 
 @app.route("/")
@@ -172,13 +198,8 @@ def event(rs):
     i=0
     while True:
         rs.update()
-        event = 'data: {"basecount": %d, "rate": %d, "active": %d}\n\n' % (
-                rs.basecount,
-                rs.rate,
-                int(not rs.finished)
-                )
-        print event,
-        yield event
+        print rs.data_package
+        yield 'data:' + json.dumps(rs.data_package)
         rs.wait_for_update()
 
         

@@ -4,6 +4,7 @@ var refreshHandlers = []
 function runBaseCounter(span, run_id) {
 	var eventSource = new EventSource("/status/runs/" + run_id);
 	var bc = {
+		// Base counter object
 		'run_id': run_id,
 		'span': span,
 		'update_time': 0,
@@ -32,7 +33,7 @@ function runBaseCounter(span, run_id) {
 $().ready(function() {
 	var span = document.getElementById("base-count");
 	var runlist = [];
-	r = runBaseCounter(span, "160329_M02980_0056_000000000-AMT90");
+	r = runBaseCounter(span, "160408_M01334_0098_000000000-AN3FD");
 	refresher();
 });
 
