@@ -5,6 +5,7 @@ import datetime
 import time
 import os
 import threading
+import glob
 
 from operator import itemgetter
 
@@ -18,6 +19,7 @@ app = Flask(__name__)
 
 active_runs = {}
 
+
 def updater():
     """Updater background thread"""
 
@@ -27,6 +29,24 @@ def updater():
         time.sleep(60)
         for rs in active_runs.values():
             rs.update()
+
+
+class Database(object):
+    """Persistent storage for base count"""
+
+    def __init__(self):
+        self.booked = set()
+        self.in_progress = set()
+
+    def update(self):
+local_runs = [
+        os.path.basename(rpath) for rpath in 
+        glob.glob("/data/runScratch.boston/??????_*_*")
+        ]
+
+    @property
+    def active_runs(self):
+        return []
 
 
 class GlobalBaseCounter(object):
