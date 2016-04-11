@@ -15,7 +15,7 @@ BLACKLIST = set()
 if re.search(r"/cees-lims.sequencing.uio.no[:/]", config.BASEURI):
     # Deleted index IDs
     BLACKLIST = set([1301] + range(121, 145))
-elif re.search(r"/ous-lims.ous.nsc.local[:/]", config.BASEURI):
+elif re.search(r"/ous-lims.sequencing.uio.no[:/]", config.BASEURI):
     # Deleted index IDs
     # Second term after | is a result of a botched import of nextera v2 indexes Nxx-Sxx
     BLACKLIST = set(range(709, 721)) | (set(range(1692,1793)) - set(range(1697,1793,8)))

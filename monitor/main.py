@@ -432,7 +432,7 @@ def get_main():
 
     ui_servers = {
             "http://dev-lims.sequencing.uio.no:8080/": "https://dev-lims.sequencing.uio.no/",
-            "http://ous-lims.ous.nsc.local:8080/": "https://ous-lims.ous.nsc.local/",
+            "http://ous-lims.sequencing.uio.no:8080/": "https://ous-lims.sequencing.uio.no/",
             "http://cees-lims.sequencing.uio.no:8080/": "https://cees-lims.sequencing.uio.no/"
             }
     ui_server = ui_servers.get(lims.baseuri, lims.baseuri)
