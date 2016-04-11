@@ -172,7 +172,7 @@ def get_projects(process):
             art.samples[0].project
             for art in process.all_inputs()
             )
-    return [read_project(p) for p in lims_projects]
+    return [read_project(p) for p in lims_projects if not p is None]
 
 
 def estimated_time_completion(process, instrument, rapid, done_cycles, total_cycles):
