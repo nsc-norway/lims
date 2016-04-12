@@ -213,8 +213,8 @@ def main():
 	if not url:
 		host_map = {"sandbox": "https://sandbox-lims.sequencing.uio.no",
 			"cees": "https://cees-lims.sequencing.uio.no",
-			"ous": "https://ous-lims.ous.nsc.local",
-			"dev": "https://dev-lims.ous.nsc.local"}
+			"ous": "https://ous-lims.sequencing.uio.no",
+			"dev": "https://dev-lims.sequencing.uio.no"}
 		url = host_map[args.server]
 
 	api = glsapiutil.glsapiutil()
