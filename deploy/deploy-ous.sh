@@ -12,7 +12,7 @@
    pushd /opt/gls/clarity/customextensions/lims > /dev/null &&
    git archive $1 && 
    popd > /dev/null ) |
-   	ssh ous-lims "/bin/bash -c '(pushd /opt/gls/clarity/customextensions > /dev/null &&
+   	ssh ous-lims.sequencing.uio.no "/bin/bash -c '(pushd /opt/gls/clarity/customextensions > /dev/null &&
 	mv genologics genologics.2 &&
 	mv lims lims.2 &&
 	mkdir genologics lims &&
