@@ -1,1 +1,1 @@
-helpers/copy-udfs.py
+../helpers/copy-udfs.py
