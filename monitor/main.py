@@ -27,7 +27,7 @@ app = Flask(__name__)
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-INSTRUMENTS = ["HiSeq", "NextSeq", "MiSeq"]
+INSTRUMENTS = ["HiSeq X", "HiSeq 3000/4000", "HiSeq", "NextSeq", "MiSeq"]
 
 # With indexes into INSTRUMENTS array
 FLOWCELL_TYPES = set((
@@ -38,6 +38,8 @@ FLOWCELL_TYPES = set((
 	))
 # List of process types
 SEQUENCING = [
+        "Illumina Sequencing (Illumina SBS) 5.0",
+        "Illumina Sequencing (Illumina SBS) 5.0",
         "Illumina Sequencing (Illumina SBS) 5.0",
         "NextSeq Run (NextSeq) 1.0",
         "MiSeq Run (MiSeq) 5.0"
@@ -58,6 +60,8 @@ JOB_STATUS_UDF = "Job status"
 JOB_STATE_CODE_UDF = "Job state code"
 CURRENT_JOB_UDF = "Current job"
 SEQ_PROCESSES=[
+        ('hiseqx', 'Illumina Sequencing (Illumina SBS) 5.0'),
+        ('hiseq3k', 'Illumina Sequencing (Illumina SBS) 5.0'),
         ('hiseq', 'Illumina Sequencing (Illumina SBS) 5.0'),
         ('nextseq', 'NextSeq Run (NextSeq) 1.0'),
         ('miseq', 'MiSeq Run (MiSeq) 5.0')
@@ -378,7 +382,7 @@ def get_recently_completed_runs():
             )
 
     cutoff_date = datetime.date.today() - datetime.timedelta(days=30)
-    results = [[],[],[]]
+    results = [list() for i in range(len(SEQUENCING))]
     for fc in reversed(flowcells):
         try:
             date = fc.udf[PROCESSED_DATE_UDF]

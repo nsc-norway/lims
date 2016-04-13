@@ -7,6 +7,7 @@
 <head>
 <title>NSC overview</title>
 <link rel="stylesheet" href="{{ static }}/style.css" type="text/css"/>
+<link rel="stylesheet" href="{{ static }}/css/font-awesome.min.css" type="text/css"/>
 </head>
 <body>
 
@@ -35,14 +36,13 @@
 {% for proc in data %}
 	<div class="box">
 	<h4 class="box-header">
+		{% if proc.runid %}
+		<a href="{{ proc.url }}">{{ proc.runid }}</a>
+		{% else %}
 		<a href="{{ proc.url }}">{{ proc.flowcell_id }}</a>
+		{% endif %}
 	</h4>
 	<table><tr>
-			<td class="label-col">Run:</td><td>
-			{% if proc.runid %}
-			<a href="{{ proc.url }}">{{ proc.runid }}</a>
-			{% endif %}</td>
-		</tr><tr>
 			<td>Project:</td><td>
 				<a href="{{ proc.projects[0].url }}">
 				{{ proc.projects[0].name }}</a> 
@@ -87,16 +87,14 @@
 
 <div class="box">
 <h4 class="box-header">
-	<a href="{{ item.url }}">{{ item.name }}</a>
+	{% if item.runid %}
+	<a href="{{ item.url }}">{{ item.runid }}</a>
+	{% else %}
+	<a href="{{ item.url }}">...</a>
+	{% endif %}
 </h4>
 <table><tr>
-		<td class="label-col">Run:</td><td>
-		{% if item.runid %}
-		<a href="{{ item.seq_url }}">{{ item.runid }}</a>
-		{% else %}
-		<a href="{{ item.seq_url }}">(unknown)</a>
-		{% endif %}</td>
-	</tr><tr>
+	<tr>
 		<td>Project:</td><td>
 			<a href="{{ item.projects[0].url }}">
 			{{ item.projects[0].name }}</a> 
