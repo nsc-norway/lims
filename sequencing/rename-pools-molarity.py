@@ -1,4 +1,4 @@
-# Check that container name is not the default (= LIMSID)
+# Rename outputs to a name which includes the molarity (to inform lab users)
 
 import sys
 from genologics.lims import *
