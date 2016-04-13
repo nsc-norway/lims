@@ -30,24 +30,24 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 INSTRUMENTS = ["HiSeq", "NextSeq", "MiSeq"]
 
 # With indexes into INSTRUMENTS array
-FLOWCELL_INSTRUMENTS = {
-	"Illumina Flow Cell": 0,
-	"Illumina Rapid Flow Cell": 0,
-	"NextSeq Reagent Cartridge": 1, 
-	"MiSeq Reagent Cartridge": 2
-	}
+FLOWCELL_TYPES = set((
+	"Illumina Flow Cell",
+	"Illumina Rapid Flow Cell",
+	"NextSeq Reagent Cartridge", 
+	"MiSeq Reagent Cartridge"
+	))
 # List of process types
 SEQUENCING = [
-        ("Illumina Sequencing (Illumina SBS) 5.0"),
-        ("NextSeq Run (NextSeq) 1.0"),
-        ("MiSeq Run (MiSeq) 5.0")
+        "Illumina Sequencing (Illumina SBS) 5.0",
+        "NextSeq Run (NextSeq) 1.0",
+        "MiSeq Run (MiSeq) 5.0"
         ]
 
 # List of process types
 DATA_PROCESSING = [
-        ("Demultiplexing and QC NSC 2.0"),
-        ("Demultiplexing and QC NSC 2.0"),
-        ("Demultiplexing and QC NSC 2.0"),
+        "Demultiplexing and QC NSC 2.0",
+        "Demultiplexing and QC NSC 2.0",
+        "Demultiplexing and QC NSC 2.0",
         ]
 
 # Process type for project eval.
@@ -122,12 +122,13 @@ class DataAnalysisInfo(object):
 
 
 class CompletedRunInfo(object):
-    def __init__(self, url, demultiplexing_url, runid, projects, date):
+    def __init__(self, url, demultiplexing_url, runid, projects, date, instrument_index):
         self.url = url
         self.demultiplexing_url = demultiplexing_url
         self.runid = runid
         self.projects = projects
         self.date = date
+        self.instrument_index = instrument_index
 
 
 def background_clear_monitor(completed):
@@ -212,6 +213,8 @@ def get_run_type(instrument, process):
                 runmode = "MiSeq v3"
             else:
                 runmode = "Unknown"
+        else:
+            runmode = "Unknown"
 
         cycles = " | (" + str(process.udf.get("Read 1 Cycles"))
         i1 = process.udf.get("Index 1 Read Cycles")
@@ -234,7 +237,7 @@ def read_sequencing(process_name, process):
     url = proc_url(process.id)
     flowcell = process.all_inputs()[0].location[0]
     flowcell_id = flowcell.name
-    instrument = INSTRUMENTS[FLOWCELL_INSTRUMENTS[flowcell.type.name]]
+    instrument = SEQUENCING.index(process.type.name)
     run_type = get_run_type(instrument, process)
     if instrument == "NextSeq":
         step = Step(lims, id=process.id)
@@ -330,7 +333,7 @@ def read_post_sequencing_process(process_name, process, sequencing_process):
 
 
 
-def get_recent_run(fc, instrument_index):
+def get_recent_run(fc):
     """Get the monitoring page's internal representation of a completed run.
     This will initiate a *lot* of requests, but it's just once per run
     (flowcell).
@@ -338,14 +341,16 @@ def get_recent_run(fc, instrument_index):
     Caching should be done by the caller."""
 
     sequencing_process = next(iter(lims.get_processes(
-            type=SEQUENCING[instrument_index],
+            type=set(SEQUENCING),
             inputartifactlimsid=fc.placements.values()[0].id
             )))
+
+    instrument_index = SEQUENCING.index(sequencing_process.type.name)
 
     url = proc_url(sequencing_process.id)
     try:
         demux_process = next(iter(lims.get_processes(
-                type=DATA_PROCESSING[instrument_index],
+                type=set(DATA_PROCESSING),
                 inputartifactlimsid=fc.placements.values()[0].id
                 )))
         demultiplexing_url = proc_url(demux_process.id)
@@ -363,7 +368,8 @@ def get_recent_run(fc, instrument_index):
             demultiplexing_url,
             runid,
             list(projects),
-            fc.udf[PROCESSED_DATE_UDF]
+            fc.udf[PROCESSED_DATE_UDF],
+            instrument_index
             )
     
 
@@ -372,7 +378,7 @@ def get_recently_completed_runs():
     # Look for any flowcells which have a value for this udf
     flowcells = lims.get_containers(
             udf={RECENTLY_COMPLETED_UDF: True},
-            type=FLOWCELL_INSTRUMENTS.keys()
+            type=FLOWCELL_TYPES
             )
 
     cutoff_date = datetime.date.today() - datetime.timedelta(days=30)
@@ -397,15 +403,12 @@ def get_recently_completed_runs():
             fc.put()
         else:
             run_info = recent_run_cache.get(fc.id)
-            instrument_index = FLOWCELL_INSTRUMENTS[fc.type.name]
 
             if not run_info:
-                # Container types will be cached, so the extra entity request 
-                # (for type) is not a problem
-                run_info = get_recent_run(fc, instrument_index)
+                run_info = get_recent_run(fc)
                 recent_run_cache[fc.id] = run_info
 
-            results[instrument_index].append(run_info)
+            results[run_info.instrument_index].append(run_info)
 
         
     return results
