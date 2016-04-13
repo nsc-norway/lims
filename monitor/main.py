@@ -27,7 +27,7 @@ app = Flask(__name__)
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-INSTRUMENTS = ["HiSeq X", "HiSeq 3000/4000", "HiSeq", "NextSeq", "MiSeq"]
+INSTRUMENTS = ["HiSeq X", "HiSeq 3000/4000", "HiSeq 2500", "NextSeq", "MiSeq"]
 
 # With indexes into INSTRUMENTS array
 FLOWCELL_TYPES = set((
@@ -180,7 +180,7 @@ def get_projects(process):
 def estimated_time_completion(process, instrument, rapid, done_cycles, total_cycles):
     if total_cycles > 0 and done_cycles < total_cycles:
         now = datetime.datetime.now()
-        if instrument == "HiSeq":
+        if instrument == "HiSeq 2500":
             if rapid:
                 time_per_cycle = 430
             else:
@@ -193,13 +193,13 @@ def estimated_time_completion(process, instrument, rapid, done_cycles, total_cyc
             time_per_cycle = 0
         time_left = seconds=(total_cycles - done_cycles) * time_per_cycle
         est_arrival = now + datetime.timedelta(seconds=time_left)
-        return " (ETA: " + est_arrival.strftime("%a %d/%m %H:%M") + ")"
+        return est_arrival.strftime("%a %d/%m %H:%M")
     else:
         return ""
 
 def get_run_type(instrument, process):
     if process.udf.get("Status"):
-        if instrument == "HiSeq":
+        if instrument == "HiSeq 2500":
             runmode = {
                     "HiSeq Rapid Flow Cell v1": "Rapid",
                     "HiSeq Flow Cell v4": "High Output v4"
@@ -238,7 +238,7 @@ def read_sequencing(process_name, process):
     url = proc_url(process.id)
     flowcell = process.all_inputs()[0].location[0]
     flowcell_id = flowcell.name
-    instrument = SEQUENCING.index(process.type.name)
+    instrument = INSTRUMENTS[SEQUENCING.index(process.type.name)]
     run_type = get_run_type(instrument, process)
     if instrument == "NextSeq":
         step = Step(lims, id=process.id)
@@ -272,7 +272,7 @@ def read_sequencing(process_name, process):
                 status = "Cycle <15 of %s" % (cycles_re.group(2))
 
     except KeyError:
-        if instrument == "HiSeq":
+        if instrument.startswith("HiSeq"):
             status = "Not yet started"
         else:
             status = "Pending/running"

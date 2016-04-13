@@ -48,25 +48,26 @@ h2.section-header {
 }
 
 table.main-table {
-	width: 100%;
+	table-layout: fixed;
+	width: 104em;
 }
 
 table.main-table th.main {
-	width: 33%;
+	width: 20em;
 	background-color: #FFFFDD;
 	border: 1px solid #DDDD55;
 	margin: 0;
 }
 
 table.main-table td.main {
-	width: 33%;
+	width: 20em;
 	vertical-align: top;
 	margin: 0;
 	padding: 0;
 }
 
-td.label-col {
-	width: 5em;
+ul.info > li {
+	margin: 0.2em 0em;
 }
 
 div.box {

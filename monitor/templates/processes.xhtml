@@ -42,31 +42,31 @@
 		<a href="{{ proc.url }}">{{ proc.flowcell_id }}</a>
 		{% endif %}
 	</h4>
-	<table><tr>
-			<td>Project:</td><td>
-				<a href="{{ proc.projects[0].url }}">
-				{{ proc.projects[0].name }}</a> 
-				<a href="{{ proc.projects[0].eval_url }}">[E]</a>
-			</td>
-		</tr>
+	<ul class="info fa-ul">
+		<li><i class="fa-li fa fa-group"></i>
+			<a href="{{ proc.projects[0].url }}">
+			{{ proc.projects[0].name }}</a> 
+			<a href="{{ proc.projects[0].eval_url }}">[E]</a>
+		</li>
 		{% for proj in proc.projects[1:] %}
-		<tr>
-			<td></td><td>
-				<a href="{{ proj.url }}">{{ proj.name }}</a> 
-				<a href="{{ proj.eval_url }}">[E]</a>
-				</td>
-		</tr>
+		<li>
+			<a href="{{ proj.url }}">{{ proj.name }}</a> 
+			<a href="{{ proj.eval_url }}">[E]</a>
+		</li>
 		{% endfor %}
-		<tr>
-			<td>Type:</td><td>{{ proc.runtype }}</td>
-		</tr>
-		<tr>
-			<td>Status:</td><td>{{ proc.status }}</td>
-		</tr>
-		<tr>
-			<td>Finished:</td><td>{{ proc.finished }}</td>
-		</tr>
-	</table>
+		{% if proc.runtype %}
+		<li><i class="fa-li fa fa-cogs"></i>{{ proc.runtype }}</li>
+		{% endif %}
+
+		{% if proc.finished %}
+			<li><i class="fa-li fa fa-check"></i>{{ proc.finished }}</li>
+		{% else %}
+			<li><i class="fa-li fa fa-spinner"></i>{{ proc.status }}</li>
+			{% if proc.eta %}
+			<li><i class="fa-li fa fa-hourglass-end"></i>{{ proc.eta }}</li>
+			{% endif %}
+		{% endif %}
+	</ul>
 	</div>
 {% endfor %}
 </td>
@@ -76,7 +76,7 @@
 
 </div>
 
-<h2 class="section-header">Data processing/analysis</h2>
+<h2 class="section-header">Data processing</h2>
 
 <table class="main-table">
 <tr>
@@ -86,35 +86,30 @@
 {% for item in boxes %}
 
 <div class="box">
-<h4 class="box-header">
-	{% if item.runid %}
-	<a href="{{ item.url }}">{{ item.runid }}</a>
-	{% else %}
-	<a href="{{ item.url }}">...</a>
-	{% endif %}
-</h4>
-<table><tr>
-	<tr>
-		<td>Project:</td><td>
+	<h4 class="box-header">
+		{% if item.runid %}
+		<a href="{{ item.url }}">{{ item.runid }}</a>
+		{% else %}
+		<a href="{{ item.url }}">...</a>
+		{% endif %}
+	</h4>
+	<ul class="info fa-ul">	
+	<li><i class="fa-li fa fa-group"></i>
 			<a href="{{ item.projects[0].url }}">
 			{{ item.projects[0].name }}</a> 
 			<a href="{{ item.projects[0].eval_url }}">[E]</a>
-		</td>
-	</tr>
+	</li>
 	{% for proj in item.projects[1:] %}
-	<tr>
-		<td></td><td>
+	<li>
 			<a href="{{ proj.url }}">{{ proj.name }}</a> 
-			<a href="{{ proj.eval_url }}">[E]</a></td>
-	</tr>
+			<a href="{{ proj.eval_url }}">[E]</a>
+	</li>
 	{% endfor %}
-	<tr>
-		<td>Job:</td><td>{{ item.current_job }}</td>
-	</tr>
-	<tr>
-		<td>Status:</td><td>{{ item.status }}</td>
-	</tr>
-</table>
+	<li><i class="fa-li fa fa-server"></i>{{ item.status }}</li>
+	{% if item.current_job %}
+	<li><i class="fa-li fa fa-spinner"></i>{{ item.current_job }}</li>
+	{% endif %}
+	</ul>
 </div>
 
 {% endfor %}
@@ -137,30 +132,22 @@
 <h4 class="box-header">
 	<a href="{{ item.url }}">{{ item.runid }}</a>
 </h4>
-<table>  <tr>
-		<td class="label-col">Demult.:</td>
-		<td><a href="{{ item.demultiplexing_url }}">Go to page...</a><td>
-	</tr>
-	<tr>
-		<td class="label-col">Processed date:</td>
-		<td>{{ item.date }}<td>
-	</tr>
-	<tr>
-		<td>Project:</td><td>
+	<ul class="info fa-ul">
+		<li><i class="fa-li fa fa-group"></i>
 			<a href="{{ item.projects[0].url }}">
 			{{ item.projects[0].name }}</a> 
 			<a href="{{ item.projects[0].eval_url }}">[E]</a>
-		</td>
-	</tr>
-	{% for proj in item.projects[1:] %}
-	<tr>
-		<td></td><td>
+		</li>
+		{% for proj in item.projects[1:] %}
+		<li>
 			<a href="{{ proj.url }}">{{ proj.name }}</a> 
 			<a href="{{ proj.eval_url }}">[E]</a>
-			</td>
-	</tr>
-	{% endfor %}
-</table>
+		</li>
+		{% endfor %}
+		<li><i class="fa-li fa fa-folder-o"></i>
+		<a href="{{ item.demultiplexing_url }}">Demultiplexing</a></li>
+		<li><i class="fa-li fa fa-check"></i>{{ item.date }}</li>
+	</ul>
 </div>
 
 {% endfor %}
