@@ -61,7 +61,7 @@ JOB_STATE_CODE_UDF = "Job state code"
 CURRENT_JOB_UDF = "Current job"
 SEQ_PROCESSES=[
         ('hiseqx', 'Illumina Sequencing (Illumina SBS) 5.0'),
-        ('hiseq3k', 'Illumina Sequencing (Illumina SBS) 5.0'),
+        ('hiseq4k', 'Illumina Sequencing (Illumina SBS) 5.0'),
         ('hiseq', 'Illumina Sequencing (Illumina SBS) 5.0'),
         ('nextseq', 'NextSeq Run (NextSeq) 1.0'),
         ('miseq', 'MiSeq Run (MiSeq) 5.0')
@@ -97,12 +97,13 @@ class Project(object):
 
 
 class SequencingInfo(object):
-    def __init__(self, name, url, flowcell_id, projects, status, runid, runtype, finished=None):
+    def __init__(self, name, url, flowcell_id, projects, status, eta, runid, runtype, finished=None):
         self.name = name
         self.url = url
         self.flowcell_id = flowcell_id
         self.projects = projects
         self.status = status
+        self.eta = eta
         self.runid = runid
         self.runtype = runtype
         self.finished = finished
@@ -251,6 +252,7 @@ def read_sequencing(process_name, process):
             for art in process.all_inputs()
             )
     projects = get_projects(process)
+    eta = None
     try:
         runid = process.udf['Run ID']
     except KeyError:
@@ -260,7 +262,7 @@ def read_sequencing(process_name, process):
         cycles_re = re.match(r"Cycle (\d+) of (\d+)", status)
         if cycles_re:
             if instrument != "MiSeq" or cycles_re.group(1) != "0":
-                status += estimated_time_completion(
+                eta = estimated_time_completion(
                         process, 
                         instrument,
                         "Rapid" in flowcell.type.name,
@@ -280,7 +282,7 @@ def read_sequencing(process_name, process):
         finished = ""
 
     return SequencingInfo(
-            process_name, url, flowcell_id, projects, status, runid, run_type, finished
+            process_name, url, flowcell_id, projects, status, eta, runid, run_type, finished
             )
 
 def automation_state(process):
