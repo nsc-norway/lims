@@ -44,11 +44,7 @@ SEQUENCING = [
         ]
 
 # List of process types
-DATA_PROCESSING = [
-        "Demultiplexing and QC NSC 2.0",
-        "Demultiplexing and QC NSC 2.0",
-        "Demultiplexing and QC NSC 2.0",
-        ]
+DATA_PROCESSING = "Demultiplexing and QC NSC 2.0"
 
 # Process type for project eval.
 PROJECT_EVALUATION = "Project Evaluation Step"
@@ -350,7 +346,7 @@ def get_recent_run(fc):
     url = proc_url(sequencing_process.id)
     try:
         demux_process = next(iter(lims.get_processes(
-                type=set(DATA_PROCESSING),
+                type=DATA_PROCESSING,
                 inputartifactlimsid=fc.placements.values()[0].id
                 )))
         demultiplexing_url = proc_url(demux_process.id)
@@ -440,7 +436,7 @@ def get_main():
             }
     ui_server = ui_servers.get(lims.baseuri, lims.baseuri)
 
-    all_process_types = SEQUENCING + DATA_PROCESSING
+    all_process_types = SEQUENCING + [DATA_PROCESSING]
 
     # Get a list of all processes 
     # Of course it can't be this efficient :( Multiple process types not supported
@@ -457,7 +453,7 @@ def get_main():
     get_batch(steps)
 
     seq_processes = defaultdict(list)
-    post_processes = defaultdict(list)
+    post_processes = []
     completed = []
     for p, step in zip(processes_with_data, steps):
         if p.type.name in SEQUENCING:
@@ -470,7 +466,7 @@ def get_main():
             if is_step_completed(step):
                 completed.append(p)
             else:
-                post_processes[p.type.name].append(p)
+                post_processes.append(p)
 
     clear_task = partial(background_clear_monitor, completed)
     t = threading.Thread(target = clear_task)
@@ -489,13 +485,13 @@ def get_main():
     # List of three sequencer types (containing lists within them)
     post_sequencing = []
     # One workflow for each sequencer type
-    for index, step_name in enumerate(DATA_PROCESSING):
+    for index in range(len(SEQUENCING)):
         machine_items = [] # all processes for a type of sequencing machine
-        for process in post_processes[step_name]:
+        for process in post_processes:
             sequencing_process = get_sequencing_process(process)
             if sequencing_process and sequencing_process.type.name == SEQUENCING[index]:
                 machine_items.append(read_post_sequencing_process(
-                    step_name, process, sequencing_process
+                    DATA_PROCESSING, process, sequencing_process
                     ))
         post_sequencing.append(machine_items)
         
