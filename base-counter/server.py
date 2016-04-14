@@ -16,37 +16,74 @@ from flask import Flask, url_for, redirect, jsonify, Response
 RUN_STORAGE = "/data/runScratch.boston"
 
 app = Flask(__name__)
-
-active_runs = {}
-
+db = None # Set on bottom of script
 
 def updater():
     """Updater background thread"""
 
-    active_runs["160408_M01334_0098_000000000-AN3FD"] =\
-                RunStatus("160408_M01334_0098_000000000-AN3FD")
     while True:
+        db.update_new()
+        for r in db.status.values():
+            if not r.finished:
+                r.update()
+        db.update_end()
         time.sleep(60)
-        for rs in active_runs.values():
-            rs.update()
 
 
 class Database(object):
-    """Persistent storage for base count"""
+    """Persistent storage for some run data."""
+
+    COUNT_FILE = "/var/db/nsc-status/count.txt"
 
     def __init__(self):
-        self.booked = set()
-        self.in_progress = set()
+        self.completed = set()
+        self.status = {}
+        self.condition = threading.Condition()
+        try:
+            with open(self.COUNT_FILE) as f:
+                self.count = int(f.read())
+        except IOError:
+            self.count = 0
 
-    def update(self):
-local_runs = [
-        os.path.basename(rpath) for rpath in 
-        glob.glob("/data/runScratch.boston/??????_*_*")
-        ]
+    def update_new(self):
+        runs_on_storage = set((
+                os.path.basename(rpath) for rpath in 
+                glob.glob(os.path.join(RUN_STORAGE, "??????_*_*"))
+                ))
+        new = runs_on_storage - set(self.status.keys())
+        for r in new:
+            new_run = RunStatus(r)
+            if new_run.finished:
+                # If completed run suddenly appears, assume that it has
+                # already bene booked
+                self.committed = True
+            self.status[r] = new_run
 
-    @property
-    def active_runs(self):
-        return []
+    def update_end(self):
+        missing = set(self.status.keys()) - runs_on_storage
+        modified = False
+        for r in missing:
+            if not self.status[r].committed:
+                # Normally only commit when runs disappear
+                self.increment(self.status[r].basecount)
+                modified = True
+                del self.status[r]
+
+        if modified:
+            with self.condition:
+                self.condition.notify_all()
+            self.save()
+
+    def increment(self, bases):
+        self.count += bases
+
+    def save(self):
+        with open(self.COUNT_FILE, 'w') as f:
+            f.write(str(self.count))
+
+    def wait_for_update(self):
+        with self.condition:
+            self.condition.wait()
 
 
 class GlobalBaseCounter(object):
@@ -72,6 +109,7 @@ class RunStatus(object):
 
         self.last_update = 0
         self.booked = 0
+        self.committed = False  # Is base count added to grand total?
         self.data_cycles_lut = [0]
         self.cycle_arrival = {} # (cycle, time) pairs
         self.condition = threading.Condition()
@@ -123,7 +161,10 @@ class RunStatus(object):
         if self.cycle_arrival.setdefault(self.current_cycle, now) == now: # Add if not exists
             updated = True
         self.clusters = self.get_clusters()
-        self.booked = self.current_cycle * self.clusters
+        if self.clusters:
+            self.booked = self.current_cycle * self.clusters
+        else:
+            self.booked = 0
         self.last_update = now
 
         if updated:
@@ -173,15 +214,30 @@ class RunStatus(object):
 
     @property
     def finished(self):
-        return self.current_cycle == self.total_cycles
+        return os.path.exists(os.path.join(self.run_dir, "RTAComplete.txt"))
     
     def wait_for_update(self):
         with self.condition:
             self.condition.wait()
 
-    @property
     def data_package(self):
         return  dict((key, getattr(self, key)) for key in RunStatus.public)
+
+
+class SseStream(object):
+    def __init__(self, wait_function, data_property):
+        self.wait_function = wait_function
+        self.data_property = data_property
+        self.first = True
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if not self.first:
+            self.wait_function()
+            self.first = False
+        return 'data: ' + json.dumps(self.data_property())
 
 
 @app.route("/")
@@ -189,29 +245,34 @@ def get_main():
     return redirect(url_for('static', filename='index.xhtml'))
 
 
+def run_list_event(database):
+    while True:
+        database.wait_for_update()
+        yield 'data: ' + json.dumps(database.status.keys)
+
 @app.route("/status/runs")
 def run_list():
-    return jsonify({"runs": active_runs.keys()})
+    return jsonify({"runs": db.status.keys()})
 
-
-def event(rs):
-    i=0
-    while True:
-        rs.update()
-        print rs.data_package
-        yield 'data:' + json.dumps(rs.data_package)
-        rs.wait_for_update()
-
-        
+ 
 @app.route("/status/runs/<run_id>")
 def run_status(run_id):
-    rs = active_runs.get(run_id)
-    if rs:
-        return Response(event(rs), mimetype="text/event-stream")
+    run_status = db.status.get(run_id)
+    if run_status:
+        return Response(
+                SseStream(run_status.wait_for_update, run_status.data_package),
+                mimetype="text/event-stream"
+                )
     else:
-        return 404
+        return "No such run", 404
 
-updater_thread = threading.Thread(target=updater)
+@app.route("/status/count")
+def count():
+   pass 
+
+
+db = Database()
+updater_thread = threading.Thread(target=updater, name="updater")
 updater_thread.daemon = True
 updater_thread.start()
 

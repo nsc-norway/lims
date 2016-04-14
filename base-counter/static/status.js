@@ -32,8 +32,14 @@ function runBaseCounter(span, run_id) {
 
 $().ready(function() {
 	var span = document.getElementById("base-count");
+	var eventSource = new EventSource("/status/runs");
+	$.get( "/status/runs", 
+		function(json_data) {
+			data = JSON.parse(json_data);
+		}
+	     );
 	var runlist = [];
-	r = runBaseCounter(span, "160408_M01334_0098_000000000-AN3FD");
+	r = runBaseCounter(span, "160414_NS500336_0115_AHY2YCBGXX");
 	refresher();
 });
 
