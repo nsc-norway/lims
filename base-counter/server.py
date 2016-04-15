@@ -6,6 +6,8 @@ import time
 import os
 import threading
 import glob
+import blinker
+import Queue
 
 from operator import itemgetter
 
@@ -22,12 +24,8 @@ def updater():
     """Updater background thread"""
 
     while True:
-        db.update_new()
-        for r in db.status.values():
-            if not r.finished:
-                r.update()
-        db.update_end()
-        time.sleep(60)
+        db.update()
+        time.sleep(61)
 
 
 class Database(object):
@@ -38,19 +36,20 @@ class Database(object):
     def __init__(self):
         self.completed = set()
         self.status = {}
-        self.condition = threading.Condition()
+        self.signal = blinker.Signal()
         try:
             with open(self.COUNT_FILE) as f:
                 self.count = int(f.read())
         except IOError:
             self.count = 0
 
-    def update_new(self):
+    def update(self):
         runs_on_storage = set((
                 os.path.basename(rpath) for rpath in 
                 glob.glob(os.path.join(RUN_STORAGE, "??????_*_*"))
                 ))
         new = runs_on_storage - set(self.status.keys())
+
         for r in new:
             new_run = RunStatus(r)
             if new_run.finished:
@@ -59,7 +58,9 @@ class Database(object):
                 self.committed = True
             self.status[r] = new_run
 
-    def update_end(self):
+        for r in self.status.values():
+            r.update()
+
         missing = set(self.status.keys()) - runs_on_storage
         modified = False
         for r in missing:
@@ -70,8 +71,7 @@ class Database(object):
                 del self.status[r]
 
         if modified:
-            with self.condition:
-                self.condition.notify_all()
+            self.signal.send()
             self.save()
 
     def increment(self, bases):
@@ -81,14 +81,10 @@ class Database(object):
         with open(self.COUNT_FILE, 'w') as f:
             f.write(str(self.count))
 
-    def wait_for_update(self):
-        with self.condition:
-            self.condition.wait()
-
-
-class GlobalBaseCounter(object):
-    pass
-
+    def global_base_count(self):
+        rate = sum(run.rate for run in self.status.values())
+        return {'count': self.count, 'rate': rate}
+        
 
 def instrument_rate(run_id):
     return 1000
@@ -98,7 +94,6 @@ class RunStatus(object):
 
     public = ['run_id', 'run_dir', 'last_update', 'read_config',
             'current_cycle', 'total_cycles']
-
 
     def __init__(self, run_id):
         self.run_id = run_id
@@ -112,7 +107,8 @@ class RunStatus(object):
         self.committed = False  # Is base count added to grand total?
         self.data_cycles_lut = [0]
         self.cycle_arrival = {} # (cycle, time) pairs
-        self.condition = threading.Condition()
+        self.finished = False
+        self.signal = blinker.Signal()
 
     def set_metadata(self):
         ds = illuminate.InteropDataset(self.run_dir)
@@ -151,6 +147,8 @@ class RunStatus(object):
         return all_df[all_df.code == 103].sum().sum() # Number of clusters PF
 
     def update(self):
+        if self.finished:
+            return
         now = time.time()
         updated = False
         if not self.read_config:
@@ -168,11 +166,11 @@ class RunStatus(object):
         self.last_update = now
 
         if updated:
-            with self.condition:
-                self.condition.notify_all()
+            self.signal.send()
+        if os.path.exists(os.path.join(self.run_dir, "RTAComplete.txt")):
+            self.finished = True
 
         return updated
-
 
     @property
     def rate(self):
@@ -212,43 +210,35 @@ class RunStatus(object):
     def basecount(self):
         return self.booked + (self.rate * (time.time() - self.last_update))
 
-    @property
-    def finished(self):
-        return os.path.exists(os.path.join(self.run_dir, "RTAComplete.txt"))
-    
-    def wait_for_update(self):
-        with self.condition:
-            self.condition.wait()
-
     def data_package(self):
-        return  dict((key, getattr(self, key)) for key in RunStatus.public)
+        return dict((key, getattr(self, key)) for key in RunStatus.public)
 
 
 class SseStream(object):
-    def __init__(self, wait_function, data_property):
-        self.wait_function = wait_function
-        self.data_property = data_property
+    def __init__(self, signal, data_function):
+        self.signal = signal
+        self.data_function = data_function
         self.first = True
+        self.queue = Queue.Queue()
+        self.queue.put(self.data_function())
+        signal.connect(self.update)
 
     def __iter__(self):
         return self
 
     def next(self):
-        if not self.first:
-            self.wait_function()
-            self.first = False
-        return 'data: ' + json.dumps(self.data_property())
+        data = self.queue.get(block=True)
+        print "Sending update: ", data
+        return 'data: ' + json.dumps(data)
+
+    def update(self):
+        self.queue.put(self.data_function())
 
 
 @app.route("/")
 def get_main():
     return redirect(url_for('static', filename='index.xhtml'))
 
-
-def run_list_event(database):
-    while True:
-        database.wait_for_update()
-        yield 'data: ' + json.dumps(database.status.keys)
 
 @app.route("/status/runs")
 def run_list():
@@ -260,15 +250,18 @@ def run_status(run_id):
     run_status = db.status.get(run_id)
     if run_status:
         return Response(
-                SseStream(run_status.wait_for_update, run_status.data_package),
+                SseStream(run_status.signal, run_status.data_package),
                 mimetype="text/event-stream"
                 )
     else:
         return "No such run", 404
 
 @app.route("/status/count")
-def count():
-   pass 
+def get_count():
+   return Response(
+           SseStream(db.signal, db.global_base_count),
+           mimetype="text/event-stream"
+           )
 
 
 db = Database()
