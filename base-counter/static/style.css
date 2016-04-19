@@ -23,10 +23,57 @@ img.logo {
 }
 
 h1.title {
-	font-size: 1.2em;
+	font-size: 1.3em;
 	font-family: Arial;
 	font-weight: normal;
-	margin-top: -5px;
 }
 
+img.seq-icon {
+	float: left;
+}
 
+h2.seq-name {
+	display: block;
+	float: left;
+	padding: 5px;
+}
+
+h2.seq-type {
+	float: right;
+	padding-right: 10px;
+	color: #AAA;
+	font-size: 1em;
+	font-weight: normal;
+	font-style: italic;
+}
+
+div.sequencer {
+	display: block;
+	float: left;
+	padding: 15px;
+	width: 400px;
+	height: 200px;
+}
+
+div.seq-running {
+	width: 250px;
+	height: 200px;
+}
+
+div.seq-idle {
+
+}
+
+div.clear {
+	clear: both;
+}
+
+ul.runs {
+	list-style-type: none;
+	padding: 0;
+	margin: 0;
+}
+
+li.run {
+	border: 1px solid green;
+}

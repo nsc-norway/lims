@@ -6,6 +6,7 @@ import time
 import os
 import threading
 import glob
+import re
 import blinker
 import Queue
 
@@ -16,6 +17,24 @@ from flask import Flask, url_for, redirect, jsonify, Response
 
 
 RUN_STORAGE = "/data/runScratch.boston"
+
+
+SEQUENCERS = {
+    '7001448': ('hiseq', 'Hillary'),
+    'D00132': ('hiseq', 'Hilma'),
+
+    'NS500336': ('nextseq', 'Nemo'),
+    'NB501273': ('nextseq', 'Nellie (?)'),
+
+    'M01132': ('miseq', 'Milo'),
+    'M01334': ('miseq', 'Mina'),
+    'M02980': ('miseq', 'Mike'),
+
+    'J00146': ('hiseq3k', 'Trevor (?)'),
+
+    'E00401': ('hiseqx', 'Xenia (?)')
+    }
+
 
 app = Flask(__name__)
 db = None # Set on bottom of script
@@ -45,7 +64,7 @@ class Database(object):
 
     def update(self):
         runs_on_storage = set((
-                os.path.basename(rpath) for rpath in 
+                os.path.basename(rpath) for rpath in
                 glob.glob(os.path.join(RUN_STORAGE, "??????_*_*"))
                 ))
         new = runs_on_storage - set(self.status.keys())
@@ -84,7 +103,7 @@ class Database(object):
     def global_base_count(self):
         rate = sum(run.rate for run in self.status.values())
         return {'count': self.count, 'rate': rate}
-        
+
 
 def instrument_rate(run_id):
     return 1000
@@ -92,8 +111,8 @@ def instrument_rate(run_id):
 
 class RunStatus(object):
 
-    public = ['run_id', 'run_dir', 'last_update', 'read_config',
-            'current_cycle', 'total_cycles']
+    public = ['run_id', 'run_dir', 'read_config', 'current_cycle',
+            'total_cycles', 'basecount', 'rate']
 
     def __init__(self, run_id):
         self.run_id = run_id
@@ -165,19 +184,19 @@ class RunStatus(object):
             self.booked = 0
         self.last_update = now
 
-        if updated:
-            self.signal.send()
         if os.path.exists(os.path.join(self.run_dir, "RTAComplete.txt")):
             self.finished = True
-
+        if updated:
+            self.signal.send()
         return updated
 
     @property
     def rate(self):
-        print self.cycle_arrival
+        """Bases per second"""
+
         if len(self.cycle_arrival) > 1:
             # Difference in cycle, time
-            # Here, we look at all cycles, including index cycles, 
+            # Here, we look at all cycles, including index cycles,
             # to estimate the speed of the sequencer
             cycle_arrival_list = sorted(self.cycle_arrival.items(), key=itemgetter(0))
             dcs, dts = zip(*[
@@ -185,7 +204,7 @@ class RunStatus(object):
                         (a2[0] - a1[0]),
                         (a2[1] - a1[1])
                     )
-                for a1, a2 in 
+                for a1, a2 in
                 zip(
                     cycle_arrival_list,
                     cycle_arrival_list[1:]
@@ -208,13 +227,24 @@ class RunStatus(object):
 
     @property
     def basecount(self):
+        """Estimated number of bases at this instant"""
+
         return self.booked + (self.rate * (time.time() - self.last_update))
 
     def data_package(self):
+        """Dict to be sent to clients"""
+
         return dict((key, getattr(self, key)) for key in RunStatus.public)
 
 
 class SseStream(object):
+    """Usees a Queue to translate between a signal (method call
+    interface) and a generator protocol.
+
+    Every time a signal is received, the data function is called,
+    and the result is JSON encoded and returned to the stream as
+    a SSE."""
+
     def __init__(self, signal, data_function):
         self.signal = signal
         self.data_function = data_function
@@ -229,22 +259,40 @@ class SseStream(object):
     def next(self):
         data = self.queue.get(block=True)
         print "Sending update: ", data
-        return 'data: ' + json.dumps(data)
+        return 'data: ' + json.dumps(data) + '\n\n'
 
-    def update(self):
+    def update(self, data):
         self.queue.put(self.data_function())
 
 
 @app.route("/")
 def get_main():
-    return redirect(url_for('static', filename='index.xhtml'))
+    return redirect(url_for('static', filename='index.html'))
 
+def get_machine_list():
+    machines = {}
+    for m_id, (m_type, m_name) in SEQUENCERS.items():
+        run_ids = [
+            run_id for run_id in sorted(db.status.keys())[::-1]
+            if re.match("\\d{6}_%s_.*" % (m_id), run_id)
+            ]
+        machines[m_id] = {
+            'id': m_id,
+            'name': m_name,
+            'type': m_type,
+            'run_ids': run_ids
+            }
 
-@app.route("/status/runs")
-def run_list():
-    return jsonify({"runs": db.status.keys()})
+    # Sort machines with newest runs first
+    return list(reversed(sorted(machines.values(), key=lambda x: x['run_ids'])))
 
- 
+@app.route("/status/machines")
+def machine_list():
+    return Response(
+        SseStream(db.signal, get_machine_list),
+        mimetype="text/event-stream"
+        )
+
 @app.route("/status/runs/<run_id>")
 def run_status(run_id):
     run_status = db.status.get(run_id)
@@ -272,4 +320,3 @@ updater_thread.start()
 if __name__ == "__main__":
     app.debug = True
     app.run(host="0.0.0.0", port=5001, threaded=True)
-

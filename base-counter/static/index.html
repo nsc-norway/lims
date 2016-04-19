@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html ng-app="seqStatusApp">
+<head>
+<title>Base counter</title>
+<link rel="stylesheet" href="/static/style.css" type="text/css">
+<script src="angular.js"></script>
+<script src="status.js"></script>
+</head>
+<body ng-controller="SeqStatusController">
+
+<div class="header">
+	<h1 class="title">THE BASE COUNTER!</h1>
+</div>
+
+<div class="sequencer"
+    ng-class="{'seq-running': machine.running, 'seq-idle': !machine.running}"
+    ng-repeat="machine in machines"
+    ng-mousemove="refresh()">
+  <img class="seq-icon" ng-src="{{ machine.icon }}">
+  <h2 class="seq-name">{{machine.name}}</h2>
+  <h2 class="seq-type">{{machine.typeName}}</h2>
+  <div class="clear"></div>
+  <ul class="runs">
+    <li ng-repeat="run in machine.runs" class="run">
+      {{run.basecount}}
+    </li>
+  </ul>
+</div>
+
+</body>
+</html>
