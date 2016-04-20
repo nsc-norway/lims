@@ -20,31 +20,55 @@ var TYPES = {
 	};
 
 
-
 function run(runId) {
-	var eventSource = new EventSource("/status/runs/" + runId);
 	var runObj = {
 		// Base counter object
 		'id': runId,
 		'updateTime': 0,
 		'basecount': 0,
-		'data': {'basecount': 0, 'rate': 0, 'active': 1},
-		'update': function(e) {
-			this.data = JSON.parse(e.data);
+		'data': {'basecount': 0, 'rate': 0, 'finished': 0, 'cancelled': 0},
+		'update': function(data) {
+			this.data = data;
 			this.updateTime = new Date().getTime();
-			if (!this.data.active) {
+			if (this.data.finished || this.data.cancelled) {
+				this.basecount = Math.round(this.data.basecount);
 				eventSource.close();
 			}
 		},
 		'refresh': function(time) {
 			// Update handler
-			var rate_comp = this.data.rate * (time - this.updateTime) / 1000.0;
-			var target = rate_comp + this.data.basecount;
-			this.basecount = Math.round(target);
+			if (!this.data.finished && !this.data.cancelled) {
+				var rate_comp = this.data.rate * ((time - this.updateTime) / 1000.0);
+				var target = rate_comp + this.data.basecount;
+				this.basecount = Math.round(target);
+			}
+			else {
+				this.basecount = this.data.basecount;
+			}
 		}
 	};
-	eventSource.onmessage = runObj.update.bind(runObj);
 	return runObj;
+}
+
+function globalBaseCounter() {
+	var eventSource = new EventSource('/status/count')
+	var bc = {
+		'basecount': 0,
+		'data': {'count': 0, 'rate': 0},
+		'updateTime': 0,
+		'refresh': function(time) {
+			var rate_comp = this.data.rate * ((time - this.updateTime) / 1000.0);
+			var target = rate_comp + this.data.count;
+			this.basecount = Math.round(target);
+		},
+		'update': function(event) {
+			this.data = JSON.parse(event.data);
+			this.updateTime = new Date().getTime();
+		}
+	}
+
+	eventSource.onmessage = bc.update.bind(bc);
+	return bc;
 }
 
 
@@ -52,7 +76,7 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 
 	$scope.machines = {}
 
-	$scope.update = function(event) {
+	$scope.updateMachineList = function(event) {
 		var machineList = JSON.parse(event.data);
 		var newMachines = {}
 		for (var i=0; i<machineList.length; ++i) {
@@ -76,11 +100,19 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 		$scope.machines = newMachines;
 	};
 
+	$scope.updateRun = function(event) {
+		var runData = JSON.parse(event.data);
+
+	};
+
+	//$scope.global = globalBaseCounter();
+
 	var source = new EventSource('/status/machines');
 	source.onmessage = function(event) {
 		// Master updater: instrument list
-		$scope.$apply($scope.update(event));
+		$scope.$apply($scope.updateMachineList(event));
 	};
+
 
 	$scope.refresh = function() {
 		time = (new Date()).getTime();
@@ -89,6 +121,7 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 				$scope.machines[machine_id].runs[run_id].refresh(time);
 			}
 		}
+		//$scope.global.refresh(time);
 	}
 
 	function refresher() {

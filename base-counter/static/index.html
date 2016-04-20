@@ -2,7 +2,7 @@
 <html ng-app="seqStatusApp">
 <head>
 <title>Base counter</title>
-<link rel="stylesheet" href="/static/style.css" type="text/css">
+<link rel="stylesheet" href="style.css" type="text/css">
 <script src="angular.js"></script>
 <script src="status.js"></script>
 </head>
@@ -21,10 +21,14 @@
   <h2 class="seq-type">{{machine.typeName}}</h2>
   <div class="clear"></div>
   <ul class="runs">
-    <li ng-repeat="run in machine.runs" class="run">
+    <li ng-repeat="run in machine.runs" class="run" ng-class="{'run-failed': run.cancelled}">
       {{run.basecount}}
     </li>
   </ul>
+</div>
+
+<div class="total-count">
+	<h2>Total count: <span>{{global.basecount}}</span></h2>
 </div>
 
 </body>

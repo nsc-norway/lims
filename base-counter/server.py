@@ -56,6 +56,8 @@ class Database(object):
         self.completed = set()
         self.status = {}
         self.signal = blinker.Signal()
+        self.signal = blinker.Signal()
+        self.run_list_signal = blinker.Signal()
         try:
             with open(self.COUNT_FILE) as f:
                 self.count = int(f.read())
@@ -77,8 +79,10 @@ class Database(object):
                 self.committed = True
             self.status[r] = new_run
 
+
         for r in self.status.values():
-            r.update()
+            if r.update():
+                self.singal.send(self, run=r)
 
         missing = set(self.status.keys()) - runs_on_storage
         modified = False
@@ -90,8 +94,10 @@ class Database(object):
                 del self.status[r]
 
         if modified:
-            self.signal.send()
             self.save()
+
+        if new or missing:
+            self.run_list_signal.send()
 
     def increment(self, bases):
         self.count += bases
@@ -102,17 +108,30 @@ class Database(object):
 
     def global_base_count(self):
         rate = sum(run.rate for run in self.status.values())
-        return {'count': self.count, 'rate': rate}
+        count = sum(run.basecount for run in self.status.values())
+        return {'count': count, 'rate': rate}
 
 
 def instrument_rate(run_id):
-    return 1000
+    machine_id = re.match(r"\d{6}_([A-Z0-9]+)_.*", run_id).group(1)
+    instrument = SEQUENCERS[machine_id][0]
+    if instrument == "hiseqx":
+        per_hour = 12500000000
+    elif instrument == "hiseq4k" or instrument == "hiseq3k":
+        per_hour = 8928571428
+    elif instrument == "hiseq":
+        per_hour = 3472222222
+    elif instrument == "nextseq":
+        per_hour = 4137931034
+    elif instrument == "miseq":
+        per_hour = 133928571
 
+    return per_hour / 3600.0
 
 class RunStatus(object):
 
     public = ['run_id', 'run_dir', 'read_config', 'current_cycle',
-            'total_cycles', 'basecount', 'rate']
+            'total_cycles', 'basecount', 'rate', 'finished', 'cancelled']
 
     def __init__(self, run_id):
         self.run_id = run_id
@@ -121,7 +140,7 @@ class RunStatus(object):
         self.current_cycle = 0
         self.total_cycles = 0
 
-        self.last_update = 0
+        self.last_update = time.time()
         self.booked = 0
         self.committed = False  # Is base count added to grand total?
         self.data_cycles_lut = [0]
@@ -140,6 +159,8 @@ class RunStatus(object):
                 self.data_cycles_lut += [base] * read['cycles']
             else:
                 self.data_cycles_lut += range(base+1, base+1+read['cycles'])
+
+        return self.total_cycles != 0
 
     def get_cycle(self):
         for cycle in range(self.current_cycle, self.total_cycles):
@@ -161,18 +182,17 @@ class RunStatus(object):
         ds = illuminate.InteropDataset(self.run_dir)
         try:
             all_df = ds.TileMetrics().df
-        except ValueError:
-            return # No information yet
+        except ValueError, TypeError:
+            return None # No information yet
         return all_df[all_df.code == 103].sum().sum() # Number of clusters PF
 
     def update(self):
-        if self.finished:
+        if self.finished or self.cancelled:
             return
         now = time.time()
         updated = False
         if not self.read_config:
-            self.set_metadata()
-            updated = True
+            updated = self.set_metadata()
         old_cycle = self.current_cycle
         self.current_cycle = self.get_cycle()
         if self.cycle_arrival.setdefault(self.current_cycle, now) == now: # Add if not exists
@@ -182,39 +202,47 @@ class RunStatus(object):
             self.booked = self.current_cycle * self.clusters
         else:
             self.booked = 0
-        self.last_update = now
 
         if os.path.exists(os.path.join(self.run_dir, "RTAComplete.txt")):
             self.finished = True
+            updated = True
         if updated:
+            self.last_update = now
             self.signal.send()
         return updated
+
+    def get_cycle_rate(self):
+        # Difference in cycle, time
+        # Here, we look at all cycles, including index cycles,
+        # to estimate the speed of the sequencer
+        cycle_arrival_list = sorted(self.cycle_arrival.items(), key=itemgetter(0))
+        dcs, dts = zip(*[
+             (
+                 (a2[0] - a1[0]),
+                 (a2[1] - a1[1])
+             )
+         for a1, a2 in
+         zip(
+             cycle_arrival_list,
+             cycle_arrival_list[1:]
+             )
+         ])
+        # Mean cycles per update for last 5 updates
+        # Typically this will be unity, unless updates are run very infrequently
+        mean_stride = sum(dcs[-5:]) / min(len(dcs), 5)
+        # Total rate (index + data cycles per time)
+        mean_cycle_rate = sum(dcs[-5:]) / sum(dts[-5:])
+        return mean_cycle_rate, mean_stride
 
     @property
     def rate(self):
         """Bases per second"""
 
+        if self.finished or self.cancelled:
+            return 0
+
         if len(self.cycle_arrival) > 1:
-            # Difference in cycle, time
-            # Here, we look at all cycles, including index cycles,
-            # to estimate the speed of the sequencer
-            cycle_arrival_list = sorted(self.cycle_arrival.items(), key=itemgetter(0))
-            dcs, dts = zip(*[
-                    (
-                        (a2[0] - a1[0]),
-                        (a2[1] - a1[1])
-                    )
-                for a1, a2 in
-                zip(
-                    cycle_arrival_list,
-                    cycle_arrival_list[1:]
-                    )
-                ])
-            # Mean cycles per update for last 5 updates
-            # Typically this will be unity, unless updates are run very infrequently
-            mean_stride = sum(dcs[-5:]) / min(len(dcs), 5)
-            # Total rate (index + data cycles per time)
-            mean_cycle_rate = sum(dcs[-5:]) / sum(dts[-5:])
+            mean_cycle_rate, mean_stride = self.get_cycle_rate()
 
             next_data_cycles = self.data_cycles_lut[
                     min(self.current_cycle+int(mean_stride), self.total_cycles)
@@ -230,6 +258,23 @@ class RunStatus(object):
         """Estimated number of bases at this instant"""
 
         return self.booked + (self.rate * (time.time() - self.last_update))
+
+    @property
+    def cancelled(self):
+        """Heuristic to determine if cancelled. If current cycle time is
+        more than 2x last cycle time."""
+
+        if len(self.cycle_arrival) > 1:
+            current_cycle_time = time.time() - self.cycle_arrival[self.current_cycle]
+            if current_cycle_time > 12*3600:
+                return True
+            cycle_rate, cycle_stride = self.get_cycle_rate()
+            print self.run_id, "cycle rate:", cycle_rate, "cycle_stride:", cycle_stride, "current_cycle_time:", current_cycle_time
+            cancelled = current_cycle_time > 2 * (cycle_stride / cycle_rate)
+            print "cancelled", cancelled
+            return cancelled
+        else:
+            return False
 
     def data_package(self):
         """Dict to be sent to clients"""
@@ -258,7 +303,6 @@ class SseStream(object):
 
     def next(self):
         data = self.queue.get(block=True)
-        print "Sending update: ", data
         return 'data: ' + json.dumps(data) + '\n\n'
 
     def update(self, data):
