@@ -10,6 +10,7 @@ import re
 import blinker
 import Queue
 
+from functools import partial
 from operator import itemgetter
 
 import illuminate
@@ -47,6 +48,9 @@ def updater():
         time.sleep(61)
 
 
+def machine_id(run_id):
+    return re.match(r"\d{6}_([A-Z0-9]+)_.*", run_id).group(1)
+
 class Database(object):
     """Persistent storage for some run data."""
 
@@ -55,9 +59,9 @@ class Database(object):
     def __init__(self):
         self.completed = set()
         self.status = {}
-        self.signal = blinker.Signal()
-        self.signal = blinker.Signal()
-        self.run_list_signal = blinker.Signal()
+        self.basecount_signal = blinker.Signal()
+        self.run_status_signal = blinker.Signal()
+        self.machine_list_signal = blinker.Signal()
         try:
             with open(self.COUNT_FILE) as f:
                 self.count = int(f.read())
@@ -79,10 +83,10 @@ class Database(object):
                 self.committed = True
             self.status[r] = new_run
 
-
+        updated = []
         for r in self.status.values():
             if r.update():
-                self.singal.send(self, run=r)
+                updated.append(r)
 
         missing = set(self.status.keys()) - runs_on_storage
         modified = False
@@ -97,24 +101,49 @@ class Database(object):
             self.save()
 
         if new or missing:
-            self.run_list_signal.send()
+            self.machine_list_signal.send(self, data=self.machine_list)
+
+        if updated:
+            self.basecount_signal.send(self, data=self.global_base_count)
+            for r in updated:
+                self.run_status_signal.send(self, data=r.data_package)
 
     def increment(self, bases):
         self.count += bases
 
     def save(self):
         with open(self.COUNT_FILE, 'w') as f:
-            f.write(str(self.count))
+            f.write(str(int(self.count)))
 
+    @property
     def global_base_count(self):
         rate = sum(run.rate for run in self.status.values())
         count = sum(run.basecount for run in self.status.values())
         return {'count': count, 'rate': rate}
 
+    @property
+    def machine_list(self):
+        machines = {}
+        for m_id, (m_type, m_name) in SEQUENCERS.items():
+            run_ids = [
+                run_id for run_id in sorted(self.status.keys())[::-1]
+                if re.match("\\d{6}_%s_.*" % (m_id), run_id)
+                ]
+            machines[m_id] = {
+                'id': m_id,
+                'name': m_name,
+                'type': m_type,
+                'run_ids': run_ids
+                }
+
+        # Sort machines with newest runs first
+        return list(reversed(sorted(machines.values(), key=lambda x: x['run_ids'])))
+
+
 
 def instrument_rate(run_id):
-    machine_id = re.match(r"\d{6}_([A-Z0-9]+)_.*", run_id).group(1)
-    instrument = SEQUENCERS[machine_id][0]
+    m_id = machine_id(run_id)
+    instrument = SEQUENCERS[m_id][0]
     if instrument == "hiseqx":
         per_hour = 12500000000
     elif instrument == "hiseq4k" or instrument == "hiseq3k":
@@ -125,15 +154,15 @@ def instrument_rate(run_id):
         per_hour = 4137931034
     elif instrument == "miseq":
         per_hour = 133928571
-
     return per_hour / 3600.0
 
 class RunStatus(object):
 
-    public = ['run_id', 'run_dir', 'read_config', 'current_cycle',
+    public = ['machine_id', 'run_id', 'run_dir', 'read_config', 'current_cycle',
             'total_cycles', 'basecount', 'rate', 'finished', 'cancelled']
 
     def __init__(self, run_id):
+        self.machine_id = machine_id(run_id)
         self.run_id = run_id
         self.run_dir = os.path.join(RUN_STORAGE, run_id)
         self.read_config = []
@@ -146,7 +175,6 @@ class RunStatus(object):
         self.data_cycles_lut = [0]
         self.cycle_arrival = {} # (cycle, time) pairs
         self.finished = False
-        self.signal = blinker.Signal()
 
     def set_metadata(self):
         ds = illuminate.InteropDataset(self.run_dir)
@@ -179,10 +207,10 @@ class RunStatus(object):
         return self.total_cycles
 
     def get_clusters(self):
-        ds = illuminate.InteropDataset(self.run_dir)
         try:
+            ds = illuminate.InteropDataset(self.run_dir)
             all_df = ds.TileMetrics().df
-        except ValueError, TypeError:
+        except (ValueError, TypeError, IOError):
             return None # No information yet
         return all_df[all_df.code == 103].sum().sum() # Number of clusters PF
 
@@ -208,7 +236,6 @@ class RunStatus(object):
             updated = True
         if updated:
             self.last_update = now
-            self.signal.send()
         return updated
 
     def get_cycle_rate(self):
@@ -264,7 +291,7 @@ class RunStatus(object):
         """Heuristic to determine if cancelled. If current cycle time is
         more than 2x last cycle time."""
 
-        if len(self.cycle_arrival) > 1:
+        if len(self.cycle_arrival) > 2:
             current_cycle_time = time.time() - self.cycle_arrival[self.current_cycle]
             if current_cycle_time > 12*3600:
                 return True
@@ -276,84 +303,81 @@ class RunStatus(object):
         else:
             return False
 
+    @property
     def data_package(self):
         """Dict to be sent to clients"""
 
         return dict((key, getattr(self, key)) for key in RunStatus.public)
 
 
+class EventQueuer(object):
+    """Helper class encapsulates a single type of signal, conversion
+    to queue data."""
+
+    def __init__(self, queue, ident):
+        self.queue = queue
+        self.ident = ident
+
+    def __call__(self, sender, data):
+        self.queue.put((self.ident, data))
+
 class SseStream(object):
     """Usees a Queue to translate between a signal (method call
     interface) and a generator protocol.
 
-    Every time a signal is received, the data function is called,
-    and the result is JSON encoded and returned to the stream as
-    a SSE."""
+    This new version of SSE Stream can multiplex multiple signals
+    onto the event stream, setting the id of each event as appropriate.
+    The constructor argument is a list of event type sepecifications,
+    encoded as tuples:
+        (SIGNAL, ID)
+    Every time a signal is received, the data of the event is JSON
+    encoded and returned to the stream as a SSE, with the specified
+    ID ("event:" line).
 
-    def __init__(self, signal, data_function):
-        self.signal = signal
-        self.data_function = data_function
-        self.first = True
+    The ID can be None, in which case no ID is sent.
+    """
+
+    def __init__(self, event_specs):
         self.queue = Queue.Queue()
-        self.queue.put(self.data_function())
-        signal.connect(self.update)
+        self.helpers = []
+        for signal, ident in event_specs:
+            qr = EventQueuer(self.queue, ident)
+            signal.connect(qr)
+            self.helpers.append(qr)
 
     def __iter__(self):
         return self
 
     def next(self):
-        data = self.queue.get(block=True)
-        return 'data: ' + json.dumps(data) + '\n\n'
+        ident, data = self.queue.get(block=True)
+        event_str = ""
+        if ident is not None:
+            event_str = "event: " + ident + "\n"
+        event_str += 'data: ' + json.dumps(data) + '\n\n'
+        return event_str
 
-    def update(self, data):
-        self.queue.put(self.data_function())
-
+    def update(self, ident, sender=None, data=None):
+        self.queue.put((ident, data))
 
 @app.route("/")
 def get_main():
     return redirect(url_for('static', filename='index.html'))
 
-def get_machine_list():
-    machines = {}
-    for m_id, (m_type, m_name) in SEQUENCERS.items():
-        run_ids = [
-            run_id for run_id in sorted(db.status.keys())[::-1]
-            if re.match("\\d{6}_%s_.*" % (m_id), run_id)
-            ]
-        machines[m_id] = {
-            'id': m_id,
-            'name': m_name,
-            'type': m_type,
-            'run_ids': run_ids
-            }
 
-    # Sort machines with newest runs first
-    return list(reversed(sorted(machines.values(), key=lambda x: x['run_ids'])))
-
-@app.route("/status/machines")
-def machine_list():
-    return Response(
-        SseStream(db.signal, get_machine_list),
-        mimetype="text/event-stream"
-        )
-
-@app.route("/status/runs/<run_id>")
-def run_status(run_id):
-    run_status = db.status.get(run_id)
-    if run_status:
-        return Response(
-                SseStream(run_status.signal, run_status.data_package),
-                mimetype="text/event-stream"
-                )
-    else:
-        return "No such run", 404
-
-@app.route("/status/count")
-def get_count():
-   return Response(
-           SseStream(db.signal, db.global_base_count),
-           mimetype="text/event-stream"
-           )
+@app.route("/status")
+def status():
+    events = [
+        (db.basecount_signal, "basecount"),
+        (db.run_status_signal, "run_status"),
+        (db.machine_list_signal, "machine_list")
+    ]
+    stream = SseStream(events)
+    # Send initial status
+    stream.update("basecount", data=db.global_base_count)
+    stream.update("machine_list", data=db.machine_list)
+    for r in db.status.values():
+        stream.update("run_status", data=r.data_package)
+    return Response(stream, mimetype="text/event-stream")
 
 
 db = Database()

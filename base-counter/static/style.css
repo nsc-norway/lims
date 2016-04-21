@@ -68,27 +68,55 @@ div.clear {
 	clear: both;
 }
 
-ul.runs {
-	list-style-type: none;
+div.run-list {
 	padding: 0;
 	margin: 0;
+	color: pink;
 }
 
-li.run {
+div.run {
 	border: 1px solid green;
 	text-align: center;
 }
 
-li.run-failed {
+div.run-failed {
 	border-color: red;
 }
 
+div.running {
+	border-color: blue;
+}
+
+div.run-completed {
+	border-color: green;
+}
 div.total-count {
+	text-align: center;
 	position: fixed;
-	width: 400px;
-	margin-left: -200px;
-	height: 150px;
+	width: 500px;
+	margin-left: -250px;
+	height: 300px;
 	bottom: 0;
 	left: 50%;
-	background-color: green;
+	background-color: #DFD;
+}
+
+div#rate {
+	margin-bottom: 1em;
+}
+
+h2.total-count-header {
+}
+
+div.grandtotal {
+	text-align: center;
+	font-family: monospace;
+	font-size: 1.8em;
+}
+
+canvas.gauge {
+	width: 100px;
+	height: 100px;
+	margin-left: auto;
+	margin-right: auto;
 }

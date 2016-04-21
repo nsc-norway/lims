@@ -4,31 +4,31 @@
 <title>Base counter</title>
 <link rel="stylesheet" href="style.css" type="text/css">
 <script src="angular.js"></script>
+<script src="gauge.min.js"></script>
 <script src="status.js"></script>
 </head>
 <body ng-controller="SeqStatusController">
 
-<div class="header">
-	<h1 class="title">THE BASE COUNTER!</h1>
-</div>
-
 <div class="sequencer"
     ng-class="{'seq-running': machine.running, 'seq-idle': !machine.running}"
-    ng-repeat="machine in machines"
-    ng-mousemove="refresh()">
+    ng-repeat="machine in machines">
   <img class="seq-icon" ng-src="{{ machine.icon }}">
   <h2 class="seq-name">{{machine.name}}</h2>
   <h2 class="seq-type">{{machine.typeName}}</h2>
   <div class="clear"></div>
-  <ul class="runs">
-    <li ng-repeat="run in machine.runs" class="run" ng-class="{'run-failed': run.cancelled}">
-      {{run.basecount}}
-    </li>
-  </ul>
+  <div class="run-list">
+    <div ng-repeat="run in machine.runs" class="run" ng-class="{'run-failed': run.data.cancelled, 'run-completed': run.data.finished, 'running': !(run.data.finished || run.data.cancelled)}">
+			<div class="completion-bg"></div>
+      {{run.basecount | number}}
+    </div>
+  </div>
 </div>
 
 <div class="total-count">
-	<h2>Total count: <span>{{global.basecount}}</span></h2>
+	<canvas id="gauge"></canvas>
+	<div id="rate">{{megaBaseRate | number:1}} Mbases/s</div>
+	<h2 class="total-count-header">Number of bases sequenced at NSC</h2>
+	<div class="grandtotal">{{globalBaseCounter.basecount | number}}</div>
 </div>
 
 </body>
