@@ -98,7 +98,8 @@ div.total-count {
 	height: 300px;
 	bottom: 0;
 	left: 50%;
-	background-color: #DFD;
+	background-color: #FFF;
+	border: 1px solid black;
 }
 
 div#rate {
@@ -119,4 +120,16 @@ canvas.gauge {
 	height: 100px;
 	margin-left: auto;
 	margin-right: auto;
+}
+
+div.progress-wrapper {
+	height: 20px;
+	width: 100px;
+	background-color: #DDD;
+}
+
+div.progress-indicator {
+	height: 100%;
+	background-color: blue;
+	border: 3px solid pink;
 }

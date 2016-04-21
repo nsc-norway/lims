@@ -177,7 +177,10 @@ class RunStatus(object):
         self.finished = False
 
     def set_metadata(self):
-        ds = illuminate.InteropDataset(self.run_dir)
+        try:
+            ds = illuminate.InteropDataset(self.run_dir)
+        except IOError:
+            return False
         self.read_config = list(ds.meta.read_config)
         self.total_cycles = sum(read['cycles'] for read in self.read_config)
         # Build look-up table for number of cycles -> number of data cycles

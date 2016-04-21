@@ -18,7 +18,9 @@
   <div class="clear"></div>
   <div class="run-list">
     <div ng-repeat="run in machine.runs" class="run" ng-class="{'run-failed': run.data.cancelled, 'run-completed': run.data.finished, 'running': !(run.data.finished || run.data.cancelled)}">
-			<div class="completion-bg"></div>
+			<div class="progress-wrapper">
+				<div ng-class="{'progress-indicator': !run.data.cancelled}" ng-style="{width: run.completionPct + '%'}">PP</div>
+			</div>
       {{run.basecount | number}}
     </div>
   </div>

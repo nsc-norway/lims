@@ -27,11 +27,18 @@ function Run(runId) {
 		'updateTime': 0,
 		'basecount': 0,
 		'data': {'basecount': 0, 'rate': 0, 'finished': 0, 'cancelled': 0},
+		'completionPct': 0,
 		'update': function(data) {
 			this.data = data;
 			this.updateTime = new Date().getTime();
 			if (this.data.finished || this.data.cancelled) {
 				this.basecount = Math.round(this.data.basecount);
+			}
+			if (this.data.total_cycles != 0) {
+				this.completionPct = this.data.current_cycle * 100.0 / this.data.total_cycles;
+			}
+			else {
+				this.completionPct = 0;
 			}
 		},
 		'refresh': function(time) {
