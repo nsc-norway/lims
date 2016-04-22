@@ -92,7 +92,7 @@ div.total-count {
 	width: 500px;
 	margin-left: -250px;
 	height: 300px;
-	bottom: 0;
+	bottom: 3px;
 	left: 50%;
 	background-color: #FFF;
 	border: 1px solid black;

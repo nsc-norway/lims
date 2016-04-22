@@ -117,7 +117,7 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 
 	$scope.globalBaseCounter = GlobalBaseCounter();
 
-	var eventSource = new EventSource('/status');
+	var eventSource = new EventSource('../status');
 	eventSource.addEventListener('basecount', function(event) {
 			$scope.globalBaseCounter.update(event);
 			$scope.megaBaseRate = $scope.globalBaseCounter.data.rate / 1e6;

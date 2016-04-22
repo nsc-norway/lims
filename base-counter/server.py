@@ -91,11 +91,11 @@ class Database(object):
         missing = set(self.status.keys()) - runs_on_storage
         modified = False
         for r in missing:
-            if not self.status[r].committed:
+            if not self.status[r].committed and self.status[r].finished:
                 # Normally only commit when runs disappear
                 self.increment(self.status[r].basecount)
-                modified = True
-                del self.status[r]
+            modified = True
+            del self.status[r]
 
         if modified:
             self.save()
@@ -118,7 +118,7 @@ class Database(object):
     @property
     def global_base_count(self):
         rate = sum(run.rate for run in self.status.values())
-        count = sum(run.basecount for run in self.status.values())
+        count = self.count + sum(run.basecount for run in self.status.values())
         return {'count': count, 'rate': rate}
 
     @property
@@ -272,7 +272,7 @@ class RunStatus(object):
         if self.finished or self.cancelled:
             return 0
 
-        if len(self.cycle_arrival) > 1:
+        if len(self.cycle_arrival) > 1 and self.clusters != 0:
             mean_cycle_rate, mean_stride = self.get_cycle_rate()
 
             #next_data_cycles = self.data_cycles_lut[
@@ -304,9 +304,7 @@ class RunStatus(object):
             if current_cycle_time > 12*3600:
                 return True
             cycle_rate, cycle_stride = self.get_cycle_rate()
-            print self.run_id, "cycle rate:", cycle_rate, "cycle_stride:", cycle_stride, "current_cycle_time:", current_cycle_time
             cancelled = current_cycle_time > 2 * (cycle_stride / cycle_rate)
-            print "cancelled", cancelled
             return cancelled
         else:
             return False
