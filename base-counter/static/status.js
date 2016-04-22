@@ -82,6 +82,7 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 	$scope.updateMachineList = function(event) {
 		var machineList = JSON.parse(event.data);
 		var newMachines = {}
+		var machineOrderedList = []
 		for (var i=0; i<machineList.length; ++i) {
 			var machine = machineList[i];
 			machine.typeName = TYPES[machine.type];
@@ -99,8 +100,10 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 				}
 			}
 			newMachines[machine.id] = machine;
+			machineOrderedList.push(machine);
 		}
 		$scope.machines = newMachines;
+		$scope.machineOrderedList = machineOrderedList;
 	};
 
 	$scope.updateRun = function(event) {

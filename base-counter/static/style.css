@@ -48,20 +48,16 @@ h2.seq-type {
 }
 
 div.sequencer {
-	display: block;
 	float: left;
 	padding: 15px;
-	width: 400px;
+	width: 300px;
 	height: 200px;
 }
 
 div.seq-running {
-	width: 250px;
-	height: 200px;
 }
 
 div.seq-idle {
-
 }
 
 div.clear {
@@ -124,12 +120,23 @@ canvas.gauge {
 
 div.progress-wrapper {
 	height: 20px;
-	width: 100px;
-	background-color: #DDD;
+	width: 100%;
 }
 
-div.progress-indicator {
+div.progress-indicator {
 	height: 100%;
-	background-color: blue;
-	border: 3px solid pink;
+	text-align: right;
+	overflow: visible;
+	background-color: #DDF;
+}
+
+div.progress-indicator-done {
+	background-color: #DFD;
+}
+
+span.run-counter {
+	font-family: monospace;
+	padding-left: 4px;
+	padding-right: 4px;
+	font-size: 1.1em;
 }

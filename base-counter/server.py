@@ -25,15 +25,15 @@ SEQUENCERS = {
     'D00132': ('hiseq', 'Hilma'),
 
     'NS500336': ('nextseq', 'Nemo'),
-    'NB501273': ('nextseq', 'Nellie (?)'),
+    'NB501273': ('nextseq', 'NextSeq (?)'),
 
     'M01132': ('miseq', 'Milo'),
     'M01334': ('miseq', 'Mina'),
     'M02980': ('miseq', 'Mike'),
 
-    'J00146': ('hiseq3k', 'Trevor (?)'),
+    'J00146': ('hiseq3k', 'HiSeq 3000 (?)'),
 
-    'E00401': ('hiseqx', 'Xenia (?)')
+    'E00401': ('hiseqx', 'HiSeq X (?)')
     }
 
 
@@ -230,6 +230,7 @@ class RunStatus(object):
             updated = True
         self.clusters = self.get_clusters()
         if self.clusters:
+            #self.booked = self.data_cycles_lut[self.current_cycle] * self.clusters
             self.booked = self.current_cycle * self.clusters
         else:
             self.booked = 0
@@ -274,14 +275,18 @@ class RunStatus(object):
         if len(self.cycle_arrival) > 1:
             mean_cycle_rate, mean_stride = self.get_cycle_rate()
 
-            next_data_cycles = self.data_cycles_lut[
-                    min(self.current_cycle+int(mean_stride), self.total_cycles)
-                        ]
-            data_factor = (next_data_cycles - self.data_cycles_lut[self.current_cycle]) / mean_stride
+            #next_data_cycles = self.data_cycles_lut[
+            #        min(self.current_cycle+int(mean_stride), self.total_cycles)
+            #            ]
+            next_data_cycles = min(self.current_cycle+int(mean_stride), self.total_cycles)
+            #data_factor = (next_data_cycles - self.data_cycles_lut[self.current_cycle]) / mean_stride
+            data_factor = (next_data_cycles - self.current_cycle) / mean_stride
 
             return self.clusters * mean_cycle_rate * data_factor
-        else:
+        elif self.total_cycles != 0:
             return instrument_rate(self.run_id)
+        else:
+            return 0
 
     @property
     def basecount(self):
@@ -294,7 +299,7 @@ class RunStatus(object):
         """Heuristic to determine if cancelled. If current cycle time is
         more than 2x last cycle time."""
 
-        if len(self.cycle_arrival) > 2:
+        if not self.finished and len(self.cycle_arrival) > 2:
             current_cycle_time = time.time() - self.cycle_arrival[self.current_cycle]
             if current_cycle_time > 12*3600:
                 return True
