@@ -222,8 +222,10 @@ class RunStatus(object):
             return
         now = time.time()
         updated = False
+        initial_update = False
         if not self.read_config:
             updated = self.set_metadata()
+            initial_update = updated
         old_cycle = self.current_cycle
         self.current_cycle = self.get_cycle()
         if self.cycle_arrival.setdefault(self.current_cycle, now) == now: # Add if not exists
@@ -239,7 +241,8 @@ class RunStatus(object):
             self.finished = True
             updated = True
         if updated:
-            self.last_update = now
+            if self.clusters != 0 || initial_update:
+                self.last_update = now
         return updated
 
     def get_cycle_rate(self):
