@@ -241,7 +241,7 @@ class RunStatus(object):
             self.finished = True
             updated = True
         if updated:
-            if self.clusters != 0 || initial_update:
+            if self.clusters != 0 or initial_update:
                 self.last_update = now
         return updated
 
