@@ -77,10 +77,6 @@ class Database(object):
 
         for r in new:
             new_run = RunStatus(r)
-            if new_run.finished:
-                # If completed run suddenly appears, assume that it has
-                # already bene booked
-                self.committed = True
             self.status[r] = new_run
 
         modified = False
