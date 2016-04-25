@@ -83,18 +83,20 @@ class Database(object):
                 self.committed = True
             self.status[r] = new_run
 
+        modified = False
         updated = []
         for r in self.status.values():
             if r.update():
                 updated.append(r)
+            if r.finished and not r.committed:
+                try:
+                    self.increment(self.status[r].basecount)
+                finally:
+                    r.committed = True
+                modified = True
 
         missing = set(self.status.keys()) - runs_on_storage
-        modified = False
         for r in missing:
-            if not self.status[r].committed and self.status[r].finished:
-                # Normally only commit when runs disappear
-                self.increment(self.status[r].basecount)
-            modified = True
             del self.status[r]
 
         if modified:
