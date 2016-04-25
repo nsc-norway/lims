@@ -10,6 +10,8 @@ import re
 import blinker
 import Queue
 
+import _strptime # Prevent import in thread
+
 from functools import partial
 from operator import itemgetter
 
