@@ -122,7 +122,7 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 			$scope.globalBaseCounter.update(event);
 			$scope.xBaseRate = $scope.globalBaseCounter.data.rate / 1e6;
 			$scope.megaBaseRate = $scope.globalBaseCounter.data.rate / 1e6;
-			if ($scope.xBaseRate > 0.05) {
+			if ($scope.xBaseRate > 0.5) {
 				$scope.baseRateUnit = "Mbases/s"
 			}
 			else {
