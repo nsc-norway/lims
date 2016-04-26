@@ -27,15 +27,15 @@ SEQUENCERS = {
     'D00132': ('hiseq', 'Hilma'),
 
     'NS500336': ('nextseq', 'Nemo'),
-    'NB501273': ('nextseq', 'NextSeq (?)'),
+    'NB501273': ('nextseq', 'Nelson'),
 
     'M01132': ('miseq', 'Milo'),
     'M01334': ('miseq', 'Mina'),
     'M02980': ('miseq', 'Mike'),
 
-    'J00146': ('hiseq3k', 'HiSeq 3000 (?)'),
+    'J00146': ('hiseq3k', 'Hiawatha'),
 
-    'E00401': ('hiseqx', 'HiSeq X (?)')
+    'E00401': ('hiseqx', 'Roxanne')
     }
 
 
