@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 import os
 import socket
 
-HOSTNAME = 'http://' + socket.gethostname() + ':8080'
+HOSTNAME = 'https://' + socket.gethostname()
 VERSION = "v2"
 BASE_URI = HOSTNAME + "/api/" + VERSION + "/"
 
