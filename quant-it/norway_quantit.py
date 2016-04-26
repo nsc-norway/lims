@@ -107,7 +107,15 @@ def findControls():
 	return controlALUIDS
 
 
-def parseFile( filename ):
+def getStandardConcs(pDOM):
+    conc_list = api.getUDF(pDOM, "Concentrations of standards (ng/uL)")
+    if conc_list:
+        return [float(v) for v in conc_list.split(",")]
+    else:
+        return [0, .5, 1, 2, 4, 6, 8, 10]
+
+
+def parseFile( pDOM, filename ):
 
 
 	global control_dict
@@ -143,7 +151,7 @@ def parseFile( filename ):
 	RFU_keys = sorted( control_dict.keys())
 	RFU_values = []
 	# expected standard values are hard coded right now.
-	RFU_conc = [0, .5, 1, 2, 4, 6, 8, 10]
+        RFU_conc = getStandardConcs(pDOM)
 	standard_volume = 10.0
 	sample_volume = 1.0
 	RFU_expected = [conc * standard_volume / sample_volume for conc in RFU_conc] 
@@ -179,14 +187,10 @@ def downloadFile():
 		cmd = "/usr/bin/curl --header" + " Content-Disposition:'attachment; filename=" + filename[0].firstChild.nodeValue + "'"  + " -u " + args[ "username" ] + ":" + args[ "password" ] + " -o qPCR.xls  " + fURI
 		os.system(cmd )
 
-def doStuff():
+def doStuff(pDOM):
 
 	## get the XML for the process
 	q_dict = {}
-	pURI = BASE_URI + "processes/" + args[ "limsid" ]
-	print pURI
-	pXML = api.getResourceByURI( pURI )
-	pDOM = parseString( pXML )
 
 
 	nodes = pDOM.getElementsByTagName( "output" )
@@ -253,8 +257,13 @@ def main():
 	## so let's get this show on the road!
 
 	downloadFile()
-	parseFile("qPCR.xls")
-	doStuff()
+
+	pURI = BASE_URI + "processes/" + args[ "limsid" ]
+	pXML = api.getResourceByURI( pURI )
+	pDOM = parseString( pXML )
+
+	parseFile(pDOM, "qPCR.xls")
+	doStuff(pDOM)
 
 if __name__ == "__main__":
 	main()
