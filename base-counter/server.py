@@ -315,15 +315,16 @@ class RunStatus(object):
         """Heuristic to determine if cancelled. If current cycle time is
         more than 2x last cycle time."""
 
-        if not self.finished and len(self.cycle_arrival) > 2:
+        if not self.finished and len(self.cycle_arrival) > 0:
             current_cycle_time = time.time() - self.cycle_arrival[self.current_cycle]
             if current_cycle_time > 12*3600:
                 return True
-            cycle_rate, cycle_stride = self.get_cycle_rate()
-            cancelled = current_cycle_time > 2 * (cycle_stride / cycle_rate)
-            return cancelled
-        else:
-            return False
+            if len(self.cycle_arrival) > 2:
+                cycle_rate, cycle_stride = self.get_cycle_rate()
+                cancelled = current_cycle_time > 2 * (cycle_stride / cycle_rate)
+                return cancelled
+
+        return False
 
     @property
     def data_package(self):
