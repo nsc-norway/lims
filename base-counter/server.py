@@ -57,6 +57,7 @@ class Database(object):
     """Persistent storage for some run data."""
 
     COUNT_FILE = "/var/db/nsc-status/count.txt"
+    BOOKED_RUNS_FILE = "/var/db/nsc-status/booked.txt"
 
     def __init__(self):
         self.completed = set()
@@ -69,6 +70,11 @@ class Database(object):
                 self.count = int(f.read())
         except IOError:
             self.count = 0
+        try:
+            with open(self.BOOKED_RUNS_FILE) as f:
+                self.booked_runs = set(r.strip() for r in f.readlines())
+        except IOError:
+            self.booked_runs = set()
 
     def update(self):
         runs_on_storage = set((
@@ -88,7 +94,9 @@ class Database(object):
                 updated.append(r)
             if r.finished and not r.committed:
                 try:
-                    self.increment(self.status[r].basecount)
+                    if not r.run_id in self.booked_runs:
+                        self.increment(r.basecount)
+                        self.booked_runs.add(r.run_id)
                 finally:
                     r.committed = True
                 modified = True
@@ -96,6 +104,9 @@ class Database(object):
         missing = set(self.status.keys()) - runs_on_storage
         for r in missing:
             del self.status[r]
+            self.booked_runs.discard(r)
+
+        self.booked_runs &= set(self.status.keys())
 
         if modified:
             self.save()
@@ -114,6 +125,8 @@ class Database(object):
     def save(self):
         with open(self.COUNT_FILE, 'w') as f:
             f.write(str(int(self.count)))
+        with open(self.BOOKED_RUNS_FILE, 'w') as f:
+            f.writelines("\n".join(self.booked_runs))
 
     @property
     def global_base_count(self):

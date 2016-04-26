@@ -30,7 +30,7 @@
 
 <div class="total-count">
 	<canvas id="gauge"></canvas>
-	<div id="rate">{{megaBaseRate | number:1}} Mbases/s</div>
+	<div id="rate">{{xBaseRate | number:1}} {{baseRateUnit}}</div>
 	<h2 class="total-count-header">Number of bases sequenced at NSC</h2>
 	<div class="grandtotal">{{globalBaseCounter.basecount | number}}</div>
 </div>
