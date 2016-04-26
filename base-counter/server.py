@@ -218,7 +218,7 @@ class RunStatus(object):
         return all_df[all_df.code == 103].sum().sum() # Number of clusters PF
 
     def update(self):
-        if self.finished or self.cancelled:
+        if self.finished:
             return
         now = time.time()
         updated = False
