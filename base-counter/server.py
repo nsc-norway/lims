@@ -189,6 +189,7 @@ class RunStatus(object):
         self.booked = 0
         self.committed = False  # Is base count added to grand total?
         self.data_cycles_lut = [0]
+        self.start_time = 0
         self.cycle_arrival = {} # (cycle, time) pairs
         self.finished = False
 
@@ -242,6 +243,7 @@ class RunStatus(object):
         if not self.read_config:
             updated = self.set_metadata()
             initial_update = updated
+            self.start_time = now
         old_cycle = self.current_cycle
         self.current_cycle = self.get_cycle()
         if self.cycle_arrival.setdefault(self.current_cycle, now) == now: # Add if not exists
@@ -291,7 +293,7 @@ class RunStatus(object):
         if self.finished or self.cancelled:
             return 0
 
-        if len(self.cycle_arrival) > 3 and self.clusters != 0:
+        if len(self.cycle_arrival) > 2 and self.clusters != 0:
             mean_cycle_rate, mean_stride = self.get_cycle_rate()
 
             #next_data_cycles = self.data_cycles_lut[
@@ -310,8 +312,12 @@ class RunStatus(object):
     @property
     def basecount(self):
         """Estimated number of bases at this instant"""
-
-        return self.booked + (self.rate * (time.time() - self.last_update))
+        if len(self.cycle_arrival) > 2 or self.current_cycle > 26:
+            return self.booked + (self.rate * (time.time() - self.last_update))
+        elif len(self.cycle_arrival) >= 1:
+            return self.rate * (time.time() - self.start_time)
+        else:
+            return 0
 
     @property
     def cancelled(self):
