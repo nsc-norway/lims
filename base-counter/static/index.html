@@ -10,20 +10,20 @@
 </head>
 <body ng-controller="SeqStatusController">
 
-<div class="sequencer"
-    ng-class="{'seq-running': machine.running, 'seq-idle': !machine.running}"
-    ng-repeat="machine in machineOrderedList">
-  <img class="seq-icon" ng-src="{{ machine.icon }}">
-  <h2 class="seq-name">{{machine.name}}</h2>
-  <h2 class="seq-type">{{machine.typeName}}</h2>
-  <div class="clear"></div>
-  <div class="run-list">
-    <div ng-repeat="run in machine.runs" class="run" ng-class="{'run-failed': run.data.cancelled, 'run-completed': run.data.finished, 'running': !(run.data.finished || run.data.cancelled)}">
-			<div class="progress-wrapper">
-				<div ng-class="{'progress-indicator': !(run.data.cancelled), 'progress-indicator-done': run.data.finished}" ng-style="{width: run.completionPct + '%'}">
-            <span class="run-counter">{{run.basecount | number}}</span>
-        </div>
-			</div>
+<div class="seq-box" ng-repeat="machine in machineOrderedList">
+  <div class="sequencer" ng-class="{'seq-running': machine.running, 'seq-idle': !machine.running}">
+    <img class="seq-icon" ng-src="{{ machine.icon }}">
+    <h2 class="seq-name">{{machine.name}}</h2>
+    <h2 class="seq-type">{{machine.typeName}}</h2>
+    <div class="clear"></div>
+    <div class="run-list">
+      <div ng-repeat="run in machine.runs" class="run" ng-class="{'run-failed': run.data.cancelled, 'run-completed': run.data.finished, 'running': !(run.data.finished || run.data.cancelled)}">
+  			<div class="progress-wrapper">
+  				<div ng-class="{'progress-indicator': !(run.data.cancelled), 'progress-indicator-done': run.data.finished}" ng-style="{width: run.completionPct + '%'}">
+              <span class="run-counter">{{run.basecount | number}}</span>
+          </div>
+  			</div>
+      </div>
     </div>
   </div>
 </div>

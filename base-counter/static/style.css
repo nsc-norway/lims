@@ -47,12 +47,15 @@ h2.seq-type {
 	font-style: italic;
 }
 
-div.sequencer {
+div.seq-box {
 	float: left;
-	padding: 15px;
+	transition: left 0.5s;
 	width: 300px;
 	height: 200px;
-	transition: left 0.5s;
+}
+
+div.sequencer {
+	padding: 15px;
 }
 
 div.seq-running {
