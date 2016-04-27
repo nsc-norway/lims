@@ -291,7 +291,7 @@ class RunStatus(object):
         if self.finished or self.cancelled:
             return 0
 
-        if len(self.cycle_arrival) > 2 and self.clusters != 0:
+        if len(self.cycle_arrival) > 3 and self.clusters != 0:
             mean_cycle_rate, mean_stride = self.get_cycle_rate()
 
             #next_data_cycles = self.data_cycles_lut[
