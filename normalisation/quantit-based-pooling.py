@@ -32,6 +32,7 @@ def main(process_id, def_sample_dna_quantity, output_file_id):
             "Pool",
             "Dest. cont.",
             "Well",
+            "Pool volume",
             "Sample",
             "Source cont.",
             "Well",
@@ -80,11 +81,13 @@ def main(process_id, def_sample_dna_quantity, output_file_id):
         dest_container = output.location[0].name
         dest_well = output.location[1]
 
+        pooling_volumes = [target_sample_qty / sample_conc for sample_conc in sample_concs]
+        pool_total_volume = sum(pooling_volumes)
+
         first_in_pool = True
-        for input, sample_conc in zip(pool.inputs, sample_concs):
+        for input, sample_conc, pooling_volume in zip(pool.inputs, sample_concs, pooling_volumes):
             sample_name = input.name.encode('utf-8')
             input_conc_str = "%4.2f" % (sample_conc)
-            pooling_volume = target_sample_qty / sample_conc
             pooling_vol_str = "%4.2f" % pooling_volume
             source_container = input.location[0].name
             source_well = input.location[1]
@@ -93,6 +96,7 @@ def main(process_id, def_sample_dna_quantity, output_file_id):
                     pool.name,
                     dest_container,
                     dest_well,
+                    "%4.2f" % pool_total_volume,
                     sample_name,
                     source_container,
                     source_well,
@@ -103,6 +107,7 @@ def main(process_id, def_sample_dna_quantity, output_file_id):
                 first_in_pool = False
             else:
                 rows.append([
+                    "",
                     "",
                     "",
                     "",
