@@ -60,7 +60,7 @@ function Run(runId) {
 		'refresh': function(time) {
 			// Update handler
 			if (!this.data.finished && !this.data.cancelled) {
-				var rate_comp = this.data.rate * ((time - this.updateTime) / 1000.0);
+				var rate_comp = this.data.rate * (time - this.updateTime) / 1000.0;
 				var target = rate_comp + this.data.basecount;
 				this.basecount = Math.round(target);
 			}
