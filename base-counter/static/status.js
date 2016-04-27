@@ -19,6 +19,10 @@ var TYPES = {
 	'miseq':	'MiSeq'
 	};
 
+seqStatusApp.factory('statusEventSource', function() {
+	return new EventSource('../status');
+});
+
 
 function Run(runId) {
 	var runObj = {
@@ -75,7 +79,7 @@ function GlobalBaseCounter() {
 }
 
 
-seqStatusApp.controller('SeqStatusController', function($scope) {
+seqStatusApp.controller('SeqStatusController', function($scope, statusEventSource) {
 
 	$scope.machines = {}
 
@@ -113,8 +117,7 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 
 	$scope.globalBaseCounter = GlobalBaseCounter();
 
-	var eventSource = new EventSource('../status');
-	eventSource.addEventListener('basecount', function(event) {
+	statusEventSource.addEventListener('basecount', function(event) {
 			$scope.globalBaseCounter.update(event);
 			$scope.xBaseRate = $scope.globalBaseCounter.data.rate / 1e6;
 			$scope.megaBaseRate = $scope.globalBaseCounter.data.rate / 1e6;
@@ -128,7 +131,7 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 			$scope.gauge.set($scope.megaBaseRate);
 	});
 
-	eventSource.addEventListener('run_status', function(event) {
+	statusEventSource.addEventListener('run_status', function(event) {
 		var data = JSON.parse(event.data);
 		var machine = $scope.machines[data.machine_id];
 		if (machine) {
@@ -138,7 +141,7 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 			}
 		}
 	});
-	eventSource.addEventListener('machine_list', function(event) {
+	statusEventSource.addEventListener('machine_list', function(event) {
 		$scope.$apply($scope.updateMachineList.bind(this, event));
 	});
 
@@ -158,4 +161,109 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 	}
 
 	$scope.refresh();
+});
+
+seqStatusApp.controller('GlobalBaseCounterController', function($scope, statusEventSource) {
+
+	// Initialise gauge
+	var target = document.getElementById("gauge");
+	$scope.gauge = new Gauge(target);
+	$scope.gauge.maxValue = 37;
+
+	$scope.globalBaseCounter = GlobalBaseCounter();
+
+	statusEventSource.addEventListener('basecount', function(event) {
+			$scope.globalBaseCounter.update(event);
+			$scope.xBaseRate = $scope.globalBaseCounter.data.rate / 1e6;
+			$scope.megaBaseRate = $scope.globalBaseCounter.data.rate / 1e6;
+			if ($scope.xBaseRate > 0.5) {
+				$scope.baseRateUnit = "Mbases/s"
+			}
+			else {
+				$scope.xBaseRate = $scope.globalBaseCounter.data.rate / 1e3;
+				$scope.baseRateUnit = "kbases/s"
+			}
+			$scope.gauge.set($scope.megaBaseRate);
+	});
+	$scope.refresh = function() {
+		var time = (new Date()).getTime();
+		$scope.globalBaseCounter.refresh(time);
+		setTimeout(window.requestAnimationFrame.bind(window, refresher), 0);
+	}
+
+	function refresher() {
+		$scope.$apply($scope.refresh());
+	}
+
+	$scope.refresh();
+
+});
+
+
+seqStatusApp.controller('SingleMachineController', function($scope, $location, statusEventSource) {
+
+	$scope.machine = {runs: {}};
+	$scope.machine_id = function() {
+		return $location.path().replace("/", "");
+	}
+
+	var machineList = [];
+
+	$scope.updateMachine = function(event) {
+		if (event != null) {
+			 machineList = JSON.parse(event.data);
+		}
+
+		for (var i=0; i<machineList.length; ++i) {
+			var machine = machineList[i];
+
+			if ($scope.machine_id() == machine.id) {
+				$scope.machine = machine;
+				$scope.machine.typeName = TYPES[machine.type];
+				$scope.machine.icon = ICONS[machine.type];
+				$scope.machine.runs = {}
+				for (var j=0; j<machine.run_ids.length; ++j) {
+					var runId = machine.run_ids[j];
+					var oldRun = $scope.machine.runs[runId];
+					if (oldRun) {
+						$scope.machine.runs[runId] = oldRun;
+					}
+					else {
+						$scope.machine.runs[runId] = Run(runId);
+					}
+				}
+			}
+		}
+	};
+
+	statusEventSource.addEventListener('run_status', function(event) {
+		var data = JSON.parse(event.data);
+		if (data.machine_id == $scope.machine.id) {
+			var run = $scope.machine.runs[data.run_id];
+			if (run) {
+				run.update(data);
+			}
+		}
+	});
+	statusEventSource.addEventListener('machine_list', function(event) {
+		$scope.$apply($scope.updateMachine.bind(this, event));
+	});
+
+	$scope.refresh = function() {
+		var time = (new Date()).getTime();
+		for (var run_id in $scope.machine.runs) {
+			$scope.machine.runs[run_id].refresh(time);
+		}
+		setTimeout(window.requestAnimationFrame.bind(window, refresher), 0);
+	}
+
+	// Look for URL changes
+	$scope.$watch('machine_id()', $scope.updateMachine.bind(this, null));
+
+	function refresher() {
+		$scope.$apply($scope.refresh());
+	}
+
+	$scope.refresh();
+
 });

@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 <html ng-app="seqStatusApp">
 <head>
-<title>Base counter</title>
+<title>Base counter (single run)</title>
 <link rel="stylesheet" href="style.css" type="text/css">
 <script src="EventSource.js"></script>
 <script src="angular.js"></script>
 <script src="gauge.min.js"></script>
 <script src="status.js"></script>
 </head>
-<body ng-controller="SeqStatusController">
+<body ng-controller="SingleMachineController">
 
 <div class="sequencer"
-    ng-class="{'seq-running': machine.running, 'seq-idle': !machine.running}"
-    ng-repeat="machine in machineOrderedList">
+    ng-class="{'seq-running': machine.running, 'seq-idle': !machine.running}">
   <img class="seq-icon" ng-src="{{ machine.icon }}">
   <h2 class="seq-name">{{machine.name}}</h2>
   <h2 class="seq-type">{{machine.typeName}}</h2>
@@ -25,15 +24,6 @@
         </div>
 			</div>
     </div>
-  </div>
-</div>
-
-<div class="total-count-box">
-  <div class="total-count">
-  	<canvas id="gauge"></canvas>
-  	<div id="rate">{{xBaseRate | number:1}} {{baseRateUnit}}</div>
-  	<h2 class="total-count-header">Number of bases sequenced at NSC in 2016</h2>
-  	<div class="grandtotal">{{globalBaseCounter.basecount | number}}</div>
   </div>
 </div>
 

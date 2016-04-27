@@ -87,14 +87,20 @@ div.running {
 div.run-completed {
 	border-color: green;
 }
-div.total-count {
-	text-align: center;
+
+div.total-count-box {
 	position: fixed;
 	width: 550px;
 	margin-left: -275px;
 	height: 300px;
 	bottom: 3px;
 	left: 50%;
+}
+
+div.total-count {
+	width: 100%;
+	height: 100%;
+	text-align: center;
 	background-color: #FFF;
 	border: 1px solid black;
 }
