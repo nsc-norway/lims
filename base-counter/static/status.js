@@ -106,10 +106,6 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 		$scope.machineOrderedList = machineOrderedList;
 	};
 
-	$scope.updateRun = function(event) {
-		var runData = JSON.parse(event.data);
-	};
-
 	// Initialise gauge
 	var target = document.getElementById("gauge");
 	$scope.gauge = new Gauge(target);
@@ -147,7 +143,7 @@ seqStatusApp.controller('SeqStatusController', function($scope) {
 	});
 
 	$scope.refresh = function() {
-		time = (new Date()).getTime();
+		var time = (new Date()).getTime();
 		for (var machine_id in $scope.machines) {
 			for (var run_id in $scope.machines[machine_id].runs) {
 				$scope.machines[machine_id].runs[run_id].refresh(time);
