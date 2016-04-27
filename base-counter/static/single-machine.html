@@ -10,7 +10,7 @@
 </head>
 <body ng-controller="SingleMachineController">
 
-<div class="sequencer" ng-class="{'seq-running': machine.running, 'seq-idle': !machine.running}">
+<div class="sequencer" ng-class="{'seq-running': machine.running, 'seq-not-installed': !machine.installed}">
   <img class="seq-icon" ng-src="{{ machine.icon }}">
   <h2 class="seq-name">{{machine.name}}</h2>
   <h2 class="seq-type">{{machine.typeName}}</h2>

@@ -35,7 +35,10 @@ SEQUENCERS = {
 
     'J00146': ('hiseq3k', 'Hiawatha'),
 
-    'E00401': ('hiseqx', 'Roxanne')
+    'E00401': ('hiseqx', 'Roxanne'),
+    '?1': ('-hiseqx', 'HiSeq X'),
+    '?2': ('-hiseqx', 'HiSeq X'),
+    '?3': ('-hiseqx', 'HiSeq X')
     }
 
 
@@ -150,7 +153,7 @@ class Database(object):
                 }
 
         # Sort machines with newest runs first
-        return list(reversed(sorted(machines.values(), key=lambda x: x['run_ids'])))
+        return list(reversed(sorted(machines.values(), key=lambda x: (not x['type'].startswith("-"), x['run_ids']))))
 
 
 
@@ -288,7 +291,7 @@ class RunStatus(object):
         if self.finished or self.cancelled:
             return 0
 
-        if len(self.cycle_arrival) > 1 and self.clusters != 0:
+        if len(self.cycle_arrival) > 2 and self.clusters != 0:
             mean_cycle_rate, mean_stride = self.get_cycle_rate()
 
             #next_data_cycles = self.data_cycles_lut[

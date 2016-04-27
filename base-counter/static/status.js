@@ -24,6 +24,18 @@ seqStatusApp.factory('statusEventSource', function() {
 });
 
 
+function Machine(dataObj) {
+	var machine = dataObj;
+	machine.installed = machine.type && !machine.type.startsWith("-");
+	if (!machine.installed) {
+		machine.type = machine.type.substring(1);
+	}
+	machine.typeName = TYPES[machine.type];
+	machine.icon = ICONS[machine.type];
+	machine.runs = {};
+	return machine;
+}
+
 function Run(runId) {
 	var runObj = {
 		// Base counter object
@@ -88,11 +100,8 @@ seqStatusApp.controller('SeqStatusController', function($scope, statusEventSourc
 		var newMachines = {}
 		var machineOrderedList = []
 		for (var i=0; i<machineList.length; ++i) {
-			var machine = machineList[i];
-			machine.typeName = TYPES[machine.type];
-			machine.icon = ICONS[machine.type];
+			var machine = Machine(machineList[i]);
 
-		  machine.runs = {}
 			for (var j=0; j<machine.run_ids.length; ++j) {
 				var runId = machine.run_ids[j];
 				var oldRun = $scope.machines[machine.id] && $scope.machines[machine.id].runs[runId];
@@ -218,10 +227,7 @@ seqStatusApp.controller('SingleMachineController', function($scope, $location, s
 			var machine = machineList[i];
 
 			if ($scope.machine_id() == machine.id) {
-				$scope.machine = machine;
-				$scope.machine.typeName = TYPES[machine.type];
-				$scope.machine.icon = ICONS[machine.type];
-				$scope.machine.runs = {}
+				$scope.machine = Machine(machine);
 				for (var j=0; j<machine.run_ids.length; ++j) {
 					var runId = machine.run_ids[j];
 					var oldRun = $scope.machine.runs[runId];

@@ -61,7 +61,8 @@ div.sequencer {
 div.seq-running {
 }
 
-div.seq-idle {
+div.seq-not-installed {
+	color: #999999;
 }
 
 div.clear {
