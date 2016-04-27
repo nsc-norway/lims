@@ -136,8 +136,7 @@ class CompletedRunInfo(object):
 def background_clear_monitor(completed):
     for proc in completed:
         proc.udf['Monitor'] = False
-        # TODO: Disabled until UTF-8 issue resolved:
-        #proc.put()
+        proc.put()
 
 
 def is_step_completed(step):
