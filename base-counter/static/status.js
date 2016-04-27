@@ -238,13 +238,14 @@ seqStatusApp.controller('SingleMachineController', function($scope, $location, s
 
 	statusEventSource.addEventListener('run_status', function(event) {
 		var data = JSON.parse(event.data);
-		if (data.machine_id == $scope.machine.id) {
+		if (data.machine_id == $scope.machine_id()) {
 			var run = $scope.machine.runs[data.run_id];
 			if (run) {
 				run.update(data);
 			}
 		}
 	});
+
 	statusEventSource.addEventListener('machine_list', function(event) {
 		$scope.$apply($scope.updateMachine.bind(this, event));
 	});
