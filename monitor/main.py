@@ -34,12 +34,13 @@ FLOWCELL_TYPES = set((
 	"Illumina Flow Cell",
 	"Illumina Rapid Flow Cell",
 	"NextSeq Reagent Cartridge", 
-	"MiSeq Reagent Cartridge"
+	"MiSeq Reagent Cartridge",
+	"Patterned Flow Cell"
 	))
 # List of process types
 SEQUENCING = [
-        "Illumina Sequencing (Illumina SBS) 5.0",
-        "Illumina Sequencing (Illumina SBS) 5.0",
+        "Illumina Sequencing (HiSeq X) 1.0",
+        "Illumina Sequencing (HiSeq 3000/4000) 1.0",
         "Illumina Sequencing (Illumina SBS) 5.0",
         "NextSeq Run (NextSeq) 1.0",
         "MiSeq Run (MiSeq) 5.0"
@@ -135,7 +136,8 @@ class CompletedRunInfo(object):
 def background_clear_monitor(completed):
     for proc in completed:
         proc.udf['Monitor'] = False
-        proc.put()
+        # TODO: Disabled until UTF-8 issue resolved:
+        #proc.put()
 
 
 def is_step_completed(step):
