@@ -7,6 +7,9 @@ from scipy import stats
 import xml.etree.ElementTree as ET
 import os
 import socket
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pylab as plt
 
 HOSTNAME = 'https://' + socket.gethostname()
 VERSION = "v2"
@@ -115,8 +118,8 @@ def getStandardConcs(pDOM):
         return [0, .5, 1, 2, 4, 6, 8, 10]
 
 
-def parseFile( pDOM, filename ):
 
+def parseFile( filename ):
 
 	global control_dict
 	# included sample_dict in case all samples are needed
@@ -147,6 +150,22 @@ def parseFile( pDOM, filename ):
 			control_dict[wp] = value
 		else:
 			sample_dict[wp] = value
+
+
+def plotting(filename, x, y, slope, intercept):
+    plt.ioff()
+    f = plt.figure()
+    plt.plot(x, y, 'ro')
+    plt.plot(x, [xi*slope + intercept for xi in x])
+    plt.xlim(x[0] - 5, x[-1] + 5)
+    plt.xlabel("Concentration (ng/uL)")
+    plt.ylabel("Fluorescence counts")
+    plt.savefig(filename)
+    
+
+def fitStandardCurve(pURI, pDOM, plotfile):
+        global sample_conc
+
 	# sorted for order
 	RFU_keys = sorted( control_dict.keys())
 	RFU_values = []
@@ -161,13 +180,22 @@ def parseFile( pDOM, filename ):
 	print RFU_values
 	print RFU_expected
 	slope, intercept, r_value, p_value, std_err = stats.linregress( RFU_expected, RFU_values )
+
+        api.setUDF(pDOM, "Correlation coefficient (r)", r_value)
+        api.setUDF(pDOM, "Standard error", std_err)
+        api.updateObject(pDOM.toxml(), pURI)
+
 	print slope
 	print intercept
 	print r_value
 	print p_value
 	print sample_dict
+        sample_conc = {}
 	for key in sample_dict:
-		sample_dict[key] = ( float(sample_dict[key]) - intercept ) / slope
+		sample_conc[key] = ( float(sample_dict[key]) - intercept ) / slope
+
+        plotting(plotfile, RFU_expected, RFU_values, slope, intercept)
+
 
 def downloadFile():
 	#downloads file based on file artifactLUID
@@ -211,9 +239,9 @@ def doStuff(pDOM):
 		nodes = aDOM.getElementsByTagName( "value" )
 		aWP = nodes[0].firstChild.data
 		print aWP
-		if aWP in sample_dict:
-			print sample_dict[aWP]
-			api.setUDF( aDOM, "Concentration", sample_dict[aWP] )
+		if aWP in sample_conc:
+			print sample_conc[aWP]
+			api.setUDF( aDOM, "Concentration", sample_conc[aWP] )
 
 	## now update the artifacts
 	## now just POST the updated artifacts back to the LIMS
@@ -236,7 +264,7 @@ def main():
 
 	args = {}
 
-	opts, extraparams = getopt.getopt(sys.argv[1:], "l:u:p:f:")
+        opts, extraparams = getopt.getopt(sys.argv[1:], "l:u:p:f:g:")
 
 	for o,p in opts:
 		if o == '-l':
@@ -247,6 +275,8 @@ def main():
 			args[ "password" ] = p
 		elif o == '-f':
 			args[ "filelimsid" ] = p
+		elif o == '-g':
+			args[ "graph" ] = p
 
 	api = glsapiutil.glsapiutil()
 	api.setHostname( HOSTNAME )
@@ -262,7 +292,8 @@ def main():
 	pXML = api.getResourceByURI( pURI )
 	pDOM = parseString( pXML )
 
-	parseFile(pDOM, "qPCR.xls")
+	parseFile("qPCR.xls")
+        fitStandardCurve(pURI, pDOM, args["graph"] + ".png")
 	doStuff(pDOM)
 
 if __name__ == "__main__":
