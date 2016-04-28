@@ -211,7 +211,7 @@ seqStatusApp.controller('GlobalBaseCounterController', function($scope, statusEv
 
 seqStatusApp.controller('SingleMachineController', function($scope, $location, statusEventSource) {
 
-	$scope.machine = {runs: {}};
+	$scope.machine = {runs: {}};
 	$scope.machine_id = function() {
 		return $location.path().replace("/", "");
 	}
