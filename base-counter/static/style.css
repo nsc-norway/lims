@@ -1,5 +1,6 @@
 body {
 	font-family: Arial;
+	font-size: 16px;
 }
 
 div.header {
@@ -30,7 +31,7 @@ h1.title {
 
 img.seq-icon {
 	float: left;
-	margin-bottom: 5px;
+	padding-bottom: 10px;
 }
 
 h2.seq-name {
@@ -71,15 +72,14 @@ div.clear {
 	clear: both;
 }
 
-div.run-list {
-	padding: 0;
-	margin: 0;
-	color: pink;
+div.run-list {
 }
 
 div.run {
+	margin: 1px;
 	border: 1px solid green;
 	text-align: center;
+	font-weight: lighter;
 }
 
 div.run-failed {
