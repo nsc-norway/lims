@@ -30,11 +30,13 @@ h1.title {
 
 img.seq-icon {
 	float: left;
+	margin-bottom: 5px;
 }
 
 h2.seq-name {
 	display: block;
 	float: left;
+	font-size: 0.95em;
 	padding: 5px;
 }
 

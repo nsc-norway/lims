@@ -26,7 +26,7 @@ seqStatusApp.factory('statusEventSource', function() {
 
 function Machine(dataObj) {
 	var machine = dataObj;
-	machine.installed = machine.type && !machine.type.startsWith("-");
+	machine.installed = machine.type && machine.type.substring(0,1) != "-";
 	if (!machine.installed) {
 		machine.type = machine.type.substring(1);
 	}
