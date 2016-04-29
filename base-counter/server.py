@@ -330,7 +330,7 @@ class RunStatus(object):
                 return True
             if len(self.cycle_arrival) > 2:
                 cycle_rate, cycle_stride = self.get_cycle_rate()
-                cancelled = current_cycle_time > 4 * (cycle_stride / cycle_rate)
+                cancelled = current_cycle_time > 18 * (cycle_stride / cycle_rate)
                 return cancelled
 
         return False
