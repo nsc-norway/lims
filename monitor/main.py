@@ -112,11 +112,12 @@ class SequencingInfo(object):
 
 class DataAnalysisInfo(object):
     def __init__(self, name, url, projects, current_job,
-            status, seq_url, runid, finished=None):
+            state_code, status, seq_url, runid, finished=None):
         self.name = name
         self.url = url
         self.projects = projects
         self.status = status
+        self.state_code = state_code
         self.current_job = current_job
         self.seq_url = seq_url
         self.runid = runid
@@ -329,9 +330,10 @@ def read_post_sequencing_process(process_name, process, sequencing_process):
 
         current_job = process.udf.get(CURRENT_JOB_UDF, "")
 
+    state_code = process.udf.get(JOB_STATE_CODE_UDF, "")
 
     return DataAnalysisInfo(
-            process_name, url, projects, current_job, status, seq_url, runid
+            process_name, url, projects, current_job, state_code, status, seq_url, runid
             )
 
 

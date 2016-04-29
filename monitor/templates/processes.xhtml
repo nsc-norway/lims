@@ -61,7 +61,7 @@
 		{% if proc.finished %}
 			<li><i class="fa-li fa fa-check"></i>{{ proc.finished }}</li>
 		{% else %}
-			<li><i class="fa-li fa fa-spinner"></i>{{ proc.status }}</li>
+			<li><i class="fa-li fa fa-spinner fa-spin"></i>{{ proc.status }}</li>
 			{% if proc.eta %}
 			<li><i class="fa-li fa fa-hourglass-end"></i>{{ proc.eta }}</li>
 			{% endif %}
@@ -105,9 +105,17 @@
 			<a href="{{ proj.eval_url }}">[E]</a>
 	</li>
 	{% endfor %}
-	<li><i class="fa-li fa fa-server"></i>{{ item.status }}</li>
 	{% if item.current_job %}
-	<li><i class="fa-li fa fa-spinner"></i>{{ item.current_job }}</li>
+	<li><i class="fa-li fa fa-server"></i>{{ item.current_job }}</li>
+	{% endif %}
+	{% if item.state_code == "" %}
+	<li><i class="fa-li fa fa-ellipsis-h"></i>{{ item.status }}</li>
+	{% elif item.state_code == "RUNNING" %}
+	<li><i class="fa-li fa fa-spinner fa-spin"></i>{{ item.status }}</li>
+	{% elif item.state_code == "FAILED" %}
+	<li><i class="fa-li fa fa-times"></i>{{ item.status }}</li>
+	{% elif item.state_code == "COMPLETED" %}
+	<li><i class="fa-li fa fa-check"></i>{{ item.status }}</li>
 	{% endif %}
 	</ul>
 </div>
