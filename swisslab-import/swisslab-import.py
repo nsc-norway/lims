@@ -26,6 +26,7 @@ REQUIRED_COLUMNS = {
 
 OPTIONAL_COLUMNS = {
         "Alternative sample ID Diag": str,
+        "Reanalysis old sample ID Diag": str,
         "Analysis registered Diag": datetime.datetime.date
         }
 
