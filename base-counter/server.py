@@ -351,7 +351,7 @@ class FakeRun(RunStatus):
     """For testing, etc."""
 
     def __init__(self, machine_id, num_cycles, start_cycle=0):
-        run_id = datetime.date.today().strftime("%y%m%d_" + machine_id + "_FAKE_%f")
+        run_id = datetime.datetime.now().strftime("%y%m%d_" + machine_id + "_FAKE_%f")
         super(FakeRun, self).__init__(run_id)
         self.num_cycles = num_cycles
         self.start_time = time.time()
@@ -466,6 +466,16 @@ def fake():
     params = request.json
     run = FakeRun(params['machine'], int(params['cycles']), int(params['start_cycle']))
     db.status[run.run_id] = run
+    return "OK"
+
+@app.route("/fake-runs")
+def fakes():
+    return jsonify(runs=[run.run_id for run in db.status.values() if isinstance(run, FakeRun)])
+
+@app.route("/delete", methods=['POST'])
+def delete():
+    params = request.json
+    del db.status[params['id']]
     return "OK"
 
 db = Database()

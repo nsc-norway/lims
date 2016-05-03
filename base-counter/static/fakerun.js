@@ -8,8 +8,15 @@ fakeRunApp.controller('FakeRunController', function($scope, $http) {
 		$scope.machines = machines;
 	});
 
+	function refreshRunList() {
+		$http.get('../fake-runs').success(function(fakes) {
+			$scope.fakeRuns = fakes.runs;
+		});
+	}
+
 	function finished(data) {
 		$scope.status = data.statusText;
+		refreshRunList();
 	}
 
 	$scope.addRun = function() {
@@ -20,4 +27,11 @@ fakeRunApp.controller('FakeRunController', function($scope, $http) {
 		}).then(finished, finished);
 	}
 
+	$scope.deleteRun = function() {
+		$http.post('../delete', {
+			'id': $scope.delRun
+		}).then(finished, finished);
+	}
+
+	refreshRunList();
 });

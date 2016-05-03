@@ -17,6 +17,10 @@
 </table>
 <button ng-click="addRun()">Add the run</button>
 <hr>
+<h1>Delete fake run</h1>
+<select ng-model="delRun" ng-options="r for r in fakeRuns"></select>
+<button ng-click="deleteRun()">Delete</button>
+<hr>
 <h3>{{ status }}</h3>
 </body>
 </html>
