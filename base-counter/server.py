@@ -16,7 +16,7 @@ from functools import partial
 from operator import itemgetter
 
 import illuminate
-from flask import Flask, url_for, redirect, jsonify, Response
+from flask import Flask, url_for, redirect, jsonify, Response, request
 
 
 RUN_STORAGE = "/data/runScratch.boston"
@@ -86,9 +86,9 @@ class Database(object):
                 ))
         new = runs_on_storage - set(self.status.keys())
 
-        for r in new:
-            new_run = RunStatus(r)
-            self.status[r] = new_run
+        for r_id in new:
+            new_run = RunStatus(r_id)
+            self.status[r_id] = new_run
 
         modified = False
         updated = []
@@ -105,9 +105,10 @@ class Database(object):
                 modified = True
 
         missing = set(self.status.keys()) - runs_on_storage
-        for r in missing:
-            del self.status[r]
-            self.booked_runs.discard(r)
+        for r_id in missing:
+            if not self.status[r_id].is_fake:
+                del self.status[r_id]
+                self.booked_runs.discard(r_id)
 
         self.booked_runs &= set(self.status.keys())
 
@@ -157,8 +158,7 @@ class Database(object):
 
 
 
-def instrument_rate(run_id):
-    m_id = machine_id(run_id)
+def instrument_rate(m_id):
     instrument = SEQUENCERS[m_id][0]
     if instrument == "hiseqx":
         per_hour = 12500000000
@@ -234,6 +234,9 @@ class RunStatus(object):
             return None # No information yet
         return all_df[all_df.code == 103].sum().sum() # Number of clusters PF
 
+    def check_finished(self):
+        return os.path.exists(os.path.join(self.run_dir, "RTAComplete.txt"))
+
     def update(self):
         if self.finished:
             return
@@ -255,7 +258,7 @@ class RunStatus(object):
         else:
             self.booked = 0
 
-        if os.path.exists(os.path.join(self.run_dir, "RTAComplete.txt")):
+        if self.check_finished():
             self.finished = True
             updated = True
         if updated:
@@ -305,7 +308,7 @@ class RunStatus(object):
 
             return self.clusters * mean_cycle_rate * data_factor
         elif self.total_cycles != 0:
-            return instrument_rate(self.run_id)
+            return instrument_rate(self.machine_id)
         else:
             return 0
 
@@ -340,6 +343,49 @@ class RunStatus(object):
         """Dict to be sent to clients"""
 
         return dict((key, getattr(self, key)) for key in RunStatus.public)
+
+    def is_fake(self):
+        return False
+
+class FakeRun(RunStatus):
+    """For testing, etc."""
+
+    def __init__(self, machine_id, num_cycles, start_cycle=0):
+        run_id = datetime.date.today().strftime("%y%m%d_" + machine_id + "_FAKE_%f")
+        super(FakeRun, self).__init__(run_id)
+        self.num_cycles = num_cycles
+        self.start_time = time.time()
+        self.start_cycle = start_cycle
+
+    def set_metadata(self):
+        self.read_config = True # See if we can get away with it
+        self.total_cycles = self.num_cycles
+        # Build look-up table for number of cycles -> number of data cycles
+        self.data_cycles_lut = [(i, i) for i in xrange(self.num_cycles+1)]
+        return True
+
+    def get_clusters(self):
+        m_t = SEQUENCERS[self.machine_id][0]
+        if m_t == "hiseq":
+            return 2e9
+        elif m_t == "hiseqx":
+            return 2.6e9
+        elif m_t in ["hiseq4k", "hiseq3k"]:
+            return 2.1e9
+        elif "nextseq":
+            return 400e6
+        elif "miseq":
+            return 25e6
+
+    def get_cycle(self):
+        speed = instrument_rate(self.machine_id) / self.get_clusters()
+        return int(min(self.start_cycle + (time.time() - self.start_time) * speed, self.total_cycles))
+
+    def check_finished(self):
+        return False
+
+    def is_fake(self):
+        return True
 
 
 class EventQueuer(object):
@@ -411,6 +457,16 @@ def status():
         stream.update("run_status", data=r.data_package)
     return Response(stream, mimetype="text/event-stream")
 
+@app.route("/machines")
+def machines():
+    return jsonify(SEQUENCERS)
+
+@app.route("/fake", methods=['POST'])
+def fake():
+    params = request.json
+    run = FakeRun(params['machine'], int(params['cycles']), int(params['start_cycle']))
+    db.status[run.run_id] = run
+    return "OK"
 
 db = Database()
 updater_thread = threading.Thread(target=updater, name="updater")

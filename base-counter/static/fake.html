@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html ng-app="fakeRunApp">
+<head>
+<title>Add a fake run</title>
+<link rel="stylesheet" href="style.css" type="text/css">
+<script src="EventSource.js"></script>
+<script src="angular.js"></script>
+<script src="gauge.min.js"></script>
+<script src="fakerun.js"></script>
+</head>
+<body ng-controller="FakeRunController">
+<h1>Add a fake run</h1>
+<table>
+  <tr><td>Machine:</td><td><select ng-model="machine" ng-options="id as id + ' ' + machine[1] for (id, machine) in machines"></select></tr>
+  <tr><td>Total cycles:</td><td><input ng-model="cycles"></tr>
+  <tr><td>Current cycle:</td><td><input ng-model="start_cycle"></tr>
+</table>
+<button ng-click="addRun()">Add the run</button>
+<hr>
+<h3>{{ status }}</h3>
+</body>
+</html>
