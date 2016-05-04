@@ -344,6 +344,7 @@ class RunStatus(object):
 
         return dict((key, getattr(self, key)) for key in RunStatus.public)
 
+    @property
     def is_fake(self):
         return False
 
@@ -384,6 +385,7 @@ class FakeRun(RunStatus):
     def check_finished(self):
         return False
 
+    @property
     def is_fake(self):
         return True
 
