@@ -49,14 +49,20 @@ h2.section-header {
 
 table.main-table {
 	table-layout: fixed;
-	width: 104em;
+	/*width: 104em;*/
 }
 
 table.main-table th.main {
 	width: 20em;
+	min-width: 20em;
 	background-color: #FFFFDD;
 	border: 1px solid #DDDD55;
 	margin: 0;
+}
+
+table.main-table th.spacer {
+	width: 20em;
+	min-width: 20em;
 }
 
 table.main-table td.main {

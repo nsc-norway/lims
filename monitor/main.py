@@ -27,24 +27,39 @@ app = Flask(__name__)
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-INSTRUMENTS = ["HiSeq X", "HiSeq 3000/4000", "HiSeq 2500", "NextSeq", "MiSeq"]
+SITE="TESTING"
+if SITE == "cees":
+    INSTRUMENTS = ["HiSeq 3000/4000", "HiSeq 2500"]
 
-# With indexes into INSTRUMENTS array
-FLOWCELL_TYPES = set((
-	"Illumina Flow Cell",
-	"Illumina Rapid Flow Cell",
-	"NextSeq Reagent Cartridge", 
-	"MiSeq Reagent Cartridge",
-	"Patterned Flow Cell"
-	))
-# List of process types
-SEQUENCING = [
-        "Illumina Sequencing (HiSeq X) 1.0",
-        "Illumina Sequencing (HiSeq 3000/4000) 1.0",
-        "Illumina Sequencing (Illumina SBS) 5.0",
-        "NextSeq Run (NextSeq) 1.0",
-        "MiSeq Run (MiSeq) 5.0"
-        ]
+    # With indexes into INSTRUMENTS array
+    FLOWCELL_TYPES = set((
+            "Illumina Flow Cell",
+            "Illumina Rapid Flow Cell",
+            ))
+    # List of process types
+    SEQUENCING = [
+            "Illumina Sequencing (HiSeq 3000/4000) 1.0",
+            "Illumina Sequencing (Illumina SBS) 5.0",
+            ]
+else:
+    INSTRUMENTS = ["HiSeq X", "HiSeq 3000/4000", "HiSeq 2500", "NextSeq", "MiSeq"]
+
+    # With indexes into INSTRUMENTS array
+    FLOWCELL_TYPES = set((
+            "Illumina Flow Cell",
+            "Illumina Rapid Flow Cell",
+            "NextSeq Reagent Cartridge", 
+            "MiSeq Reagent Cartridge",
+            "Patterned Flow Cell"
+            ))
+    # List of process types
+    SEQUENCING = [
+            "Illumina Sequencing (HiSeq X) 1.0",
+            "Illumina Sequencing (HiSeq 3000/4000) 1.0",
+            "Illumina Sequencing (Illumina SBS) 5.0",
+            "NextSeq Run (NextSeq) 1.0",
+            "MiSeq Run (MiSeq) 5.0"
+            ]
 
 # List of process types
 DATA_PROCESSING = "Demultiplexing and QC NSC 2.0"
