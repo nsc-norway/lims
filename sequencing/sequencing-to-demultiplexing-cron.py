@@ -6,13 +6,24 @@ import time
 from genologics.lims import *
 from genologics import config
 
-SEQ_PROCESSES = [
-        "MiSeq Run (MiSeq) 5.0",
-        "NextSeq Run (NextSeq) 1.0",
-        "Illumina Sequencing (Illumina SBS) 5.0",
-        "Illumina Sequencing (HiSeq 3000/4000) 1.0",
-        "Illumina Sequencing (HiSeq X) 1.0"
-        ]
+try:
+    SITE = open("/etc/pipeline-site").read().strip()
+except IOError:
+    SITE = "unknown"
+
+if SITE == "ous":
+    SEQ_PROCESSES = [
+            "MiSeq Run (MiSeq) 5.0",
+            "NextSeq Run (NextSeq) 1.0",
+            "Illumina Sequencing (Illumina SBS) 5.0",
+            "Illumina Sequencing (HiSeq 3000/4000) 1.0",
+            "Illumina Sequencing (HiSeq X) 1.0"
+            ]
+else:
+    SEQ_PROCESSES = [
+            "Illumina Sequencing (Illumina SBS) 5.0",
+            "Illumina Sequencing (HiSeq 3000/4000) 1.0"
+            ]
 
 DEMULTIPLEXING = "Demultiplexing and QC NSC 2.0"
 WORKFLOW_NAME = "Demultiplexing and QC 2.0"
