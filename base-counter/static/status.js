@@ -209,7 +209,13 @@ seqStatusApp.controller('GlobalBaseCounterController', function($scope, statusEv
 });
 
 
-seqStatusApp.controller('SingleMachineController', function($scope, $location, statusEventSource) {
+seqStatusApp.controller('SingleMachineController', function($scope, $location) {
+
+	var evtSourceUrl = "../status";
+	if ($location.path().indexOf("/counter") != -1) {
+		evtSourceUrl = $location.path().replace("/", "") + "." + $location.host() + "/counter/status";
+	}
+  var statusEventSource = new EventSource(evtSourceUrl);
 
 	$scope.machine = {runs: {}};
 	$scope.machine_id = function() {
