@@ -135,7 +135,7 @@ class Database(object):
     @property
     def global_base_count(self):
         rate = sum(run.rate for run in self.status.values())
-        count = self.count + sum(run.basecount for run in self.status.values())
+        count = self.count + sum(run.basecount for run in self.status.values() if not run.committed)
         return {'count': count, 'rate': rate}
 
     @property
