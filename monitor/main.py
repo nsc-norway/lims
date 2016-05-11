@@ -76,8 +76,8 @@ JOB_STATUS_UDF = "Job status"
 JOB_STATE_CODE_UDF = "Job state code"
 CURRENT_JOB_UDF = "Current job"
 SEQ_PROCESSES=[
-        ('hiseqx', 'Illumina Sequencing (Illumina SBS) 5.0'),
-        ('hiseq4k', 'Illumina Sequencing (Illumina SBS) 5.0'),
+        ('hiseqx', 'Illumina Sequencing (HiSeq X) 1.0'),
+        ('hiseq4k', 'Illumina Sequencing (HiSeq 3000/4000) 1.0'),
         ('hiseq', 'Illumina Sequencing (Illumina SBS) 5.0'),
         ('nextseq', 'NextSeq Run (NextSeq) 1.0'),
         ('miseq', 'MiSeq Run (MiSeq) 5.0')

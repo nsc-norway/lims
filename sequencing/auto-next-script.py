@@ -22,6 +22,8 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 TAG="prod"
 DEMULTIPLEXING_QC_PROCESS = "Demultiplexing and QC NSC 2.0" 
 SEQ_PROCESSES=[
+                ('hiseqx', 'Illumina Sequencing (HiSeq X) 1.0'),
+                ('hiseq4k', 'Illumina Sequencing (HiSeq 3000/4000) 1.0'),
                 ('hiseq', 'Illumina Sequencing (Illumina SBS) 5.0'),
                 ('nextseq', 'NextSeq Run (NextSeq) 1.0'),
                 ('miseq', 'MiSeq Run (MiSeq) 5.0')
@@ -50,8 +52,8 @@ def get_sequencing_process(process):
 def is_sequencing_finished(process):
     seq_process = get_sequencing_process(process)
     if not seq_process:
-        logging.warning("Cannot detect the sequencing process, returning as if it's completed")
-        return True
+        logging.warning("Cannot detect the sequencing process, returning as if it's not completed")
+        return False
     try:
         return seq_process.udf['Finish Date']
     except KeyError:
