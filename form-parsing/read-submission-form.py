@@ -1,3 +1,4 @@
+# coding=utf-8
 import sys
 import re
 import zipfile
@@ -32,7 +33,7 @@ DNA_PREPS = {
 RNA_PREPS = {
         "Regular TruSeqTM RNA-seq library prep": "Regular TruSeq RNA-seq library prep",
         "Strand-specific TruSeqTM RNA-seq library prep": "Strand-specific TruSeq RNA-seq library prep",
-        "small RNA library preparation": "small RNA library preparation",
+        "small RNA library preparation": "Small RNA library preparation",
         "I\x60m unsure, please advise": "User unsure"
         }
 SEQUENCING_TYPES = {
@@ -40,6 +41,8 @@ SEQUENCING_TYPES = {
         "Paired End": "Paired End Read"
         }
 SEQUENCING_INSTRUMENTS = {
+        "HiSeq X": "HiSeq X",
+        "HiSeq 4000": "HiSeq 4000",
         "HiSeq 2500, high output mode": "HiSeq high output",
         "HiSeq 2500, rapid mode": "HiSeq rapid mode",
         "HiSeq 2000": "HiSeq high output",
@@ -397,7 +400,14 @@ def main(process_id):
 
     try:
         process.udf['Sample submission form imported'] = True
-        process.put()
+        # TODO: Work-around for LIMS bug with special characters -- Replace with process.put() when fixed
+        from xml.etree import ElementTree
+        req = lims.tostring(ElementTree.ElementTree(process.root))
+        req = req.replace("ø", "oe")
+        req = req.replace("æ", "ae")
+        req = req.replace("å", "aa")
+        lims.put(process.uri, req)
+        #process.put()
         print "Put successful"
     except requests.exceptions.HTTPError, e:
         # Don't crash on errors
