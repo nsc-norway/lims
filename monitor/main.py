@@ -31,7 +31,6 @@ SITE="TESTING"
 if SITE == "cees":
     INSTRUMENTS = ["HiSeq 3000/4000", "HiSeq 2500"]
 
-    # With indexes into INSTRUMENTS array
     FLOWCELL_TYPES = set((
             "Illumina Flow Cell",
             "Illumina Rapid Flow Cell",
@@ -44,7 +43,6 @@ if SITE == "cees":
 else:
     INSTRUMENTS = ["HiSeq X", "HiSeq 3000/4000", "HiSeq 2500", "NextSeq", "MiSeq"]
 
-    # With indexes into INSTRUMENTS array
     FLOWCELL_TYPES = set((
             "Illumina Flow Cell",
             "Illumina Rapid Flow Cell",
