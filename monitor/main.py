@@ -211,7 +211,7 @@ def estimated_time_completion(process, instrument, rapid, done_cycles, total_cyc
         elif instrument == "NextSeq":
             time_per_cycle = 348
         else:
-            time_per_cycle = 0
+            return ""
         time_left = seconds=(total_cycles - done_cycles) * time_per_cycle
         est_arrival = now + datetime.timedelta(seconds=time_left)
         return est_arrival.strftime("%a %d/%m %H:%M")
@@ -220,6 +220,9 @@ def estimated_time_completion(process, instrument, rapid, done_cycles, total_cyc
 
 def get_run_type(instrument, process):
     if process.udf.get("Status"):
+        # HiSeq X / 4000: Not different modes
+        #if instrument == "HiSeq X":
+        #elif instrument == "HiSeq 3000/4000":
         if instrument == "HiSeq 2500":
             runmode = {
                     "HiSeq Rapid Flow Cell v1": "Rapid",
@@ -237,9 +240,9 @@ def get_run_type(instrument, process):
             else:
                 runmode = "Unknown"
         else:
-            runmode = "Unknown"
+            runmode = None
 
-        cycles = " | (" + str(process.udf.get("Read 1 Cycles"))
+        cycles = "(" + str(process.udf.get("Read 1 Cycles"))
         i1 = process.udf.get("Index 1 Read Cycles")
         if i1:
             cycles += ", " + str(i1)
@@ -251,7 +254,10 @@ def get_run_type(instrument, process):
             cycles += ", " + str(r2)
         cycles += ")"
 
-        return runmode + cycles
+        if runmode:
+            return runmode + " | " + cycles
+        else:
+            return cycles
     else:
         return ""
 
