@@ -198,9 +198,9 @@ def estimated_time_completion(process, instrument, rapid, done_cycles, total_cyc
     if total_cycles > 0 and done_cycles < total_cycles:
         now = datetime.datetime.now()
         if instrument == "HiSeq X":
-            time_per_cycle = 0
+            time_per_cycle = 864
         elif instrument == "HiSeq 3000/4000":
-            time_per_cycle = 0
+            time_per_cycle = 1008
         elif instrument == "HiSeq 2500":
             if rapid:
                 time_per_cycle = 430
