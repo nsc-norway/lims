@@ -197,7 +197,11 @@ def get_projects(process):
 def estimated_time_completion(process, instrument, rapid, done_cycles, total_cycles):
     if total_cycles > 0 and done_cycles < total_cycles:
         now = datetime.datetime.now()
-        if instrument == "HiSeq 2500":
+        if instrument == "HiSeq X":
+            time_per_cycle = 0
+        elif instrument == "HiSeq 3000/4000":
+            time_per_cycle = 0
+        elif instrument == "HiSeq 2500":
             if rapid:
                 time_per_cycle = 430
             else:
@@ -219,6 +223,7 @@ def get_run_type(instrument, process):
         if instrument == "HiSeq 2500":
             runmode = {
                     "HiSeq Rapid Flow Cell v1": "Rapid",
+                    "HiSeq Rapid Flow Cell v2": "Rapid",
                     "HiSeq Flow Cell v4": "High Output v4"
                     }.get(process.udf.get("Flow Cell Version"), "Unknown")
         elif instrument == "NextSeq":
