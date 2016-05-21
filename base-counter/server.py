@@ -9,6 +9,7 @@ import glob
 import re
 import blinker
 import Queue
+import weakref
 
 import _strptime # Prevent import in thread
 
@@ -52,6 +53,8 @@ def updater():
         db.update()
         time.sleep(61)
 
+MAX_ACTIVE_STREAMS = 30
+active_streams = []
 
 def machine_id(run_id):
     return re.match(r"\d{6}_([A-Z0-9]+)_.*", run_id).group(1)
@@ -417,6 +420,8 @@ class SseStream(object):
     The ID can be None, in which case no ID is sent.
     """
 
+    TERMINATE = object()
+
     def __init__(self, event_specs):
         self.queue = Queue.Queue()
         self.helpers = []
@@ -430,6 +435,8 @@ class SseStream(object):
 
     def next(self):
         ident, data = self.queue.get(block=True)
+        if ident is TERMINATE:
+            raise StopIteration()
         event_str = ""
         if ident is not None:
             event_str = "event: " + ident + "\n"
@@ -439,6 +446,9 @@ class SseStream(object):
     def update(self, ident, sender=None, data=None):
         self.queue.put((ident, data))
 
+    def terminate(self):
+        self.queue.put((TERMINATE, None))
+
 @app.route("/")
 def get_main():
     return redirect(url_for('static', filename='index.html'))
@@ -446,6 +456,9 @@ def get_main():
 
 @app.route("/status")
 def status():
+    active_streams = [stream for stream in active_streams if stream() is not None]
+    while len(active_streams) >= MAX_ACTIVE_STREAMS:
+        (active_streams.pop(0))().terminate()
     events = [
         (db.basecount_signal, "basecount"),
         (db.run_status_signal, "run_status"),
@@ -457,6 +470,7 @@ def status():
     stream.update("machine_list", data=db.machine_list)
     for r in db.status.values():
         stream.update("run_status", data=r.data_package)
+    active_streams.append(weakref.ref(stream))
     return Response(stream, mimetype="text/event-stream")
 
 @app.route("/machines")
