@@ -56,8 +56,8 @@ def get_swl_data(filename):
     assert ws['A1'].value == "Sample/Name"
     # Get { header name => column index }
     headers = {}
-    for i in itertools.count(2):
-        h = ws.cell(column=i, row=1).value
+    for i in itertools.count(1):
+        h = ws.cell(column=i, row=0).value
         if h:
             if h in ALL_COLUMNS:
                 headers[h] = i
@@ -115,7 +115,7 @@ def get_all_fields(sample_name, ws, row, headers, columns, required):
             try:
                 result.append((col, value_type(v)))
             except ValueError:
-                print "Cannot convert '" +  str(v) + "' to a", value_type,\
+                print "Cannot convert '" +  unicode(v).encode("utf-8") + "' to a", value_type,\
                         "for sample", sample_name, ", column", col
                 sys.exit(1)
         elif required:
