@@ -70,8 +70,8 @@ def get_swl_data(filename):
         sys.exit(1)
 
     data = {}
-    for row in itertools.count(2):
-        sample_name = ws.cell(column=1, row=row).value
+    for row in itertools.count(1):
+        sample_name = ws.cell(column=0, row=row).value
         if sample_name:
             sample_name = str(sample_name)
 
