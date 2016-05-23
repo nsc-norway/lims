@@ -435,7 +435,7 @@ class SseStream(object):
 
     def next(self):
         ident, data = self.queue.get(block=True)
-        if ident is TERMINATE:
+        if ident is self.TERMINATE:
             raise StopIteration()
         event_str = ""
         if ident is not None:
@@ -447,7 +447,8 @@ class SseStream(object):
         self.queue.put((ident, data))
 
     def terminate(self):
-        self.queue.put((TERMINATE, None))
+        self.queue.put((self.TERMINATE, None))
+
 
 @app.route("/")
 def get_main():
@@ -456,6 +457,7 @@ def get_main():
 
 @app.route("/status")
 def status():
+    global active_streams
     active_streams = [stream for stream in active_streams if stream() is not None]
     while len(active_streams) >= MAX_ACTIVE_STREAMS:
         (active_streams.pop(0))().terminate()
@@ -482,6 +484,7 @@ def fake():
     params = request.json
     run = FakeRun(params['machine'], int(params['cycles']), int(params['start_cycle']))
     db.status[run.run_id] = run
+    db.update()
     return "OK"
 
 @app.route("/fake-runs")
