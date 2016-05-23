@@ -19,10 +19,20 @@ var TYPES = {
 	'miseq':	'MiSeq'
 	};
 
+var statusEventSource = null;
+
 seqStatusApp.factory('statusEventSource', function() {
-	return new EventSource('../status');
+	if (statusEventSource == null) {
+	  statusEventSource = new EventSource('../status');
+	}
+	return statusEventSource;
 });
 
+window.onunload = function() {
+    if (statusEventSource != null) {
+        statusEventSource.close();
+    }
+};
 
 function Machine(dataObj) {
 	var machine = dataObj;
@@ -276,3 +286,6 @@ seqStatusApp.controller('SingleMachineController', function($scope, $location) {
 	$scope.refresh();
 
 });
+
+
+
