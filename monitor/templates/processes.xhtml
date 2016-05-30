@@ -59,7 +59,7 @@
 		{% endif %}
 
 		{% if proc.finished %}
-			<li><i class="fa-li fa fa-check"></i>{{ proc.finished }}</li>
+			<li><i class="fa-li fa fa-flag-checkered"></i>{{ proc.finished }}</li>
 		{% else %}
 			<li><i class="fa-li fa fa-spinner fa-spin"></i>{{ proc.status }}</li>
 			{% if proc.eta %}
@@ -166,7 +166,7 @@
 		{% endfor %}
 		<li><i class="fa-li fa fa-folder-o"></i>
 		<a href="{{ item.demultiplexing_url }}">Demultiplexing</a></li>
-		<li><i class="fa-li fa fa-check"></i>{{ item.date }}</li>
+		<li><i class="fa-li fa fa-flag-checkered"></i>{{ item.date }}</li>
 	</ul>
 </div>
 
