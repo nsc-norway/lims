@@ -53,8 +53,9 @@ def updater():
         db.update()
         time.sleep(61)
 
-MAX_ACTIVE_STREAMS = 30
+MAX_ACTIVE_STREAMS = 19
 active_streams = []
+KEEPALIVE_INTERVAL = 60 # Times sleep interval 61
 
 def machine_id(run_id):
     return re.match(r"\d{6}_([A-Z0-9]+)_.*", run_id).group(1)
@@ -71,6 +72,7 @@ class Database(object):
         self.basecount_signal = blinker.Signal()
         self.run_status_signal = blinker.Signal()
         self.machine_list_signal = blinker.Signal()
+        self.keepalive_counter = 0
         try:
             with open(self.COUNT_FILE) as f:
                 self.count = int(f.read())
@@ -121,7 +123,8 @@ class Database(object):
         if new or missing:
             self.machine_list_signal.send(self, data=self.machine_list)
 
-        if updated:
+        if updated or keepalive_counter > KEEPALIVE_INTERVAL:
+            keepalive_counter = 0
             self.basecount_signal.send(self, data=self.global_base_count)
             for r in updated:
                 self.run_status_signal.send(self, data=r.data_package)
