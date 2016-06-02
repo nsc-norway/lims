@@ -15,9 +15,15 @@ def main(process_id):
         print "Please make sure container names are changed before continuing."
         sys.exit(1)
 
-    if any(re.match(r"MS.*-\d+v\d$", fc.name) for fc in flowcells):
-        print 'Use capital "v" at the end of the MiSeq carteridge ID, e.g. "MS00000000-600V3"'
-        sys.exit(1)
+    for fc in flowcells:
+        if re.match(r"MS.*-\d+v\d$", fc.name):
+            print 'Reagent cartridge ID corrected: changed to capital "V".'
+            fc.name = fc.name[:-2] + "V" + fc.name[-1:]
+            fc.put()
+        if fc.name.startswith("MS") and fc.name.endswith("-50V2"):
+            fc.name = fc.name[:-len("-50V2")] + "-050V2"
+            print 'Reagent cartridge ID corrected: Should be 050V2 for 50 bp kit".'
+            fc.put()
 
     all_known = lims.get_containers(name=(container.name for container in flowcells))
     if len(all_known) > len(flowcells):
