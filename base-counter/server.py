@@ -123,8 +123,8 @@ class Database(object):
         if new or missing:
             self.machine_list_signal.send(self, data=self.machine_list)
 
-        if updated or keepalive_counter > KEEPALIVE_INTERVAL:
-            keepalive_counter = 0
+        if updated or self.keepalive_counter > KEEPALIVE_INTERVAL:
+            self.keepalive_counter = 0
             self.basecount_signal.send(self, data=self.global_base_count)
             for r in updated:
                 self.run_status_signal.send(self, data=r.data_package)
