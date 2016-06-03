@@ -33,7 +33,7 @@ def main(process_id):
     except KeyError:
         category = None
 
-    index_analyte = [(a.samples[0].udf[SAMPLE_INDEX_UDF].strip(" \t\xa0\xc2"), a.name) for a in analytes]
+    index_analyte = [(a.samples[0].udf[SAMPLE_INDEX_UDF].strip(" \t\xca\xa0\xc2"), a.name) for a in analytes]
     if category == "Auto-detect":
         category, result = indexes.get_reagents_auto_category(reagents, index_analyte)
     else:
