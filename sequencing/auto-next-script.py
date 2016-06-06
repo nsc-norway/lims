@@ -12,12 +12,19 @@
 import logging
 import re
 import time
+import requests
 
 # scilife genologics library
 from genologics.lims import *
 from genologics import config
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
+try:
+    lims.check_version()
+except requests.exceptions.ConnectionError:
+    # Don't spam with errors if we can't reach LIMS
+    sys.exit(0)
+
 # Local copies of variables from the pipeline config package
 TAG="prod"
 DEMULTIPLEXING_QC_PROCESS = "Demultiplexing and QC NSC 2.0" 
