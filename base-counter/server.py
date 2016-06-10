@@ -65,6 +65,7 @@ class Database(object):
 
     COUNT_FILE = "/var/db/nsc-status/count.txt"
     BOOKED_RUNS_FILE = "/var/db/nsc-status/booked.txt"
+    CANCELLED_RUNS_FILE = "/var/db/nsc-status/cancelled.txt"
 
     def __init__(self):
         self.completed = set()
@@ -83,6 +84,11 @@ class Database(object):
                 self.booked_runs = set(r.strip() for r in f.readlines())
         except IOError:
             self.booked_runs = set()
+        try:
+            with open(self.CANCELLED_RUNS_FILE) as f:
+                self.cancelled_runs = set(r.strip() for r in f.readlines())
+        except IOError:
+            self.cancelled_runs = set()
 
     def update(self):
         runs_on_storage = set((
@@ -92,7 +98,7 @@ class Database(object):
         new = runs_on_storage - set(self.status.keys())
 
         for r_id in new:
-            new_run = RunStatus(r_id)
+            new_run = RunStatus(r_id, start_cancelled=r_id in self.cancelled_runs)
             self.status[r_id] = new_run
 
         modified = False
@@ -116,6 +122,10 @@ class Database(object):
                 self.booked_runs.discard(r_id)
 
         self.booked_runs &= set(self.status.keys())
+        new_cancelled_runs = set(k for (k, v) in self.status.items() if v.cancelled)
+        if new_cancelled_runs != self.cancelled_runs:
+            self.cancelled_runs = new_cancelled_runs
+            modified = True
 
         if modified:
             self.save()
@@ -137,6 +147,8 @@ class Database(object):
             f.write(str(int(self.count)))
         with open(self.BOOKED_RUNS_FILE, 'w') as f:
             f.writelines("\n".join(self.booked_runs))
+        with open(self.CANCELLED_RUNS_FILE, 'w') as f:
+            f.writelines("\n".join(self.cancelled_runs))
 
     @property
     def global_base_count(self):
@@ -183,7 +195,7 @@ class RunStatus(object):
     public = ['machine_id', 'run_id', 'run_dir', 'read_config', 'current_cycle',
             'total_cycles', 'basecount', 'rate', 'finished', 'cancelled']
 
-    def __init__(self, run_id):
+    def __init__(self, run_id, start_cancelled=False):
         self.machine_id = machine_id(run_id)
         self.run_id = run_id
         self.run_dir = os.path.join(RUN_STORAGE, run_id)
@@ -198,6 +210,7 @@ class RunStatus(object):
         self.start_time = 0
         self.cycle_arrival = {} # (cycle, time) pairs
         self.finished = False
+        self.start_cancelled = start_cancelled
 
     def set_metadata(self):
         try:
@@ -333,6 +346,8 @@ class RunStatus(object):
         """Heuristic to determine if cancelled. If current cycle time is
         more than 2x last cycle time."""
 
+        if len(self.cycle_arrival) <= 1 and self.start_cancelled:
+            return True
         if (not self.finished) and len(self.cycle_arrival) > 0:
             current_cycle_time = time.time() - self.cycle_arrival[self.current_cycle]
             if current_cycle_time > 12*3600:
