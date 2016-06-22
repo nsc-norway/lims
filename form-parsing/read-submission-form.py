@@ -400,14 +400,7 @@ def main(process_id):
 
     try:
         process.udf['Sample submission form imported'] = True
-        # TODO: Work-around for LIMS bug with special characters -- Replace with process.put() when fixed
-        from xml.etree import ElementTree
-        req = lims.tostring(ElementTree.ElementTree(process.root))
-        req = req.replace("ø", "oe")
-        req = req.replace("æ", "ae")
-        req = req.replace("å", "aa")
-        lims.put(process.uri, req)
-        #process.put()
+        process.put()
         print "Put successful"
     except requests.exceptions.HTTPError, e:
         # Don't crash on errors
