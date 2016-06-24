@@ -5,6 +5,9 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
+# This is just a CSV file generator, for use with the Biomek robots.
+# Two normalisation steps for Nextera are supported by this one script.
+
 def sort_key(elem):
     input, output, sample = elem
     container, well = output.location
