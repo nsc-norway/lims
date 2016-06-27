@@ -66,15 +66,15 @@ def main(process_id, filecfg, file_id):
 
         sample_no = re.match(r"([0-9]+)-", sample_name)
         if filecfg == "norm1":
-            NORM_CONC = 20 # ng/uL
-            VOL = 25 # uL
+            NORM_CONC = 20.0 # ng/uL
+            VOL = 25.0 # uL
 
             # (20 ng/uL * 25 uL) / conc = (500 ng) / conc
-            sample_volume = (NORM_CONC * VOL / input_conc)
+            sample_volume = (NORM_CONC * VOL * 1.0 / input_conc)
             buffer_volume = VOL - sample_volume
 
             if buffer_volume < 0:
-                buffer_volume = 0
+                buffer_volume = 0.0
                 sample_volume = VOL
                 warning.append(output.name)
             columns = [
@@ -104,14 +104,14 @@ def main(process_id, filecfg, file_id):
             output.udf['Volume (uL)'] = VOL
 
         elif filecfg == "norm2":
-            NORM_CONC = 6 # ng/uL
-            VOL = 25 # uL
+            NORM_CONC = 6.0 # ng/uL
+            VOL = 25.0 # uL
 
-            sample_volume = (NORM_CONC * VOL / input_conc)
+            sample_volume = (NORM_CONC * VOL * 1.0 / input_conc)
             buffer_volume = VOL - sample_volume 
 
             if buffer_volume < 0:
-                buffer_volume = 0
+                buffer_volume = 0.0
                 sample_volume = VOL
                 warning.append(output.name)
             columns = [
@@ -125,6 +125,8 @@ def main(process_id, filecfg, file_id):
                     ("Prove", sample_no.group(1) if sample_no else sample_name),
 
                     ("Fortynning_1_pos", "Fortynning_1"),
+                    ("Fortynning_1_bronn", well),
+
                     ("DNAfort_kons", input_conc),
 
                     ("Fortynning_1_vol", sample_volume),
@@ -148,7 +150,13 @@ def main(process_id, filecfg, file_id):
     out.writerows(rows)
 
     outfile = Artifact(lims, id=file_id)
-    gs = lims.glsstorage(outfile, 'biomek-fortynning.csv')
+    if filecfg == "norm1":
+        filename = "biomek-fortynning.csv"
+    elif filecfg == "norm2":
+        filename = "biomek-fortynning2.csv"
+    else:
+        filename = "UNKNOWN.csv"
+    gs = lims.glsstorage(outfile, filename)
     file_obj = gs.post()
     file_obj.upload(out_buffer.getvalue())
 
