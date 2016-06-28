@@ -28,7 +28,7 @@ def parse_result_file(content):
     data = {}
     for irow, row in enumerate(ROWS):
         for col in range(1,13):
-            data["{0}:{1}".format(row, col)] = sheet.cell(first_row+(irow*2), col+1).value
+            data["{0}:{1}".format(row, col)] = sheet.cell(first_row+(irow*3), col+1).value
     return data
 
 
