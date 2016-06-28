@@ -10,6 +10,7 @@ matplotlib.use("Agg")
 import matplotlib.pylab as plt
 
 ROWS = ["A","B","C","D","E","F","G","H"]
+ROW_SPACING = 3
 STANDARD_VOLUME = 10.0
 SAMPLE_VOLUME = 1.0
 
@@ -22,13 +23,13 @@ def parse_result_file(content):
             break
 
     first_row = row+4
-    assert sheet.cell(first_row-1, 2).value == 1.0, "Unexpected result file format (col 1 not found; row={0})".format(first_row-1)
-    assert sheet.cell(first_row, 1).value == "A", "Unexpected result file format (row A not found)"
+    assert all(sheet.cell(first_row-1, 2+i).value == i+1 for i in range(12)), "Unexpected result file format (col not as expected)"
+    assert all(sheet.cell(first_row+i*ROW_SPACING, 1).value == c for i, c in enumerate(ROWS)), "Unexpected result file format (row not as expected)"
     
     data = {}
     for irow, row in enumerate(ROWS):
         for col in range(1,13):
-            data["{0}:{1}".format(row, col)] = sheet.cell(first_row+(irow*3), col+1).value
+            data["{0}:{1}".format(row, col)] = sheet.cell(first_row+(irow*ROW_SPACING), col+1).value
     return data
 
 
