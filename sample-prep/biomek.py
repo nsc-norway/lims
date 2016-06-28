@@ -15,7 +15,7 @@ def sort_key(elem):
     return (container, int(col), row)
 
 
-def main(process_id, filecfg, file_id):
+def main(process_id, filecfg, file_id, norm_conc, vol):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
 
@@ -66,16 +66,13 @@ def main(process_id, filecfg, file_id):
 
         sample_no = re.match(r"([0-9]+)-", sample_name)
         if filecfg == "norm1":
-            NORM_CONC = 20.0 # ng/uL
-            VOL = 25.0 # uL
-
             # (20 ng/uL * 25 uL) / conc = (500 ng) / conc
-            sample_volume = (NORM_CONC * VOL * 1.0 / input_conc)
-            buffer_volume = VOL - sample_volume
+            sample_volume = (norm_conc * vol * 1.0 / input_conc)
+            buffer_volume = vol - sample_volume
 
             if buffer_volume < 0:
                 buffer_volume = 0.0
-                sample_volume = VOL
+                sample_volume = vol
                 warning.append(output.name)
             columns = [
                     ("Prove", sample_no.group(1) if sample_no else sample_name),
@@ -100,19 +97,16 @@ def main(process_id, filecfg, file_id):
                     ("Quant-it_bronn2", well_2base),
                     ("Vol_fortDNA", "1.2")
                 ]
-            output.udf['Normalized conc. (ng/uL)'] = NORM_CONC
-            output.udf['Volume (uL)'] = VOL
+            output.udf['Normalized conc. (ng/uL)'] = norm_conc
+            output.udf['Volume (uL)'] = vol
 
         elif filecfg == "norm2":
-            NORM_CONC = 6.0 # ng/uL
-            VOL = 25.0 # uL
-
-            sample_volume = (NORM_CONC * VOL * 1.0 / input_conc)
-            buffer_volume = VOL - sample_volume 
+            sample_volume = (norm_conc * vol * 1.0 / input_conc)
+            buffer_volume = vol - sample_volume 
 
             if buffer_volume < 0:
                 buffer_volume = 0.0
-                sample_volume = VOL
+                sample_volume = vol
                 warning.append(output.name)
             columns = [
                     ("TE_pos", "TE"),
@@ -132,8 +126,8 @@ def main(process_id, filecfg, file_id):
                     ("Fortynning_1_vol", sample_volume),
                 ]
 
-            output.udf['Normalized conc. (ng/uL)'] = NORM_CONC
-            output.udf['Volume (uL)'] = VOL
+            output.udf['Normalized conc. (ng/uL)'] = norm_conc
+            output.udf['Volume (uL)'] = vol
 
 
         if not header:
@@ -164,6 +158,6 @@ def main(process_id, filecfg, file_id):
         print "Warning: too low input concentration for samples:", ", ".join(warning), "."
         sys.exit(1)
 
-# Use:  PROCESS_ID CONFIG={"norm1"|"norm2"}
-main(sys.argv[1], sys.argv[2], sys.argv[3])
+# Use:  main PROCESS_ID TYPE FILEID CONCENTRATION VOLUME
+main(sys.argv[1], sys.argv[2], sys.argv[3], float(sys.argv[4]), float(sys.argv[5]))
 
