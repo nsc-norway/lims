@@ -47,7 +47,7 @@ def main(process_id, concentration_source):
         print concentrations
     elif concentration_source == "quantit":
         try:
-            qc_results = lims.get_qc_results(inputs, "Quant-iT QC (low conc.) Diag 1.1")
+            qc_results = lims.get_qc_results(inputs, "Quant-iT QC (low conc.) Diag 2.0")
         except KeyError, e:
             print "Missing QC result for", e
             sys.exit(1)

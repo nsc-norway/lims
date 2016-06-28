@@ -37,7 +37,7 @@ def main(process_id, filecfg, file_id):
         concentrations = [sample.udf.get('Sample conc. (ng/ul)') for sample in samples]
     elif filecfg == "norm2":
         try:
-            qc_results = lims.get_qc_results(inputs, "Quant-iT QC (low conc.) Diag 1.1")
+            qc_results = lims.get_qc_results(inputs, "Quant-iT QC (low conc.) Diag 2.0")
         except KeyError, e:
             print "Missing QC result for", e
             sys.exit(1)
