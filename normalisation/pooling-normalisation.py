@@ -4,9 +4,10 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
-def get_row_key(row):
-    container = row[2]
-    well = row[3]
+def get_tuple_key(tupl):
+    artifact = tupl[0]
+    container = artifact.location[0].name
+    well = artifact.location[1]
     row, col = well.split(":")
     return (container, int(col), row)
     
@@ -103,7 +104,10 @@ def main(process_id, output_file_id):
 
         first_in_pool = True
         sum_frag_length = 0.0
-        for input, sample_volume in zip(pool.inputs, sample_volumes):
+        for input, sample_volume in sorted(
+                zip(pool.inputs, sample_volumes),
+                key=get_tuple_key
+                ):
             sample_name = input.name.encode('utf-8')
             input_mol_conc = input.udf['Molarity']
             sum_frag_length += input.udf['Average Fragment Size']
