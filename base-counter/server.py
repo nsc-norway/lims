@@ -334,7 +334,7 @@ class RunStatus(object):
     @property
     def basecount(self):
         """Estimated number of bases at this instant"""
-        if len(self.cycle_arrival) > 2 or self.current_cycle > 26:
+        if len(self.cycle_arrival) > 3 or self.current_cycle > 29:
             return self.booked + (self.rate * (time.time() - self.last_update))
         elif len(self.cycle_arrival) >= 1:
             return self.rate * (time.time() - self.start_time)
