@@ -46,7 +46,7 @@ def main(process_id, file_id):
     gs = lims.glsstorage(outfile, 'quant_studio.txt')
     file_obj = gs.post()
     rows = ["Well\tSample Name"] + ["\t".join(values) for values in rows]
-    file_obj.upload("\n".join(rows))
+    file_obj.upload("\r\n".join(rows))
 
 
 main(sys.argv[1], sys.argv[2])
