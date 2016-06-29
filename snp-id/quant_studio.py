@@ -36,16 +36,17 @@ def main(process_id, file_id):
         sys.exit(1)
 
     rows = []
-    for xcol in range(24):
+    for xcol in range(16):
         for index, (input, output) in enumerate(sorted(i_o, key=sort_key), 1):
             sample_no = re.match(r"([0-9]+)-", input.name)
             sample_no = sample_no.group(1) if sample_no else input.name
-            rows.append((str(xcol*16 + index), sample_no))
+            rows.append((str(xcol*24 + index), sample_no))
 
     outfile = Artifact(lims, id=file_id)
     gs = lims.glsstorage(outfile, 'quant_studio.txt')
     file_obj = gs.post()
-    file_obj.upload("\n".join(("\t".join(values) for values in rows)))
+    rows = ["Well\tSample Name"] + ["\t".join(values) for values in rows]
+    file_obj.upload("\n".join(rows))
 
 
 main(sys.argv[1], sys.argv[2])
