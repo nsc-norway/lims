@@ -67,7 +67,7 @@ def main(process_id, output_file_id, mode):
             qc_results = lims.get_qc_results(inputs, "Quant-iT QC Diag 1.1")
         except KeyError, e:
             print "Missing QC result for:", e
-        sys.exit(1)
+            sys.exit(1)
     lims.get_batch(inputs + outputs + qc_results)
     lims.get_batch(input.samples[0] for sample in inputs)
 
