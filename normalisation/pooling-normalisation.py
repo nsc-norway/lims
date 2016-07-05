@@ -110,7 +110,7 @@ def main(process_id, output_file_id):
                 ):
             sample_name = input.name.encode('utf-8')
             input_mol_conc = input.udf['Molarity']
-            sum_frag_length += input.udf['Average Fragment Size']
+            sum_frag_length += input.udf.get('Average Fragment Size', 0.0)
             input_mol_conc_str = "%4.2f" % (input.udf['Molarity'])
             sample_vol_str = "%4.2f" % sample_volume
             source_container = input.location[0].name
