@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for, request, Response, redirect
+from flask import Flask, render_template, url_for, request, Response, redirect, current_app
 from genologics.lims import *
 from genologics import config
 import re
@@ -26,6 +26,7 @@ from collections import defaultdict
 app = Flask(__name__)
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
+page = None
 
 SITE="TESTING"
 if SITE == "cees":
@@ -83,6 +84,7 @@ SEQ_PROCESSES=[
 
 recent_run_cache = {}
 sequencing_process_type = []
+eval_url_base = ""
 
 def get_sequencing_process(process):
     """Gets the sequencing process from a process object corresponing to a process
@@ -180,7 +182,7 @@ def proc_url(process_id):
 
 def read_project(lims_project):
     url = "{0}clarity/search?scope=Project&query={1}".format(ui_server, lims_project.id)
-    eval_url = url_for('go_eval', project_name = lims_project.name)
+    eval_url = eval_url_base + "?project_name=" + lims_project.name
     return Project(url, lims_project.name, eval_url)
 
 
@@ -455,20 +457,11 @@ def get_batch(instances):
     return instances
 
 
-@app.route('/')
-def get_main():
+def prepare_page():
+    global page
     global ui_server
 
-    if not request.url.endswith("/"):
-        return redirect(request.url + '/')
-
-    ui_servers = {
-            "http://dev-lims.sequencing.uio.no:8080/": "https://dev-lims.sequencing.uio.no/",
-            "http://ous-lims.sequencing.uio.no:8080/": "https://ous-lims.sequencing.uio.no/",
-            "http://cees-lims.sequencing.uio.no:8080/": "https://cees-lims.sequencing.uio.no/"
-            }
-    ui_server = ui_servers.get(lims.baseuri, lims.baseuri)
-
+    ui_server = lims.baseuri
     all_process_types = SEQUENCING + [DATA_PROCESSING]
 
     # Get a list of all processes 
@@ -531,7 +524,7 @@ def get_main():
 
     recently_completed = get_recently_completed_runs()
 
-    body = render_template(
+    page = render_template(
             'processes.xhtml',
             static=request.url + "static",
             server=lims.baseuri,
@@ -540,7 +533,23 @@ def get_main():
             recently_completed=recently_completed,
             instruments=INSTRUMENTS
             )
-    return (body, 200, {'Refresh': '300'})
+    
+    threading.Timer(60, prepare_page).start()
+
+
+@app.route('/')
+def get_main():
+    global page
+    global eval_url_base
+
+    eval_url_base = url_for('go_eval')
+
+    if not request.url.endswith("/"):
+        return redirect(request.url + '/')
+
+    if not page:
+        prepare_page()
+    return (page, 200, {'Refresh': '60'})
 
 
 @app.route('/go-eval')
@@ -552,7 +561,6 @@ def go_eval():
         return redirect(proc_url(process.id))
     else:
         return Response("Sorry, project evaluation not found for " + project_name, mimetype="text/plain")
-
 
 if __name__ == '__main__':
     app.debug=True
