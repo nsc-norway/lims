@@ -149,7 +149,7 @@ class CompletedRunInfo(object):
         self.instrument_index = instrument_index
 
 
-def background_clear_monitor(completed):
+def clear_monitor(completed):
     for proc in completed:
         proc.udf['Monitor'] = False
         proc.put()
@@ -494,10 +494,7 @@ def prepare_page():
             else:
                 post_processes.append(p)
 
-    clear_task = partial(background_clear_monitor, completed)
-    t = threading.Thread(target = clear_task)
-    t.run()
-
+    clear_monitor(completed)
 
     # List of three elements -- Hi,Next,MiSeq, each contains a list of 
     # sequencing processes
