@@ -3,6 +3,7 @@ from genologics.lims import *
 from genologics import config
 import re
 import datetime
+import traceback
 import threading
 from functools import partial
 from collections import defaultdict
@@ -534,8 +535,8 @@ def prepare_page():
                 )
 
         threading.Timer(60, prepare_page).start()
-    except Exception, e:
-        page = str(e)
+    except:
+        page = traceback.format_exc()
     
 
 
