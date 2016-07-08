@@ -461,77 +461,81 @@ def prepare_page():
     global page
     global ui_server
 
-    ui_server = lims.baseuri
-    all_process_types = SEQUENCING + [DATA_PROCESSING]
+    try:
+        ui_server = lims.baseuri
+        all_process_types = SEQUENCING + [DATA_PROCESSING]
 
-    # Get a list of all processes 
-    # Of course it can't be this efficient :( Multiple process types not supported
-    #monitored_process_list = lims.get_processes(udf={'Monitor': True}, type=all_process_types)
-    monitored_process_list = []
-    for ptype in set(all_process_types):
-        monitored_process_list += lims.get_processes(udf={'Monitor': True}, type=ptype)
+        # Get a list of all processes 
+        # Of course it can't be this efficient :( Multiple process types not supported
+        #monitored_process_list = lims.get_processes(udf={'Monitor': True}, type=all_process_types)
+        monitored_process_list = []
+        for ptype in set(all_process_types):
+            monitored_process_list += lims.get_processes(udf={'Monitor': True}, type=ptype)
 
-    # Refresh data for all processes (need this for almost all monitored procs, so
-    # doing a batch request)
-    processes_with_data = get_batch(monitored_process_list)
-    # Need Steps to see if COMPLETED, this loads them into cache
-    steps = [Step(lims, id=p.id) for p in processes_with_data]
-    get_batch(steps)
+        # Refresh data for all processes (need this for almost all monitored procs, so
+        # doing a batch request)
+        processes_with_data = get_batch(monitored_process_list)
+        # Need Steps to see if COMPLETED, this loads them into cache
+        steps = [Step(lims, id=p.id) for p in processes_with_data]
+        get_batch(steps)
 
-    seq_processes = defaultdict(list)
-    post_processes = []
-    completed = []
-    for p, step in zip(processes_with_data, steps):
-        if p.type.name in SEQUENCING:
-            if is_step_completed(step):
-                completed.append(p)
+        seq_processes = defaultdict(list)
+        post_processes = []
+        completed = []
+        for p, step in zip(processes_with_data, steps):
+            if p.type.name in SEQUENCING:
+                if is_step_completed(step):
+                    completed.append(p)
+                else:
+                    seq_processes[p.type.name].append(p)
+
             else:
-                seq_processes[p.type.name].append(p)
+                if is_step_completed(step):
+                    completed.append(p)
+                else:
+                    post_processes.append(p)
 
-        else:
-            if is_step_completed(step):
-                completed.append(p)
-            else:
-                post_processes.append(p)
+        clear_monitor(completed)
 
-    clear_monitor(completed)
-
-    # List of three elements -- Hi,Next,MiSeq, each contains a list of 
-    # sequencing processes
-    sequencing = [
-        [read_sequencing(sp, proc) 
-            for proc in seq_processes[sp]]
-            for sp in SEQUENCING
-        ]
+        # List of three elements -- Hi,Next,MiSeq, each contains a list of 
+        # sequencing processes
+        sequencing = [
+            [read_sequencing(sp, proc) 
+                for proc in seq_processes[sp]]
+                for sp in SEQUENCING
+            ]
 
 
-    # List of three sequencer types (containing lists within them)
-    post_sequencing = []
-    # One workflow for each sequencer type
-    for index in range(len(SEQUENCING)):
-        machine_items = [] # all processes for a type of sequencing machine
-        for process in post_processes:
-            sequencing_process = get_sequencing_process(process)
-            if sequencing_process and sequencing_process.type.name == SEQUENCING[index]:
-                machine_items.append(read_post_sequencing_process(
-                    DATA_PROCESSING, process, sequencing_process
-                    ))
-        post_sequencing.append(machine_items)
-        
+        # List of three sequencer types (containing lists within them)
+        post_sequencing = []
+        # One workflow for each sequencer type
+        for index in range(len(SEQUENCING)):
+            machine_items = [] # all processes for a type of sequencing machine
+            for process in post_processes:
+                sequencing_process = get_sequencing_process(process)
+                if sequencing_process and sequencing_process.type.name == SEQUENCING[index]:
+                    machine_items.append(read_post_sequencing_process(
+                        DATA_PROCESSING, process, sequencing_process
+                        ))
+            post_sequencing.append(machine_items)
+            
 
-    recently_completed = get_recently_completed_runs()
+        recently_completed = get_recently_completed_runs()
 
-    page = render_template(
-            'processes.xhtml',
-            static=request.url + "static",
-            server=lims.baseuri,
-            sequencing=sequencing,
-            post_sequencing=post_sequencing,
-            recently_completed=recently_completed,
-            instruments=INSTRUMENTS
-            )
+        page = render_template(
+                'processes.xhtml',
+                static=request.url + "static",
+                server=lims.baseuri,
+                sequencing=sequencing,
+                post_sequencing=post_sequencing,
+                recently_completed=recently_completed,
+                instruments=INSTRUMENTS
+                )
+
+        threading.Timer(60, prepare_page).start()
+    except e:
+        page = str(e)
     
-    threading.Timer(60, prepare_page).start()
 
 
 @app.route('/')
