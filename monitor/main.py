@@ -526,7 +526,7 @@ def prepare_page():
         page = render_template(
                 'processes.xhtml',
                 updated=datetime.datetime.now(),
-                static=request.url + "static",
+                static=static_url,
                 server=lims.baseuri,
                 sequencing=sequencing,
                 post_sequencing=post_sequencing,
@@ -544,8 +544,10 @@ def prepare_page():
 def get_main():
     global page
     global eval_url_base
+    global static_url
 
     eval_url_base = url_for('go_eval')
+    static_url = request.url + "static"
 
     if not request.url.endswith("/"):
         return redirect(request.url + '/')
