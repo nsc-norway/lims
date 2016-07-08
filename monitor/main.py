@@ -523,20 +523,21 @@ def prepare_page():
 
         recently_completed = get_recently_completed_runs()
 
-        page = render_template(
-                'processes.xhtml',
-                updated=datetime.datetime.now(),
-                static=static_url,
-                server=lims.baseuri,
-                sequencing=sequencing,
-                post_sequencing=post_sequencing,
-                recently_completed=recently_completed,
-                instruments=INSTRUMENTS
-                )
+        with app.app_context():
+            page = render_template(
+                    'processes.xhtml',
+                    updated=datetime.datetime.now(),
+                    static=static_url,
+                    server=lims.baseuri,
+                    sequencing=sequencing,
+                    post_sequencing=post_sequencing,
+                    recently_completed=recently_completed,
+                    instruments=INSTRUMENTS
+                    )
 
-        threading.Timer(60, prepare_page).start()
     except:
         page = traceback.format_exc()
+    threading.Timer(60, prepare_page).start()
     
 
 
