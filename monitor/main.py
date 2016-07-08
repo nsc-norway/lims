@@ -524,6 +524,7 @@ def prepare_page():
 
         page = render_template(
                 'processes.xhtml',
+                updated=datetime.datetime.now(),
                 static=request.url + "static",
                 server=lims.baseuri,
                 sequencing=sequencing,
@@ -533,7 +534,7 @@ def prepare_page():
                 )
 
         threading.Timer(60, prepare_page).start()
-    except e:
+    except Exception, e:
         page = str(e)
     
 
