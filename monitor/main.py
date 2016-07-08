@@ -2,9 +2,11 @@ from flask import Flask, render_template, url_for, request, Response, redirect, 
 from genologics.lims import *
 from genologics import config
 import re
+import os
 import datetime
 import traceback
 import threading
+import jinja2
 from functools import partial
 from collections import defaultdict
 
@@ -86,6 +88,7 @@ SEQ_PROCESSES=[
 recent_run_cache = {}
 sequencing_process_type = []
 eval_url_base = ""
+template_loc = ""
 
 def get_sequencing_process(process):
     """Gets the sequencing process from a process object corresponing to a process
@@ -523,17 +526,18 @@ def prepare_page():
 
         recently_completed = get_recently_completed_runs()
 
-        with app.app_context():
-            page = render_template(
-                    'processes.xhtml',
-                    updated=datetime.datetime.now(),
-                    static=static_url,
-                    server=lims.baseuri,
-                    sequencing=sequencing,
-                    post_sequencing=post_sequencing,
-                    recently_completed=recently_completed,
-                    instruments=INSTRUMENTS
-                    )
+        variables = {
+                'updated': datetime.datetime.now(),
+                'static': static_url,
+                'server': lims.baseuri,
+                'sequencing': sequencing,
+                'post_sequencing': post_sequencing,
+                'recently_completed': recently_completed,
+                'instruments': INSTRUMENTS
+                }
+        page = jinja2.Environment(
+                loader=jinja2.FileSystemLoader(template_loc)
+                ).get_template('processes.xhtml').render(variables)
 
     except:
         page = traceback.format_exc()
@@ -546,9 +550,11 @@ def get_main():
     global page
     global eval_url_base
     global static_url
+    global template_loc
 
     eval_url_base = url_for('go_eval')
     static_url = request.url + "static"
+    template_loc = os.path.join(app.root_path, app.template_folder)
 
     if not request.url.endswith("/"):
         return redirect(request.url + '/')
