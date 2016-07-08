@@ -359,7 +359,10 @@ class RunStatus(object):
                         for i in range(self.current_cycle+1, self.total_cycles)
                         if self.data_cycles_lut[i] == self.data_cycles_lut[self.current_cycle]
                         )
-                cancelled = current_cycle_time > (6+next_index_cycles) * (cycle_stride / cycle_rate)
+                after_index_read = 0
+                if next_index_cycles:
+                    after_index_read = 5 # Some slack on start of read 2, to be fine-tuned later
+                cancelled = current_cycle_time > (6+after_index_read+next_index_cycles) * (cycle_stride / cycle_rate)
                 return cancelled
 
         return False
