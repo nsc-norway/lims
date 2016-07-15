@@ -202,6 +202,7 @@ class RunStatus(object):
         self.read_config = []
         self.current_cycle = 0
         self.total_cycles = 0
+        self.clusters = 0
 
         self.last_update = time.time()
         self.booked = 0
@@ -249,8 +250,8 @@ class RunStatus(object):
         try:
             ds = illuminate.InteropDataset(self.run_dir)
             all_df = ds.TileMetrics().df
-        except (ValueError, TypeError, IOError):
-            return None # No information yet
+        except (ValueError, TypeError, IOError, bitstring.ReadError):
+            return None # No information yet, or it's being written to
         return all_df[all_df.code == 103].sum().sum() # Number of clusters PF
 
     def check_finished(self):
@@ -270,7 +271,8 @@ class RunStatus(object):
         self.current_cycle = self.get_cycle()
         if self.cycle_arrival.setdefault(self.current_cycle, now) == now: # Add if not exists
             updated = True
-        self.clusters = self.get_clusters()
+        new_clusters = self.get_clusters()
+        self.clusters = new_clusters or self.clusters
         if self.clusters:
             #self.booked = self.data_cycles_lut[self.current_cycle] * self.clusters
             self.booked = self.current_cycle * self.clusters
