@@ -91,11 +91,6 @@ def main(process_id, filecfg, file_id, norm_conc, vol):
                     ("Destinasjon2", "Quant-it_plate"),
                     ("Quant-it_plate_bronn", well_2base),
                     ("Quant-it_miks_vol", "200"),
-                    ("Fortynning1_pos", "Fortynning_1"),
-                    ("Pos_i_Fortynning1_2", well),
-                    ("Destinasjon3", "Quant-it_plate"),
-                    ("Quant-it_bronn2", well_2base),
-                    ("Vol_fortDNA", "1.2")
                 ]
             output.udf['Normalized conc. (ng/uL)'] = norm_conc
             output.udf['Volume (uL)'] = vol

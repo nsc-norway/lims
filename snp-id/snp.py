@@ -54,14 +54,16 @@ def main(process_id, filecfg, file_id):
             filename = "biomek-snp1.csv"
             columns = [
                     ("Mastermiks_deckpos", "Mastermiks"),
-                    ("Mastermiks_Bronn", 2),
-                    ("Mastermiks_vol", 45),
+                    ("TaqmanMM_Bronn", 2),
+                    ("TaqmanMM_vol", 45),
+                    ("EB-MM_Bronn", 1),
+                    ("EB-MM_vol", 42),
                     ("Destinasjon_1_deckpos", "96_DNA_MM"),
                     ("96_DNA_MM_bronn1", well),
                     ("Provenummer", sample_no),
                     ("Rack_DeckPos_DNAror", "DNA_1"),
                     ("Pos_i_rack_DNA", index+1),
-                    ("DNA_vol", 45)
+                    ("DNA_vol", 3)
                 ]
             rows.append([x[1] for x in columns])
 
