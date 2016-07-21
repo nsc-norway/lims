@@ -99,7 +99,7 @@ def main(process_id, output_file_id):
             print "try again."
             error = True
 
-        dest_container = output.location[0].name
+        dest_container = output.location[0].name.encode('utf-8')
         dest_well = output.location[1]
 
         first_in_pool = True
@@ -113,11 +113,11 @@ def main(process_id, output_file_id):
             sum_frag_length += input.udf.get('Average Fragment Size', 0.0)
             input_mol_conc_str = "%4.2f" % (input.udf['Molarity'])
             sample_vol_str = "%4.2f" % sample_volume
-            source_container = input.location[0].name
+            source_container = input.location[0].name.encode('utf-8')
             source_well = input.location[1]
             if first_in_pool:
                 rows.append([
-                    pool.name,
+                    pool.name.encode('utf-8'),
                     dest_container,
                     dest_well,
                     "%4.2f" % pool_norm_conc,
