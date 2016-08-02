@@ -318,8 +318,8 @@ def process_hazardous(fields):
     for i, f in reversed(list(enumerate(fields))):
         if f[0] == 'Hazardous':
             if f[1]:
-                print "Warning: Hazardous samples."
-                #sys.exit(1)
+                print "Warning: Hazardous samples. Can't do anything."
+                del fields[i]
             else:
                 del fields[i]
 
