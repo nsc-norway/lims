@@ -10,6 +10,7 @@ import re
 import blinker
 import Queue
 import weakref
+import bitstring
 
 import _strptime # Prevent import in thread
 
