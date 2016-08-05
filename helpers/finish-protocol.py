@@ -5,7 +5,7 @@ import subprocess
 from genologics import config
 from genologics.lims import *
 
-# This script is no longer in use. It is only necessary when a protocol can 
+# This script is only useful when a protocol can 
 # finish on two or more steps, such that there is no single step at the end.
 # In that case, one can add a dummy step, and this script will forward all 
 # samples to that and complete the dummy step.
@@ -13,7 +13,7 @@ from genologics.lims import *
 def main(process_id, is_subprocess = False):
     """Finishes the current step and the next one.
 
-    Used in the Diag SureSelect workflow.
+    Used in the Diag Interpretation workflow.
 
     For use with the "end of protocol" step which is not used for anything.
     """
