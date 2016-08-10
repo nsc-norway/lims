@@ -364,7 +364,7 @@ class RunStatus(object):
                         )
                 after_index_read = 0
                 if next_index_cycles:
-                    after_index_read = 5 # Some slack on start of read 2, to be fine-tuned later
+                    after_index_read = 15 # Some slack on start of read 2, takes about 15 cycles before writing on MiSeq
                 cancelled = current_cycle_time > (6+after_index_read+next_index_cycles) * (cycle_stride / cycle_rate)
                 return cancelled
 
