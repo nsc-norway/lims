@@ -217,7 +217,7 @@ class RunStatus(object):
     def set_metadata(self):
         try:
             ds = illuminate.InteropDataset(self.run_dir)
-        except IOError:
+        except:
             return False
         self.read_config = list(ds.meta.read_config)
         self.total_cycles = sum(read['cycles'] for read in self.read_config)
