@@ -63,7 +63,10 @@ def is_sequencing_finished(process):
         logging.warning("Cannot detect the sequencing process, returning as if it's not completed")
         return False
     try:
-        return seq_process.udf['Finish Date']
+        if seq_process.udf['Finish Date'] and seq_process.udf['Read 1 Cycles']:
+            match = re.match(r"Cycle (\d+) of (\d+)", seq_process.udf['Status'])
+            if match:
+                return match.group(1) == match.group(2)
     except KeyError:
         return False
 
