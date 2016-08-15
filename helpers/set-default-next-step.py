@@ -7,8 +7,7 @@ from genologics.lims import *
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     step = Step(lims, id=process_id)
-    outputs = lims.get_batch(Artifact(lims, id=na['artifact-uri']) for na in step.actions.next_actions)
-    lims.set_default_next_step(step, outputs)
+    lims.set_default_next_step(step)
 
 main(sys.argv[1])
 
