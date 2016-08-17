@@ -15,7 +15,7 @@ def main(process_id):
         sys.exit(1)
     for other_process in reversed(prev_processes):
         process.udf['Dato kontroll av resultatvurdering ferdig'] = datetime.date.today()
-        process.udf['Signaturkode eller EGG'] = other_process.udf['Signaturkode']
+        process.udf['Signaturkode'] = other_process.udf['Signaturkode']
         process.put()
         break
 
