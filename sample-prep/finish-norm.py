@@ -29,7 +29,7 @@ def main(process_id):
         sys.exit(1)
 
     lims.put_batch(samples)
-    lims.set_default_next_step(step, outputs)
+    lims.set_default_next_step(step)
 
 main(sys.argv[1])
 
