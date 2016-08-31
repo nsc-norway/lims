@@ -274,9 +274,12 @@ def read_sequencing(process_name, process):
     run_type = get_run_type(instrument, process)
     if instrument == "NextSeq":
         step = Step(lims, id=process.id)
-        for lot in step.reagentlots.reagent_lots:
-            if lot.reagent_kit.name == "NextSeq 500 FC v1":
-                flowcell_id = lot.name
+        try:
+            for lot in step.reagentlots.reagent_lots:
+                if lot.reagent_kit.name == "NextSeq 500 FC v1":
+                    flowcell_id = lot.name
+        except AttributeError:
+            pass
     elif instrument == "MiSeq":
         pass
     lims_projects = set(
