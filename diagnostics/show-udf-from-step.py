@@ -1,3 +1,4 @@
+# coding: utf-8
 # Copy the value of a UDF on the previous step to the current one.
 
 import sys
@@ -14,8 +15,9 @@ def main(process_id):
         print("Forventet en enkelt resultatvurdering, fant " + str(len(prev_processes)))
         sys.exit(1)
     for other_process in reversed(prev_processes):
-        process.udf['Dato kontroll av resultatvurdering ferdig'] = datetime.date.today()
-        process.udf['Signaturkode'] = other_process.udf['Signaturkode']
+        process.udf['Dato for kontroll av resultatvurdering:'] = datetime.date.today()
+        process.udf['Dato for utfort resultatvurdering:'] = other_process.udf['Dato resultatvurdering ferdig']
+        process.udf['Resultatvurdering utfort av:'] = other_process.udf['Signaturkode']
         process.put()
         break
 
