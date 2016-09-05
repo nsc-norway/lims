@@ -15,7 +15,7 @@ SAMPLE_INDEX_UDF = "Index requested/used"
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
 
-def main(analyte_ids):
+def main(category, analyte_ids):
     """Assign reagents based on available reagent types, the Index requested/used UDF,
     and automatic detection of category.
     """
@@ -27,7 +27,7 @@ def main(analyte_ids):
     lims.get_batch(analyte.samples[0] for analyte in analytes)
     index_analyte = [(a.samples[0].udf[SAMPLE_INDEX_UDF].strip(" \t"), a.name) for a in analytes]
 
-    category, result = indexes.get_reagents_auto_category(reagents, index_analyte)
+    result = indexes.get_reagents_for_category(reagents, index_analyte, category)
 
     # Assign the indexes
     for analyte, reagent_name in zip(analytes, result):
@@ -40,5 +40,5 @@ def main(analyte_ids):
     print "Successfully set the indexes"
 
 
-main(sys.argv[1:])
+main(sys.argv[1], sys.argv[2:])
 
