@@ -10,7 +10,7 @@ def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
     inputs = process.all_inputs()
-    prev_processes = lims.get_processes(inputartifactlimsid=[i.id for i in inputs], type="Resultatvurdering_diag")
+    prev_processes = lims.get_processes(inputartifactlimsid=[i.id for i in inputs], type="Resultatvurdering_diag 1.1")
     if len(prev_processes) != 1:
         print("Forventet en enkelt resultatvurdering, fant " + str(len(prev_processes)))
         sys.exit(1)
