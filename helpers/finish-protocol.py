@@ -45,8 +45,15 @@ def main(process_id, is_subprocess = False):
             for na in next_step.actions.next_actions:
                 na['action'] = 'complete'
             next_step.actions.put()
-            while next_step.current_state.upper() != "COMPLETED":
-                next_step.advance()
+            attempts = 3
+            while next_step.current_state.upper() != "COMPLETED" and attempts > 0:
+                try:
+                    next_step.advance()
+                    time.sleep(1)
+                    next_step.get(force=True)
+                except:
+                    attempts -= 1
+                    continue
 
 main(*sys.argv[1:])
 
