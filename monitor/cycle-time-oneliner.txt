@@ -1,3 +1,7 @@
 # Get the cycle time for HiSeq run (replace run_ID string)
 
 awk '/HiSeqGAEventHandler.*160912_7001448_0420_ACA2MMANXX/ {print $1,$2;}' /opt/gls/clarity/extensions/Illumina_HiSeq/v5/SequencingService/HiSeqGAIntegrator.log | xargs -I DATE date --date="DATE" +%s | awk '{if(NR>1){print $1-_n}; _n=$1}'
+
+# Or with average over last 25 cycles
+awk '/HiSeqGAEventHandler.*160912_7001448_0420_ACA2MMANXX/ {print $1,$2;}' /opt/gls/clarity/extensions/Illumina_HiSeq/v5/SequencingService/HiSeqGAIntegrator.log | xargs -I DATE date --date="DATE" +%s | tail -n25 | awk '{if(NR>1){print $1-_n; ct+=($1-_n); n++}; _n=$1} END {print "AVG:", ct / n}'
+
