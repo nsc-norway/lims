@@ -198,7 +198,7 @@ def get_projects(process):
     return [read_project(p) for p in lims_projects if not p is None]
 
 
-def estimated_time_completion(process, instrument, rapid, done_cycles, total_cycles):
+def estimated_time_completion(process, instrument, rapid, dual, done_cycles, total_cycles):
     if total_cycles > 0 and done_cycles < total_cycles:
         now = datetime.datetime.now()
         if instrument == "HiSeq X":
@@ -208,8 +208,10 @@ def estimated_time_completion(process, instrument, rapid, done_cycles, total_cyc
         elif instrument == "HiSeq 2500":
             if rapid:
                 time_per_cycle = 430
-            else:
+            elif dual:
                 time_per_cycle = 2160
+            else:
+                time_per_cycle = 1158
         elif instrument == "MiSeq":
             time_per_cycle = 336
         elif instrument == "NextSeq":
@@ -266,7 +268,7 @@ def get_run_type(instrument, process):
         return ""
 
 
-def read_sequencing(process_name, process):
+def read_sequencing(process_name, process, machines):
     url = proc_url(process.id)
     flowcell = process.all_inputs()[0].location[0]
     flowcell_id = flowcell.name
@@ -278,10 +280,16 @@ def read_sequencing(process_name, process):
             )
     projects = get_projects(process)
     eta = None
+    machine = None
     try:
         runid = process.udf['Run ID']
+        if runid:
+            machine = re.match(r"\d{6}_([\dA-Z])+_", runid).group(1)
     except KeyError:
         runid = ""
+
+    other_flowcell_sequencing_info = machines.get(machine)
+
     try:
         status = process.udf['Status']
         cycles_re = re.match(r"Cycle (\d+) of (\d+)", status)
@@ -291,10 +299,14 @@ def read_sequencing(process_name, process):
                         process, 
                         instrument,
                         "Rapid" in flowcell.type.name,
+                        other_flowcell_sequencing_info, #dual flowcell
                         int(cycles_re.group(1)), int(cycles_re.group(2))
                         )
             elif instrument == "MiSeq" and cycles_re.group(1) == "0":
                 status = "Cycle <15 of %s" % (cycles_re.group(2))
+
+            if other_flowcell_sequencing_info: # Update for dual
+                other_flowcell_sequencing_info.eta = eta
 
     except KeyError:
         if instrument.startswith("HiSeq"):
@@ -306,9 +318,13 @@ def read_sequencing(process_name, process):
     except KeyError:
         finished = ""
 
-    return SequencingInfo(
+    seq_info = SequencingInfo(
             process_name, url, flowcell_id, projects, status, eta, runid, run_type, finished
             )
+    if machine:
+        machines[machine] = seq_info
+    return seq_info
+
 
 def automation_state(process):
     enabled = any(value for key, value in process.udf.items() if key.startswith("Auto "))
@@ -494,10 +510,13 @@ def prepare_page():
 
         clear_monitor(completed)
 
+        # Keep track of machine-ID, to estimate correct time for single/dual flow cell runs
+        machines = {}
+
         # List of three elements -- Hi,Next,MiSeq, each contains a list of 
         # sequencing processes
         sequencing = [
-            [read_sequencing(sp, proc) 
+            [read_sequencing(sp, proc, machines) 
                 for proc in seq_processes[sp]]
                 for sp in SEQUENCING
             ]
