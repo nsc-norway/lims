@@ -206,6 +206,8 @@ def estimated_time_completion(process, instrument, rapid, dual, done_cycles, tot
         elif instrument == "HiSeq 3000/4000":
             time_per_cycle = 1008
         elif instrument == "HiSeq 2500":
+            if done_cycles < 5:
+                return "" # Cycle #5 is much longer than others. We can't give a reliable time.
             if rapid:
                 time_per_cycle = 430
             elif dual:
