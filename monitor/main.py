@@ -307,7 +307,7 @@ def read_sequencing(process_name, process, machines):
             elif instrument == "MiSeq" and cycles_re.group(1) == "0":
                 status = "Cycle <15 of %s" % (cycles_re.group(2))
 
-            if other_flowcell_sequencing_info: # Update for dual
+            if instrument == "HiSeq 2500" and other_flowcell_sequencing_info: # Update for dual
                 other_flowcell_sequencing_info.eta = eta
 
     except KeyError:
