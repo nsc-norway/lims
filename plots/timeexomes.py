@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import psycopg2
 import socket
+import os
 
 
 if socket.gethostname() == "dev-lims.sequencing.uio.no":
@@ -15,7 +16,7 @@ else:
 conn = psycopg2.connect("dbname=clarityDB user={0}".format(user))
 cur = conn.cursor()
 
-query = open("exomes.sql").read()
+query = open(os.path.join(os.path.dirname(__file__), "exomes.sql")).read()
 cur.execute(query)
 
 timeseries = enumerate(sorted(row[0] for row in cur))

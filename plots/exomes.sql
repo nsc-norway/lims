@@ -17,11 +17,11 @@ WHERE
 	project.projectid=sample.projectid AND
 	artifactstate.artifactid=artifact.artifactid AND
 	artifactstate.qcflag = 1 AND
-    process.daterun IS NOT NULL AND
+	process.daterun IS NOT NULL AND
     
-    --- EXOME
-    project.name ILIKE 'Diag-excap%'
-    --project.name ILIKE '%'
+	--- EXOME
+	project.name ILIKE 'Diag-excap%'
+	--project.name ILIKE '%'
 
 	GROUP BY sample.name
 

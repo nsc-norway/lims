@@ -1,7 +1,7 @@
 SELECT
 	process.daterun,
-    SUM(CAST(artifact_udf_view.udfvalue AS FLOAT)),
-    process.processtype
+	SUM(CAST(artifact_udf_view.udfvalue AS FLOAT)),
+	processtype.displayname
 
 FROM processtype, process, processiotracker, artifact, artifact_udf_view, artifactstate
 WHERE
@@ -11,20 +11,20 @@ WHERE
         processtype.displayname='Illumina Sequencing (Illumina SBS) 5.0' OR
         processtype.displayname='NextSeq Run (NextSeq) 1.0' OR
         processtype.displayname='MiSeq Run (MiSeq) 5.0'
-    ) AND
-    process.typeid=processtype.typeid AND
+	) AND
+	process.typeid=processtype.typeid AND
 	processiotracker.processid=process.processid AND
 	artifact.artifactid=processiotracker.inputartifactid AND
 	artifact_udf_view.artifactid=artifact.artifactid AND
-    (
-        artifact_udf_view.udfname IN ('Yield PF (Gb) R1', 'Yield PF (Gb) R2')
-    ) AND
+	(
+	artifact_udf_view.udfname IN ('Yield PF (Gb) R1', 'Yield PF (Gb) R2')
+	) AND
 	artifactstate.artifactid=artifact.artifactid AND
 	artifactstate.qcflag = 1 AND
-    process.daterun IS NOT NULL AND
-    artifact_udf_view.udfvalue IS NOT NULL AND
-    YEAR(process.daterun) >= 2016
+	process.daterun IS NOT NULL AND
+	artifact_udf_view.udfvalue IS NOT NULL AND
+	EXTRACT(YEAR FROM process.daterun) >= 2014
     
-	GROUP BY process.daterun
-    ORDER BY process.daterun
+	GROUP BY process.daterun, processtype.displayname
+	ORDER BY process.daterun
 

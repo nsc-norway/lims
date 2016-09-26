@@ -6,6 +6,7 @@ from collections import defaultdict
 import numpy as np
 import psycopg2
 import socket
+import os
 
 
 if socket.gethostname() == "dev-lims.sequencing.uio.no":
@@ -15,7 +16,7 @@ else:
 conn = psycopg2.connect("dbname=clarityDB user={0}".format(user))
 cur = conn.cursor()
 
-query = open("bases.sql").read()
+query = open(os.path.join(os.path.dirname(__file__), "bases.sql")).read()
 cur.execute(query)
 
 ptype_total = defaultdict(int)
@@ -26,6 +27,8 @@ for row in cur:
     ptype_total[typ] += yiel
     ptype_values[typ].append((daterun, ptype_total[typ]))
 
-plt.plot(dates, cumyield)
+for ptype in sorted(ptype_total.keys()):
+    plt.plot(zip(*ptype_values[ptype]))
+
 plt.savefig('bases.png')
 
