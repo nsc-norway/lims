@@ -12,7 +12,7 @@ def sort_key(elem):
     return (container, int(col), row)
 
 
-def main(process_id, file_id):
+def main(process_id, file_ids):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
 
@@ -27,27 +27,30 @@ def main(process_id, file_id):
 
     lims.get_batch(inputs + outputs)
     
-    rows = []
-    header = []
-    i_o = zip(inputs, outputs)
+    all_i_o = zip(inputs, outputs)
 
-    if len(i_o) > 24:
-        print "Too many samples. Only 24 samples are supported."
-        sys.exit(1)
+    chunks = [all_i_o[i:i+24] for i in xrange(0, len(all_i_o), 24)]
+    for file_index, i_o in enumerate(chunks):
+        try:
+            outfile = Artifact(lims, id=file_ids[file_index])
+        except IndexError:
+            print "Too many samples. Only", len(file_ids)*24 ,"samples are supported (file:", file_index, ")."
+            sys.exit(1)
+        rows = []
+        header = []
 
-    rows = []
-    for xcol in range(16):
-        for index, (input, output) in enumerate(sorted(i_o, key=sort_key), 1):
-            sample_no = re.match(r"([0-9]+)-", input.name)
-            sample_no = sample_no.group(1) if sample_no else input.name
-            rows.append((str(xcol*24 + index), sample_no))
+        rows = []
+        for xcol in range(16):
+            for index, (input, output) in enumerate(sorted(i_o, key=sort_key), 1):
+                sample_no = re.match(r"([0-9]+)-", input.name)
+                sample_no = sample_no.group(1) if sample_no else input.name
+                rows.append((str(xcol*24 + index), sample_no))
 
-    outfile = Artifact(lims, id=file_id)
-    gs = lims.glsstorage(outfile, 'quant_studio.txt')
-    file_obj = gs.post()
-    rows = ["Well\tSample Name"] + ["\t".join(values) for values in rows]
-    file_obj.upload("\r\n".join(rows))
+        gs = lims.glsstorage(outfile, 'quant_studio_' + str(file_index+1) + '.txt')
+        file_obj = gs.post()
+        rows = ["Well\tSample Name"] + ["\t".join(values) for values in rows]
+        file_obj.upload("\r\n".join(rows))
 
 
-main(sys.argv[1], sys.argv[2])
+main(sys.argv[1], sys.argv[2:])
 

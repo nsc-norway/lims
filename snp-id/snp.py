@@ -37,8 +37,8 @@ def main(process_id, filecfg, file_id):
     i_o = zip(inputs, outputs)
 
     if len(i_o) > 24:
-        print "Too many samples. Only 24 samples are supported."
-        sys.exit(1)
+        print "Too many samples for Biomek. Only 24 samples are supported. Skipping biomek files."
+        sys.exit(0)
 
     for index, (input, output) in enumerate(sorted(i_o, key=sort_key)):
         sample_name = input.name.encode('utf-8')
