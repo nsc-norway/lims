@@ -7,7 +7,7 @@ def main(process_id):
     step = Step(lims, id=process_id)
     if step.reagentlots:
         for lot in step.reagentlots.reagent_lots:
-            if lot.lot_number != "Rapid dummy":
+            if not "dummy" in lot.lot_number.lower():
                 lot.status = "ARCHIVED"
                 lot.put()
 
