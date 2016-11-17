@@ -1,0 +1,27 @@
+# Kits
+-
+    ref:         15043895
+    name:        MiSeq Reagent Kit 1/2
+    lotcode:     v3-600C
+    hasUniqueId: true
+-
+    ref:         15058251
+    name:        NextSeq Accessory Box
+    lotcode:     v2
+    hasUniqueId: true
+-
+    ref:         15057941
+    name:        NextSeq 500 BC
+    lotcode:     BC-v2
+    hasUniqueId: false
+-
+    ref:         15057934
+    name:        NextSeq 500 RC
+    hasUniqueId: false
+    lotcode:     RC-HO-v2-75C
+-
+    ref:         15057929
+    name:        NextSeq 500 RC
+    hasUniqueId: false
+    lotcode:     RC-HO-v2-300C
+
