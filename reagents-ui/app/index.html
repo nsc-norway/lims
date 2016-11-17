@@ -63,7 +63,7 @@
 		</tr>
     <tr>
       <td>Rgt/unique ID:</td>
-			<td>{{ lot.uid }}</td>
+			<td>{{ lot.uniqueId }}</td>
     </tr>
   	<td>
   		Expiry date:
@@ -73,7 +73,7 @@
   	</td>
   	</tr>
 	</table>
-  <div class="confirm-save" ng-hide="!(kit.found && lot.lotnumber && lot.uid && lot.expiryDate) || submitted">
+  <div class="confirm-save" ng-hide="!(kit.found && lot.lotnumber && lot.uniqueId && lot.expiryDate) || submitted">
     <button class="save" ng-click="saveLot()">&#x2795; Save</button>
     <div>(scan a new REF to cancel)</div>
   </div>

@@ -109,7 +109,7 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot, Refre
 		else {
 			$scope.scanMode = false;
 		}
-		if ($scope.lotnumber != "") {
+		if ($scope.lotnumber != "") {
 			$scope.lot = Lot.get({'ref': $scope.ref, 'lotnumber': $scope.lotnumber},
 			function() {
 				if ($scope.lot.known && !$scope.kit.requestLotName) {
@@ -128,10 +128,10 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot, Refre
 	});
 
 	$scope.rgtChanged = Defer(20, function() {
-		if (! ($scope.lot.uid == "" && $scope.rgt.length > 3)) {
+		if (! ($scope.lot.uniqueId == "" && $scope.rgt.length > 3)) {
 			$scope.scanMode = false;
 		}
-		$scope.lot.uid = $scope.rgt;
+		$scope.lot.uniqueId = $scope.rgt;
 		if ($scope.rgt != "" && $scope.scanMode) {
 			if ($scope.lot.known) {
 				$scope.saveLot($scope);
