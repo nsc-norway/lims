@@ -22,8 +22,16 @@ import yaml
 app = Flask(__name__)
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-kit_list = yaml.load(open("kits.yml").read())
-kits = dict((str(e['ref']), e) for e in kit_list)
+KITS_FILE = "kits.yml"
+
+kits = {}
+
+def load_kits():
+    global kits
+    kit_list = yaml.load(open(KITS_FILE).read())
+    kits = dict((str(e['ref']), e) for e in kit_list)
+
+load_kits()
 lims_kits = {}
 
 class KitDoesNotExistError(ValueError):
@@ -47,12 +55,42 @@ def get_kit(ref):
         kit = kits[ref]
         return jsonify({
                 "name": kit['name'],
-                "requestLotName": kit['hasUniqueId'],
+                "hasUniqueId": kit['hasUniqueId'],
                 "found": True,
                 "ref": kit['ref']
                 })
     except KeyError, e:
         return ("Kit not found", 404)
+
+@app.route('/kits', methods=['POST'])
+def new_kit():
+    data = request.json
+    try:
+        ref = data['ref']
+        load_kits()
+        if kits.has_key(data['ref']):
+            return ("Kit " + str(ref) + " already exists", 400)
+        try:
+            get_lims_kit(data['name'])
+        except KitDoesNotExistError:
+            # TODO enable return ("Kit type " + data['name'] + " does not exist in LIMS", 400)
+            pass
+        kit = {}
+        for prop in ['ref', 'hasUniqueId', 'name', 'lotcode']: 
+            kit[prop] = data[prop]
+        kits[ref] = kit
+        try:
+            sorted_values = sorted(kits.values(), key=lambda e: e.get('name'))
+            open(KITS_FILE, "w").write(yaml.safe_dump())
+        except IOError, e:
+            if e.errno == 13:
+                return ("Access denied to write data file", 403)
+            else:
+                return ("Unable to write data file", 500)
+        return ("OK", 200)
+
+    except KeyError, e:
+        return ("Missing field " + str(e) + " in request", 400) 
 
 def get_next_seq_number(kitname, lotcode):
     for i in itertools.count(1):
@@ -117,8 +155,10 @@ def create_lot(ref, lotnumber):
             if not unique_id:
                 if not kit.get('hasUniqueId'):
                     unique_id = get_next_name(kit)
-                else:
+                elif kit.get('lotcode'):
                     unique_id = "{0}-{1}".format(data['uniqueId'], kit['lotcode'])
+                else:
+                    unique_id = data['uniqueId']
             lot = lims.create_lot(
                 get_lims_kit(kit['name']),
                 unique_id,
