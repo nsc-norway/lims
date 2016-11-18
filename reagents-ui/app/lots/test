@@ -1,6 +1,7 @@
 {
   "lotnumber": "test",
   "known": true,
-  "uid": "UID-test",
+  "uniqueId": "UID-test",
+  "assignedUniqueId": "UID-test",
   "expiryDate": "2016-04-23T18:25:43.511Z"
 }

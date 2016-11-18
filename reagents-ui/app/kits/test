@@ -1,6 +1,6 @@
 {
   "name": "Test kit",
-  "requestLotName": false,
+  "hasUniqueId": false,
   "found": true,
   "ref": "test"
 }

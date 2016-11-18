@@ -10,7 +10,7 @@ function resetInputFields($scope) {
 function resetDetails($scope) {
 	$scope.saved = false;
 	$scope.submitted = false;
-	$scope.kit = {ref: "", found:false, requestLotName: false};
+	$scope.kit = {ref: "", found:false, hasUniqueId: false};
 	$scope.lot = {lotnumber: "", known: false};
 }
 
@@ -99,7 +99,7 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot, Refre
 
 	$scope.lotChanged = Defer(20, function() {
 		if ($scope.lot.lotnumber == "" && $scope.lotnumber.length > 3) {
-					if ($scope.kit.requestLotName) {
+					if ($scope.kit.hasUniqueId) {
 						$scope.$broadcast("focusRgt");
 					}
 					else {
@@ -112,12 +112,12 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot, Refre
 		if ($scope.lotnumber != "") {
 			$scope.lot = Lot.get({'ref': $scope.ref, 'lotnumber': $scope.lotnumber},
 			function() {
-				if ($scope.lot.known && !$scope.kit.requestLotName) {
+				if ($scope.lot.known && !$scope.kit.hasUniqueId) {
 					if ($scope.scanMode) {
 						$scope.saveLot($scope);
 					}
 				}
-				if ($scope.lot.known && $scope.kit.requestLotName) {
+				if ($scope.lot.known && $scope.kit.hasUniqueId) {
 					$scope.$broadcast("focusRgt");
 				}
 			});

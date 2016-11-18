@@ -80,19 +80,23 @@ def get_lot(ref, lotnumber):
     except KeyError:
         return ("Kit not found", 404)
     lots = lims.get_reagent_lots(kitname=kit['name'], number=lotnumber)
+    next_lot_name =  get_next_name(kit)
     if lots:
         lot = next(iter(lots))
         return jsonify({
 		"expiryDate": lot.expiry_date,
-		"assignedUniqueId": get_next_name(kit),
+		"assignedUniqueId": next_lot_name,
+		"uniqueId": next_lot_name,
 		"known": True,
 		"lotnumber": lotnumber,
 		"ref": ref
     	})
     else:
+
         return jsonify({
 		"expiryDate": None,
-		"assignedUniqueId": get_next_name(kit),
+		"assignedUniqueId": next_lot_name,
+		"uniqueId": next_lot_name,
 		"known": False,
 		"lotnumber": lotnumber,
 		"ref": ref
@@ -138,7 +142,39 @@ def create_lot(ref, lotnumber):
         "assignedUniqueId": lot.name,
         "known": True,
         "lotnumber": lotnumber,
-        "ref": ref
+        "ref": ref,
+        "limsId": lot.id
+        })
+
+@app.route('/editlot/<limsId>', methods=['PUT'])
+def edit_lot(limsId):
+    data = request.json
+    try:
+        lot = ReagentLot(lims, id=data['limsId'])
+    except KeyError:
+        return ("LIMS-ID not specified", 400)
+    try:
+        lot.get()
+    except requests.HTTPError, e:
+        if e.response.status_code == 404:
+            return ("Lot does not exist", 404)
+        else:
+            raise
+    
+    lot.expiry_date = data['expiryDate'].replace("/", "-")
+    lot.name = data['uniqueId']
+    lot.lot_number = data['lotnumber']
+
+    lot.put()
+
+    return jsonify({
+        "expiryDate": lot.expiry_date,
+        "uniqueId": lot.name,
+        "assignedUniqueId": lot.name,
+        "known": True,
+        "lotnumber": lot.lot_number,
+        "ref": data['ref'],
+        "limsId": lot.id
         })
 
 @app.route('/')
