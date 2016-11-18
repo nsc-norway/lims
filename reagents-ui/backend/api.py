@@ -81,7 +81,7 @@ def new_kit():
         kits[ref] = kit
         try:
             sorted_values = sorted(kits.values(), key=lambda e: e.get('name'))
-            open(KITS_FILE, "w").write(yaml.safe_dump())
+            open(KITS_FILE, "w").write(yaml.safe_dump(sorted_values))
         except IOError, e:
             if e.errno == 13:
                 return ("Access denied to write data file", 403)
