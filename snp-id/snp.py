@@ -99,6 +99,6 @@ def main(process_id, filecfg, file_id):
     file_obj.upload(out_buffer.getvalue())
 
 
-# Use:  PROCESS_ID CONFIG={"norm1"|"norm2"}
+# Use:  PROCESS_ID CONFIG={"norm1"|"norm2"} OUTPUT_FILE_ID
 main(sys.argv[1], sys.argv[2], sys.argv[3])
 
