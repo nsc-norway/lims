@@ -27,7 +27,7 @@ def main(process_id, file_ids):
 
     lims.get_batch(inputs + outputs)
     
-    all_i_o = zip(inputs, outputs)
+    all_i_o = sorted(zip(inputs, outputs), key=sort_key)
 
     chunks = [all_i_o[i:i+24] for i in xrange(0, len(all_i_o), 24)]
     for file_index, i_o in enumerate(chunks):
@@ -41,7 +41,7 @@ def main(process_id, file_ids):
 
         rows = []
         for xcol in range(16):
-            for index, (input, output) in enumerate(sorted(i_o, key=sort_key), 1):
+            for index, (input, output) in enumerate(i_o, 1):
                 sample_no = re.match(r"([0-9]+)-", input.name)
                 sample_no = sample_no.group(1) if sample_no else input.name
                 rows.append((str(xcol*24 + index), sample_no))
