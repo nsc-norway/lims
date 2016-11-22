@@ -10,7 +10,14 @@ import yaml
 
 # Back-end JSON REST service for reagent registration
 
-# Edit the file kits.yml to set the kits.
+# This service allows unauthenticated access to query kit types and lots,
+# and to add new lots and edit existing lots. It uses the file kits.yml 
+# to keep a mapping of "REF" numbers, printed on barcodes, to kit 
+# information. Clients can also add entries to kits.yml via the API.
+
+# This back-end service supports both the reagent scanning web application 
+# (in the parent directory) and the webcam-based Java application in the
+# reagent-scanning repo.
 
 # The previous version of this program used only the LIMS to get a
 # list of kits, and matched the REF code to the catalogue number. While 
@@ -20,18 +27,25 @@ import yaml
 # To look at the version, see commit 898a94423d8cb367e60b630165a692b11df1c171
 
 app = Flask(__name__)
+
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-KITS_FILE = "kits.yml"
+kits_file = "kits.yml"
 
 kits = {}
 
 def load_kits():
     global kits
-    kit_list = yaml.load(open(KITS_FILE).read())
-    kits = dict((str(e['ref']), e) for e in kit_list)
+    try:
+        kit_list = yaml.load(open(kits_file).read())
+        kits = dict((str(e['ref']), e) for e in kit_list)
+    except IOError, e:
+        print "Failed to read kits: ", e
+        kits = {}
 
-load_kits()
+if __name__ == '__main__':
+    load_kits()
+
 lims_kits = {}
 
 class KitDoesNotExistError(ValueError):
@@ -80,7 +94,7 @@ def new_kit():
         kits[ref] = kit
         try:
             sorted_values = sorted(kits.values(), key=lambda e: e.get('name'))
-            open(KITS_FILE, "w").write(yaml.safe_dump(sorted_values))
+            open(kits_file, "w").write(yaml.safe_dump(sorted_values))
         except IOError, e:
             if e.errno == 13:
                 return ("Access denied to write data file", 403)
