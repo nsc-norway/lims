@@ -73,8 +73,7 @@ def new_kit():
         try:
             get_lims_kit(data['name'])
         except KitDoesNotExistError:
-            # TODO enable return ("Kit type " + data['name'] + " does not exist in LIMS", 400)
-            pass
+            return ("Kit type " + data['name'] + " does not exist in LIMS", 400)
         kit = {}
         for prop in ['ref', 'hasUniqueId', 'name', 'lotcode']: 
             kit[prop] = data[prop]
