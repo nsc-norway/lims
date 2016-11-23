@@ -9,11 +9,11 @@ def calculate_molarity(frag_size, quant_mean):
 
 def get_pool_frag_size(artifact):
     pp = artifact.parent_process
-    pool_ios = [i_o for i_o in pp.input_output_maps if i_o[1] == artifact]
+    pool_ios = [i_o for i_o in pp.input_output_maps if i_o[1]['uri'] == artifact]
     frag_sum = 0.0
     frag_count = len(pool_ios)
     for i_o in pool_ios:
-        frag_sum += i_o[0].udf['Average Fragment Size']
+        frag_sum += i_o[0]['uri'].udf['Average Fragment Size']
     return frag_sum / frag_count
 
 
