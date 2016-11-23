@@ -34,8 +34,11 @@ def main(process_id):
         try:
             frag_size = input.udf['Average Fragment Size']
         except KeyError, e:
-            frag_size = get_pool_frag_size(input)
-            
+            try:
+                frag_size = get_pool_frag_size(input)
+            except KeyError, e:
+                print "Can't find the", e, "of one of the samples in pool", input.name
+                sys.exit(1)
         if frag_size == 0:
             zeros.append(input.name.encode('utf-8'))
         else:
