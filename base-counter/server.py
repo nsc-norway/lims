@@ -25,7 +25,6 @@ RUN_STORAGE = "/data/runScratch.boston"
 
 
 SEQUENCERS = {
-    '7001448': ('hiseq', 'Hillary'),
     'D00132': ('hiseq', 'Hilma'),
 
     'NS500336': ('nextseq', 'Nemo'),
