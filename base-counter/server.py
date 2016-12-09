@@ -355,7 +355,7 @@ class RunStatus(object):
             return True
         if (not self.finished) and len(self.cycle_arrival) > 0:
             current_cycle_time = time.time() - self.cycle_arrival[self.current_cycle]
-            if current_cycle_time > 18*3600 or (SEQUENCERS[self.machine_id][0] != 'hiseq' and current_cycle_time > 3600):
+            if current_cycle_time > 25*3600 or (SEQUENCERS[self.machine_id][0] != 'hiseq' and current_cycle_time > 3600):
                 return True
             if len(self.cycle_arrival) > 2:
                 cycle_rate, cycle_stride = self.get_cycle_rate()
