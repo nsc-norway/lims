@@ -4,7 +4,8 @@ import datetime
 from functools import partial
 import StringIO
 import requests
-from xml.etree.ElementTree import XML
+from xml.etree.ElementTree import XML, ElementTree
+import requests
 from genologics import config
 from genologics.lims import *
 
@@ -120,7 +121,14 @@ def main(process_id):
 
     try:
         process.udf['Project evaluation form imported'] = True
-        process.put()
+        # The below code should really be this:
+        ####process.put()
+        # but we are struggling with handling of non-ascii characters in the
+        # response to PUT.
+        data = lims.tostring(ElementTree(process.root))
+        r = requests.put(process.uri, data=data,
+                    auth=(lims.username, lims.password),
+                    headers={'content-type': 'application/xml', 'accept': 'application/xml'})
     except requests.exceptions.HTTPError, e:
         # Don't crash on errors
         print "LIMS wouldn't let us fill in the form: " + str(e)
