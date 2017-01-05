@@ -1,1 +1,0 @@
-../../snp-id/snp.py
