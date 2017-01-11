@@ -5,6 +5,9 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
+# -- PROBABLY NO LONGER USED (2017-01) --
+# Was used on Sample Normalization step, check and discard if appropriate.
+
 # This is a CSV file generator, for use with the Biomek robots.
 # Various output formats are supported, see the filecfg parameter.
 
