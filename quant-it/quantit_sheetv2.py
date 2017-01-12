@@ -12,7 +12,7 @@ import matplotlib.pylab as plt
 ROWS = ["A","B","C","D","E","F","G","H"]
 ROW_SPACING = 3
 STANDARD_VOLUME = 10.0
-SAMPLE_VOLUME = 1.0
+DEFAULT_SAMPLE_VOLUME = 1.0
 
 def parse_result_file(content):
     book = open_workbook(file_contents=content, formatting_info=False )
@@ -39,12 +39,12 @@ def make_plot(x, y, intercept, slope, graph_file_id):
     plt.plot(x, y, 'ro')
     plt.plot(x, [xi*slope + intercept for xi in x])
     plt.xlim(x[0] - 5, x[-1] + 5)
-    plt.xlabel("Concentration x {0} (ng/uL)".format(STANDARD_VOLUME / SAMPLE_VOLUME))
+    plt.xlabel("Concentration x {0} (ng/uL)".format(STANDARD_VOLUME / sample_volume))
     plt.ylabel("Fluorescence counts")
     plt.savefig(graph_file_id + ".png")
 
 
-def main(process_id, graph_file_id):
+def main(process_id, graph_file_id, sample_volume):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
     lims.get_batch(process.all_inputs() + process.all_outputs())
@@ -64,7 +64,7 @@ def main(process_id, graph_file_id):
     data = parse_result_file(datafiles[0].download())
 
     standards_values = [data["{0}:{1}".format(row, 1)] for row in ROWS]
-    scaled_concs = [sv * STANDARD_VOLUME / SAMPLE_VOLUME for sv in standards_concs]
+    scaled_concs = [sv * STANDARD_VOLUME / sample_volume for sv in standards_concs]
 
     slope, intercept, r_value, p_value, std_err = stats.linregress(scaled_concs, standards_values)
 
@@ -87,4 +87,11 @@ def main(process_id, graph_file_id):
 
 
 if __name__ == "__main__":
-	main(sys.argv[1], sys.argv[2])
+    if len(sys.argv) == 3:
+        main(sys.argv[1], sys.argv[2], DEFAULT_SAMPLE_VOLUME)
+    elif len(sys.argv) >= 4:
+        main(sys.argv[1], sys.argv[2], sys.argv[3])
+    else:
+        print("Incorrect usage (see script")
+        sys.exit(1)
+
