@@ -20,6 +20,12 @@ ws = wb.active
 side_style = Side(border_style="thin")
 border_style = Border(top=side_style, left=side_style, right=side_style, bottom=side_style)
 
+def sort_key(elem):
+    input, output = elem
+    container, well = output.location
+    row, col = well.split(":")
+    return (container, int(col), row)
+
 headers = [
     "Prøvenummer",
     "Arkivposisjon",
@@ -44,7 +50,7 @@ i_os = process.input_output_maps
 inputs_outputs = [(i['uri'], o['uri']) for i,o in i_os if o['output-generation-type'] == 'PerInput']
 lims.get_batch([i for i,o in inputs_outputs] + [o for i,o in inputs_outputs])
 samples = lims.get_batch(i.samples[0] for i, o in inputs_outputs)
-for row_index, (input, output) in enumerate(inputs_outputs, 2):
+for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key), 2):
     for i in range(1, len(headers)+1):
         ws.cell(row=row_index, column=i).border = border_style
     ws.cell(row=row_index, column=1).value = input.name
