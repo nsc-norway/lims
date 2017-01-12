@@ -49,7 +49,7 @@ for i, width in enumerate([32, 12, 18, 8, 6, 8]):
 i_os = process.input_output_maps
 inputs_outputs = [(i['uri'], o['uri']) for i,o in i_os if o['output-generation-type'] == 'PerInput']
 lims.get_batch([i for i,o in inputs_outputs] + [o for i,o in inputs_outputs])
-samples = lims.get_batch(i.samples[0] for i, o in inputs_outputs)
+lims.get_batch(i.samples[0] for i, o in inputs_outputs)
 for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key), 2):
     for i in range(1, len(headers)+1):
         ws.cell(row=row_index, column=i).border = border_style
