@@ -33,7 +33,7 @@ def parse_result_file(content):
     return data
 
 
-def make_plot(x, y, intercept, slope, graph_file_id):
+def make_plot(sample_volume, x, y, intercept, slope, graph_file_id):
     plt.ioff()
     f = plt.figure()
     plt.plot(x, y, 'ro')
@@ -79,7 +79,7 @@ def main(process_id, graph_file_id, sample_volume):
         o.udf['Concentration'] = conc
 
 
-    make_plot(scaled_concs, standards_values, intercept, slope, graph_file_id)
+    make_plot(sample_volume, scaled_concs, standards_values, intercept, slope, graph_file_id)
     lims.put_batch(result_files)
 
     process.put()
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 3:
         main(sys.argv[1], sys.argv[2], DEFAULT_SAMPLE_VOLUME)
     elif len(sys.argv) >= 4:
-        main(sys.argv[1], sys.argv[2], sys.argv[3])
+        main(sys.argv[1], sys.argv[2], float(sys.argv[3]))
     else:
         print("Incorrect usage (see script")
         sys.exit(1)
