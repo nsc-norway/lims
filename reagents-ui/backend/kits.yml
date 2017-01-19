@@ -1,5 +1,11 @@
 - {hasUniqueId: true, lotcode: V4, name: HiSeq 2500 Cluster Kit 1/2, ref: '15049946'}
+- {hasUniqueId: true, lotcode: RAPID-SR-V2, name: HiSeq 2500 Cluster Kit 1/2, ref: '15056111'}
+- {hasUniqueId: true, lotcode: RAPID-SR-V2, name: HiSeq 2500 FC, ref: '15053060'}
+- {hasUniqueId: true, lotcode: RAPID-50V2, name: HiSeq 2500 SBS Reagents 1/2, ref: '15059958'}
 - {hasUniqueId: true, lotcode: 250V4, name: HiSeq 2500 SBS Reagents 2/2, ref: '15049943'}
+- {hasUniqueId: true, lotcode: RAPID-50V2, name: HiSeq 2500 SBS Reagents 2/2, ref: '15059901'}
+- {hasUniqueId: true, lotcode: SR-V1, name: HiSeq 3000/4000 Cluster Kit 1/2, ref: '15071459'}
+- {hasUniqueId: true, lotcode: SR-V1, name: HiSeq 3000/4000 Cluster Kit 2/2, ref: '15071661'}
 - {hasUniqueId: true, lotcode: SR-V1, name: HiSeq 3000/4000 FC, ref: '20002047'}
 - {hasUniqueId: true, lotcode: 50V1, name: HiSeq 3000/4000 SBS Reagents 1/2, ref: '15067108'}
 - {hasUniqueId: true, lotcode: 300V1, name: HiSeq 3000/4000 SBS Reagents 1/2, ref: '15067104'}
@@ -10,8 +16,13 @@
 - {hasUniqueId: true, lotcode: V2.5, name: HiSeq X FC, ref: '15067696'}
 - {hasUniqueId: true, lotcode: 300V2, name: HiSeq X SBS Reagents 1/2, ref: '15057935'}
 - {hasUniqueId: true, lotcode: 300V2, name: HiSeq X SBS Reagents 2/2, ref: '15057936'}
-- {hasUniqueId: true, lotcode: 600V2, name: MiSeq Reagent Kit 1/2, ref: '15043895'}
+- {hasUniqueId: true, lotcode: 600V3, name: MiSeq Reagent Kit 1/2, ref: '15043895'}
+- {hasUniqueId: true, lotcode: 500V2, name: MiSeq Reagent Kit 1/2, ref: '15033625'}
+- {hasUniqueId: true, lotcode: V2, name: MiSeq Reagent Kit 2/2, ref: '15033626'}
+- {hasUniqueId: true, lotcode: V3, name: MiSeq Reagent Kit 2/2, ref: '15043894'}
 - {hasUniqueId: false, lotcode: BC-V2, name: NextSeq 500 BC, ref: '15057941'}
+- {hasUniqueId: true, lotcode: MO-V2, name: NextSeq 500 FC, ref: '15065974'}
+- {hasUniqueId: true, lotcode: HO-V2, name: NextSeq 500 FC, ref: '15065973'}
 - {hasUniqueId: false, lotcode: RC-HO-75V2, name: NextSeq 500 RC, ref: '15057934'}
+- {hasUniqueId: false, lotcode: RC-MO-300V2, name: NextSeq 500 RC, ref: '15057939'}
 - {hasUniqueId: false, lotcode: RC-HO-300V2, name: NextSeq 500 RC, ref: '15057929'}
-- {hasUniqueId: true, lotcode: V2, name: NextSeq Accessory Box, ref: '15058251'}
