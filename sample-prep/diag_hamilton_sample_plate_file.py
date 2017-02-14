@@ -12,8 +12,6 @@ def main(process_id, file_id):
     container_0 = next(iter(outputs.values())).location[0]
     assert all(o.location[0] == container_0 for o in outputs.values())
 
-    lims.get_batch(o.samples[0] for o in outputs.values())
-
     with open(file_id + "-HamiltonSamplePlate.txt", "w") as f:
         f.write("""Version  2       \r\nID  Diag--      \r\nAssay   \r\nNextera Rapid Capture Enrichment        \r\nIndexReads  2       \r\nIndexCycles 8       \r\n""")
         for row in 'ABCDEFGH':
