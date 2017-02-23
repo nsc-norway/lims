@@ -37,7 +37,7 @@ def main(process_id, file_id):
         row.write(3, i7)
         row.write(4, i5)
 
-    book.save(file_id + "-HamiltonPoolingVolum.xls")
+    book.save(file_id + "-HamiltonNormPoolOutput.xls")
 
 def get_index_names(output):
     try:
