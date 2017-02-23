@@ -71,6 +71,7 @@ def get_kit(ref):
                 "name": kit['name'],
                 "hasUniqueId": kit['hasUniqueId'],
                 "found": True,
+                "setActive": kit['setActive'],
                 "ref": kit['ref']
                 })
     except KeyError, e:
@@ -89,7 +90,7 @@ def new_kit():
         except KitDoesNotExistError:
             return ("Kit type " + data['name'] + " does not exist in LIMS", 400)
         kit = {}
-        for prop in ['ref', 'hasUniqueId', 'name', 'lotcode']: 
+        for prop in ['ref', 'hasUniqueId', 'name', 'lotcode', 'setActive']: 
             kit[prop] = data[prop]
         kits[ref] = kit
         try:
@@ -177,7 +178,7 @@ def create_lot(ref, lotnumber):
                 unique_id,
                 lotnumber,
                 data['expiryDate'].replace("/", "-"),
-                status='ACTIVE'
+                status='ACTIVE' if kit['setActive'] else 'PENDING'
             )
         except requests.HTTPError, e:
             if 'Duplicate lot' in e.message:
