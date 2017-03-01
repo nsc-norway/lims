@@ -1,35 +1,74 @@
-- {setActive: false, hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Box 1: Nextera Rapid Capture/TruSight One/Cardio', ref: '15046892'}
-- {setActive: false, hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Box 2: Nextera Rapid Capture/TruSightOne/Cardio', ref: '15046897'}
-- {setActive: false, hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Indices: Nextera Rapid Capture/TruSight One/Cardio', ref: '15046902'}
-- {setActive: false, hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Oligos: Nextera Rapid Capture/TruSight One/Cardio', ref: '15047151'}
-- {setActive: true, hasUniqueId: true, lotcode: V4, name: HiSeq 2500 Cluster Kit 1/2, ref: '15049946'}
-- {setActive: true, hasUniqueId: true, lotcode: RAPID-SR-V2, name: HiSeq 2500 Cluster Kit 1/2, ref: '15056111'}
-- {setActive: true, hasUniqueId: true, lotcode: RAPID-SR-V2, name: HiSeq 2500 FC, ref: '15053060'}
-- {setActive: true, hasUniqueId: true, lotcode: RAPID-50V2, name: HiSeq 2500 SBS Reagents 1/2, ref: '15059958'}
-- {setActive: true, hasUniqueId: true, lotcode: 250V4, name: HiSeq 2500 SBS Reagents 2/2, ref: '15049943'}
-- {setActive: true, hasUniqueId: true, lotcode: RAPID-50V2, name: HiSeq 2500 SBS Reagents 2/2, ref: '15059901'}
-- {setActive: true, hasUniqueId: true, lotcode: SR-V1, name: HiSeq 3000/4000 Cluster Kit 1/2, ref: '15071459'}
-- {setActive: true, hasUniqueId: true, lotcode: SR-V1, name: HiSeq 3000/4000 Cluster Kit 2/2, ref: '15071661'}
-- {setActive: true, hasUniqueId: true, lotcode: SR-V1, name: HiSeq 3000/4000 FC, ref: '20002047'}
-- {setActive: true, hasUniqueId: true, lotcode: 50V1, name: HiSeq 3000/4000 SBS Reagents 1/2, ref: '15067108'}
-- {setActive: true, hasUniqueId: true, lotcode: 300V1, name: HiSeq 3000/4000 SBS Reagents 1/2, ref: '15067104'}
-- {setActive: true, hasUniqueId: true, lotcode: 50V1, name: HiSeq 3000/4000 SBS Reagents 2/2, ref: '15067109'}
-- {setActive: true, hasUniqueId: true, lotcode: RAPID-500V2, name: HiSeq SBS Reagents 1/2, ref: '15059960'}
-- {setActive: true, hasUniqueId: true, lotcode: PE-V2, name: HiSeq X Cluster Kit 1/2, ref: '15057932'}
-- {setActive: true, hasUniqueId: true, lotcode: PE-V2, name: HiSeq X Cluster Kit 2/2, ref: '15057933'}
-- {setActive: true, hasUniqueId: true, lotcode: V2.5, name: HiSeq X FC, ref: '15067696'}
-- {setActive: true, hasUniqueId: true, lotcode: 300V2, name: HiSeq X SBS Reagents 1/2, ref: '15057935'}
-- {setActive: true, hasUniqueId: true, lotcode: 300V2, name: HiSeq X SBS Reagents 2/2, ref: '15057936'}
-- {setActive: true, hasUniqueId: true, lotcode: 600V3, name: MiSeq Reagent Kit 1/2, ref: '15043895'}
-- {setActive: true, hasUniqueId: true, lotcode: 300V2, name: MiSeq Reagent Kit 1/2, ref: '15033624'}
-- {setActive: true, hasUniqueId: true, lotcode: 500V2, name: MiSeq Reagent Kit 1/2, ref: '15033625'}
-- {setActive: true, hasUniqueId: true, lotcode: V2, name: MiSeq Reagent Kit 2/2, ref: '15033626'}
-- {setActive: true, hasUniqueId: true, lotcode: NANO-V2, name: MiSeq Reagent Kit 2/2, ref: '15036714'}
-- {setActive: true, hasUniqueId: true, lotcode: V3, name: MiSeq Reagent Kit 2/2, ref: '15043894'}
-- {setActive: true, hasUniqueId: false, lotcode: BC-V2, name: NextSeq 500 BC, ref: '15057941'}
-- {setActive: true, hasUniqueId: true, lotcode: MO-V2, name: NextSeq 500 FC, ref: '15065974'}
-- {setActive: true, hasUniqueId: true, lotcode: HO-V2, name: NextSeq 500 FC, ref: '15065973'}
-- {setActive: true, hasUniqueId: false, lotcode: RC-HO-75V2, name: NextSeq 500 RC, ref: '15057934'}
-- {setActive: true, hasUniqueId: false, lotcode: RC-MO-300V2, name: NextSeq 500 RC, ref: '15057939'}
-- {setActive: true, hasUniqueId: false, lotcode: RC-HO-300V2, name: NextSeq 500 RC, ref: '15057929'}
-- {setActive: true, hasUniqueId: false, lotcode: RC-MO-150V2, name: NextSeq 500 RC, ref: '15057940'}
+- {hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Box 1: Nextera Rapid Capture/TruSight
+    One/Cardio', ref: '15046892', setActive: false}
+- {hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Box 2: Nextera Rapid Capture/TruSightOne/Cardio',
+  ref: '15046897', setActive: false}
+- {hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Indices: Nextera Rapid Capture/TruSight
+    One/Cardio', ref: '15046902', setActive: false}
+- {hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Oligos: Nextera Rapid Capture/TruSight
+    One/Cardio', ref: '15047151', setActive: false}
+- {hasUniqueId: true, lotcode: V4, name: HiSeq 2500 Cluster Kit 1/2, ref: '15049946',
+  setActive: true}
+- {hasUniqueId: true, lotcode: RAPID-SR-V2, name: HiSeq 2500 Cluster Kit 1/2, ref: '15056111',
+  setActive: true}
+- {hasUniqueId: true, lotcode: RAPID-SR-V2, name: HiSeq 2500 FC, ref: '15053060',
+  setActive: true}
+- {hasUniqueId: true, lotcode: RAPID-50V2, name: HiSeq 2500 SBS Reagents 1/2, ref: '15059958',
+  setActive: true}
+- {hasUniqueId: true, lotcode: 250V4, name: HiSeq 2500 SBS Reagents 2/2, ref: '15049943',
+  setActive: true}
+- {hasUniqueId: true, lotcode: RAPID-50V2, name: HiSeq 2500 SBS Reagents 2/2, ref: '15059901',
+  setActive: true}
+- {hasUniqueId: true, lotcode: PE-V1, name: HiSeq 3000/4000 Cluster Kit 1/2, ref: '15067099',
+  setActive: true}
+- {hasUniqueId: true, lotcode: SR-V1, name: HiSeq 3000/4000 Cluster Kit 1/2, ref: '15071459',
+  setActive: true}
+- {hasUniqueId: true, lotcode: PE-V1, name: HiSeq 3000/4000 Cluster Kit 2/2, ref: '15067100',
+  setActive: true}
+- {hasUniqueId: true, lotcode: SR-V1, name: HiSeq 3000/4000 Cluster Kit 2/2, ref: '15071661',
+  setActive: true}
+- {hasUniqueId: true, lotcode: PE-V1, name: HiSeq 3000/4000 FC, ref: '20002046', setActive: true}
+- {hasUniqueId: true, lotcode: SR-V1, name: HiSeq 3000/4000 FC, ref: '20002047', setActive: true}
+- {hasUniqueId: true, lotcode: 50V1, name: HiSeq 3000/4000 SBS Reagents 1/2, ref: '15067108',
+  setActive: true}
+- {hasUniqueId: true, lotcode: 300V1, name: HiSeq 3000/4000 SBS Reagents 1/2, ref: '15067104',
+  setActive: true}
+- {hasUniqueId: true, lotcode: 150V1, name: HiSeq 3000/4000 SBS Reagents 1/2, ref: '15067106',
+  setActive: true}
+- {hasUniqueId: true, lotcode: 50V1, name: HiSeq 3000/4000 SBS Reagents 2/2, ref: '15067109',
+  setActive: true}
+- {hasUniqueId: true, lotcode: 300V1, name: HiSeq 3000/4000 SBS Reagents 2/2, ref: '15067105',
+  setActive: true}
+- {hasUniqueId: true, lotcode: 150V1, name: HiSeq 3000/4000 SBS Reagents 2/2, ref: '15067107',
+  setActive: true}
+- {hasUniqueId: true, lotcode: RAPID-500V2, name: HiSeq SBS Reagents 1/2, ref: '15059960',
+  setActive: true}
+- {hasUniqueId: true, lotcode: PE-V2, name: HiSeq X Cluster Kit 1/2, ref: '15057932',
+  setActive: true}
+- {hasUniqueId: true, lotcode: PE-V2, name: HiSeq X Cluster Kit 2/2, ref: '15057933',
+  setActive: true}
+- {hasUniqueId: true, lotcode: V2.5, name: HiSeq X FC, ref: '15067696', setActive: true}
+- {hasUniqueId: true, lotcode: 300V2, name: HiSeq X SBS Reagents 1/2, ref: '15057935',
+  setActive: true}
+- {hasUniqueId: true, lotcode: 300V2, name: HiSeq X SBS Reagents 2/2, ref: '15057936',
+  setActive: true}
+- {hasUniqueId: true, lotcode: 300V2, name: MiSeq Reagent Kit 1/2, ref: '15033624',
+  setActive: true}
+- {hasUniqueId: true, lotcode: 500V2, name: MiSeq Reagent Kit 1/2, ref: '15033625',
+  setActive: true}
+- {hasUniqueId: true, lotcode: 600V3, name: MiSeq Reagent Kit 1/2, ref: '15043895',
+  setActive: true}
+- {hasUniqueId: true, lotcode: V2, name: MiSeq Reagent Kit 2/2, ref: '15033626', setActive: true}
+- {hasUniqueId: true, lotcode: NANO-V2, name: MiSeq Reagent Kit 2/2, ref: '15036714',
+  setActive: true}
+- {hasUniqueId: true, lotcode: V3, name: MiSeq Reagent Kit 2/2, ref: '15043894', setActive: true}
+- {hasUniqueId: false, lotcode: BC-V2, name: NextSeq 500 BC, ref: '15057941', setActive: true}
+- {hasUniqueId: true, lotcode: MO-V2, name: NextSeq 500 FC, ref: '15065974', setActive: true}
+- {hasUniqueId: true, lotcode: HO-V2, name: NextSeq 500 FC, ref: '15065973', setActive: true}
+- {hasUniqueId: false, lotcode: RC-HO-300V2, name: NextSeq 500 RC, ref: '15057929',
+  setActive: true}
+- {hasUniqueId: false, lotcode: RC-HO-75V2, name: NextSeq 500 RC, ref: '15057934',
+  setActive: true}
+- {hasUniqueId: false, lotcode: RC-MO-300V2, name: NextSeq 500 RC, ref: '15057939',
+  setActive: true}
+- {hasUniqueId: false, lotcode: RC-MO-150V2, name: NextSeq 500 RC, ref: '15057940',
+  setActive: true}
