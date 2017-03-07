@@ -94,7 +94,7 @@ def main(process_id, filegen, file_id, norm_conc, vol):
                 warning.append(output.name)
             columns = [
                     ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
-                    ("Labware", "Rack%d" % (i//32 + 1)),
+                    ("Labware", "Rack1"),
                     ("Position_ID", str(index+1)),
                     ("Volume_DNA", sample_volume),
                     ("Volume_EB", buffer_volume),
