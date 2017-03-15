@@ -13,7 +13,7 @@ def main(process_id, file_id):
     assert all(o.location[0] == container_0 for o in outputs.values())
 
     with open(file_id + "-HamiltonSamplePlate.txt", "w") as f:
-        f.write("""Version  2       \r\nID  Diag--      \r\nAssay   \r\nNextera Rapid Capture Enrichment        \r\nIndexReads  2       \r\nIndexCycles 8       \r\n""")
+        f.write("""Version\t2\r\nID\tDiag--\r\nAssay\tNextera Rapid Capture Enrichment\r\nIndexReads\t2\r\nIndexCycles\t8\r\n""")
         for row in 'ABCDEFGH':
             for col in range(1, 13):
                 well_label = "%s%02d" % (row, col)
