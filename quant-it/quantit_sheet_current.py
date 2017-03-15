@@ -55,7 +55,7 @@ def main(process_id, graph_file_id, sample_volume):
     datafiles = next((
             o['uri']
             for i,o in process.input_output_maps
-            if o['output-generation-type'] == "PerAllInputs" and o['uri'].name == "Quant-iT results (xls)"
+            if o['output-generation-type'] == "PerAllInputs" and o['uri'].name == "Quant-iT results"
             )).files
     if not datafiles:
         print "No result file found"
