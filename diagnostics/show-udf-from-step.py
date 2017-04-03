@@ -10,13 +10,14 @@ def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
     inputs = process.all_inputs()
-    prev_processes = [p 
+    prev_processes = sorted([p 
             for p in lims.get_processes(inputartifactlimsid=[i.id for i in inputs])
-            if p.type_name.startswith("Resultatvurdering_diag")
-            ]
+            if p.type_name.startswith("Resultatvurdering_diag")],
+            key=lambda p: p.run_date
+            )
 
-    if len(prev_processes) != 1:
-        print("Forventet en enkelt resultatvurdering, fant " + str(len(prev_processes)))
+    if len(prev_processes) == 0:
+        print("Fant ingen resultatvurdering")
         sys.exit(1)
     for other_process in reversed(prev_processes):
         process.udf['Dato for kontroll av resultatvurdering:'] = datetime.date.today()
