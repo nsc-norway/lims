@@ -13,7 +13,7 @@ def main(process_id):
     prev_processes = sorted([p 
             for p in lims.get_processes(inputartifactlimsid=[i.id for i in inputs])
             if p.type_name.startswith("Resultatvurdering_diag")],
-            key=lambda p: p.date_run
+            key=lambda p: int(p.id.split("-"))
             )
 
     if len(prev_processes) == 0:
