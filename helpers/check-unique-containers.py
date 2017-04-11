@@ -7,10 +7,9 @@ from genologics import config
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     step = Step(lims, id=process_id)
-    containers = set(placement.location[0] for placement in step.placements.output_placements)
+    containers = set(step.placements.get_selected_containers())
     if len(containers) > 1:
         lims.get_batch(containers)
-
     all_known = lims.get_containers(name=(container.name for container in containers))
     if len(all_known) > len(containers):
         pre_existing = set(all_known) - containers
