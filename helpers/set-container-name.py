@@ -9,7 +9,7 @@ def main(process_id, container_name):
     step = Step(lims, id=process_id)
     # Warning: This API (selected_containers) has diverged from upstream
     # Need to merge this later.
-    containers = lims.get_batch(step.placements.selected_containers)
+    containers = lims.get_batch(step.placements.get_selected_containers())
     for c in containers:
         c.name = container_name
     lims.put_batch(containers)
