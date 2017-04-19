@@ -14,14 +14,15 @@ def main(process_id, workflow_name):
     except IndexError:
         print "Unknown workflow '", workflow_name, "'"
         sys.exit(1)
-    lims.get_batch(process.all_inputs(unique=True) + process.all_outputs(unique=True))
-    lims.get_batch(output.samples[0] for output in process.all_outputs(unique=True))
+    inputs = process.all_inputs(unique=True)
+    lims.get_batch(inputs)
+    lims.get_batch(sample for input in inputs for sample in input.samples)
     routables = []
     for i, o in process.input_output_maps:
         if o['output-generation-type'] == "PerReagentLabel":
-            if i['uri'].qc_flag == "PASSED":
-                if o['uri'].samples[0].project.udf.get('Project type') == "Diagnostics":
-                    routables.append(o['uri'].samples[0].artifact)
+            if i['uri'].stateless.qc_flag == "PASSED":
+                if i['uri'].samples[0].project.udf.get('Project type') == "Diagnostics":
+                    routables += [sample.artifact for sample in i['uri'].samples]
 
     if routables:
         lims.route_analytes(routables, workflow)
