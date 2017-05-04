@@ -5,15 +5,9 @@ import re
 from genologics.lims import *
 from genologics import config
 
-def main(process_id, workflow_name):
+def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
-    workflows = lims.get_workflows(name=workflow_name)
-    try:
-        workflow = workflows[0]
-    except IndexError:
-        print "Unknown workflow '", workflow_name, "'"
-        sys.exit(1)
     inputs = process.all_inputs(unique=True)
     lims.get_batch(inputs)
     lims.get_batch(sample for input in inputs for sample in input.samples)
@@ -25,8 +19,16 @@ def main(process_id, workflow_name):
                     routables += [sample.artifact for sample in i['uri'].samples]
 
     if routables:
+        workflows = lims.get_workflows()
+        match_workflows = [] # Contains version, then workflow object
+        for w in workflows:
+            # This will do a GET for each workflow in the system. Performance is bad.
+            m = re.match(r"Tolkning av HTS-data diag (\d)\.(\d)", w.name, re.IGNORECASE)
+            if w.state == "ACTIVE" and m:
+                match_workflows.append((int(m.group(1)), int(m.group(2)), w))
+        workflow = sorted(workflows)[-1]
         lims.route_analytes(routables, workflow)
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1])
 
