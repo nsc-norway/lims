@@ -27,7 +27,7 @@ def main(process_id):
             if w.status == "ACTIVE" and m:
                 match_workflows.append((int(m.group(1)), int(m.group(2)), w))
         workflow = sorted(match_workflows)[-1]
-        lims.route_analytes(routables, workflow)
+        lims.route_analytes(routables, workflow[2])
 
 if __name__ == "__main__":
     main(sys.argv[1])
