@@ -26,7 +26,7 @@ def main(process_id):
             m = re.match(r"Tolkning av HTS-data diag (\d)\.(\d)", w.name, re.IGNORECASE)
             if w.status == "ACTIVE" and m:
                 match_workflows.append((int(m.group(1)), int(m.group(2)), w))
-        workflow = sorted(workflows)[-1]
+        workflow = sorted(match_workflows)[-1]
         lims.route_analytes(routables, workflow)
 
 if __name__ == "__main__":
