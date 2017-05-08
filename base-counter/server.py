@@ -95,7 +95,7 @@ class Database(object):
             self.count = int(f.read())
 
         runs_on_storage = set((
-                os.path.basename(rpath) for rpath in
+                os.path.basename(os.path.dirname(rpath)) for rpath in
                 glob.glob(os.path.join(RUN_STORAGE, "??????_*_*", "*"))
                 ))
         new = runs_on_storage - set(self.status.keys())
