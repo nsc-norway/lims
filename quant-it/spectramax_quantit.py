@@ -21,7 +21,7 @@ def parse_result_file(text):
     else:
         raise ValueError("Line starting with 'Plate:' not found.")
 
-    rows = [row.split()[1:] if i == 0 else row.split() for row in lines[i+2:i+10]]
+    rows = [row.split("\t")[2:] for row in lines[i+2:i+10]]
     data = {}
     for row_label, row in zip("ABCDEFGH", rows):
         for col_label, cell in zip(range(1, 9), row):
@@ -64,6 +64,7 @@ def main(process_id, graph_file_id, sample_volume):
         sys.exit(1)
 
     standards_values = [data["{0}:{1}".format(row, 1)] for row in ROWS]
+    print standards_values
     scaled_concs = [sv * STANDARD_VOLUME / sample_volume for sv in standards_concs]
 
     slope, intercept, r_value, p_value, std_err = stats.linregress(scaled_concs, standards_values)
@@ -91,6 +92,6 @@ if __name__ == "__main__":
     elif len(sys.argv) >= 4:
         main(sys.argv[1], sys.argv[2], float(sys.argv[3]))
     else:
-        print("Incorrect usage (see script")
+        print("Incorrect usage (see script)")
         sys.exit(1)
 
