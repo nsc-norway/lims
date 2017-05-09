@@ -68,8 +68,7 @@ def main(process_id, graph_file_id, sample_volume):
 
     slope, intercept, r_value, p_value, std_err = stats.linregress(scaled_concs, standards_values)
 
-    process.udf['Correlation coefficient (r)'] = r_value
-    process.udf['Standard error'] = std_err
+    process.udf['R^2'] = r_value**2
 
     result_files = set([o['uri'] for i,o in process.input_output_maps if o['output-generation-type'] == "PerInput"])
     assert len(set(rf.container for rf in result_files)) == 1, "This script can only read one plate at a time"
