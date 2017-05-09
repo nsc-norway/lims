@@ -10,9 +10,23 @@ def main(process_id):
     inputs = process.all_inputs(unique=True, resolve=True)
     ###TODO  delete inputs = [i['uri'] for i,o in i_os]
 
-    
+    controls = ... 
 
-    projects = set(sample.project for sample in samples)
+    other_processes = lims.get_processes(inputartifactlimsid=next(iter(inputs)))
+    for place_process in reversed(sorted(other_processes, key=lambda p: p.id)):
+        if place_process.type_name.startswith("qPCR Plate Setup") and\
+                set(place_process.all_inputs()) == set(inputs) - set(controls):
+            break
+    else:
+        print "Sample placement process was not found for these inputs, ",
+        print "make sure all inputs are selected."
+        sys.exit(1)
+
+    input_index = {
+            (i, o['well'])
+            for i,o in other_process.input_output_maps
+            }
+
     current_96well_index = 0
     output_container = lims.create_container('384 well plate')
     placements = []
