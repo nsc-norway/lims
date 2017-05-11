@@ -43,7 +43,8 @@ def main(process_id):
     if output_container.type_name == '96 well plate':
         placements = place_standards_96(output_container, control_outputs)
         pos = pos_96
-        assert not any(int(w.split(":")[1]) > 3 for _, (c, w) in placement_list), "You can only use the first 3 columns for 96 format qPCR."
+        assert not any(int(w.split(":")[1]) > 3 for _, (c, w) in placement_list),\
+                "You can only use the first 3 columns for 96 format qPCR."
     elif output_container.type_name == '384 well plate':
         placements = place_standards_384(output_container, control_outputs)
         pos = pos_384
@@ -88,13 +89,25 @@ def place_standards_384(container, controls):
 
 
 def place_standards_96(container, controls):
-    return []
+    placements = []
+    control_replicate = {}
+    for control in sorted(controls, key=lambda control: control.id):
+        m = re.match(r"QSTD ([A-F])1", control.name)
+        repl = control_replicate.get(control.name, 0)
+        control_replicate[control.name] = repl + 1
+        if m:
+            placements.append((control.stateless, (container, "{0}:{1}".format(m.group(1), repl+10))))
+        elif control.name.startswith("No Template Control"):
+            c_row = alpha[repl // 3 + 6]
+            c_col = repl % 3 + 10
+            placements.append((control.stateless, (container, "{0}:{1}".format(c_row, c_col))))
+    return placements
 
 def pos_384(row, col, repl):
     return row * 2 + (repl // 2), col * 2 + (repl % 2)
 
 def pos_96(row, col, repl):
-    return row, col
+    return row, col*3+repl
 
 main(sys.argv[1])
 
