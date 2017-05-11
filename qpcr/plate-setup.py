@@ -1,18 +1,21 @@
 import sys
 from genologics.lims import *
 from genologics import config
+from collections import defaultdict
+import re
 
+alpha = "ABCDEFGHIJKLMNO"
 
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
     process = Process(lims, id=process_id)
-    i_os = project.input_output_maps
+    step = Step(lims, id=process_id)
+    step.placements.get()
     inputs = process.all_inputs(unique=True, resolve=True)
-    ###TODO  delete inputs = [i['uri'] for i,o in i_os]
 
-    controls = ... 
+    controls = [i for i in inputs if i.control_type]
 
-    other_processes = lims.get_processes(inputartifactlimsid=next(iter(inputs)))
+    other_processes = lims.get_processes(inputartifactlimsid=next((i for i in inputs if not i.control_type)).id)
     for place_process in reversed(sorted(other_processes, key=lambda p: p.id)):
         if place_process.type_name.startswith("qPCR Plate Setup") and\
                 set(place_process.all_inputs()) == set(inputs) - set(controls):
@@ -22,39 +25,89 @@ def main(process_id):
         print "make sure all inputs are selected."
         sys.exit(1)
 
-    input_index = {
-            (i, o['well'])
-            for i,o in other_process.input_output_maps
-            }
+    sample_inputs = place_process.all_inputs(unique=True)
 
-    current_96well_index = 0
-    output_container = lims.create_container('384 well plate')
-    placements = []
-    input_replicate_id = {}
-    for project in projects:
-        proj_i_os = ((i, o) for (i, o) in i_os if i['uri'].samples[0].project == project)
-        project_index_outputs = []
-        for i, o in proj_i_os:
-            container, well = i['uri'].location
-            try:
-                sample_id_sortable = int(i['uri'].name.partition("-")[0])
-            except ValueError:
-                sample_id_sortable = i['uri'].name
-            project_index_outputs.append((sample_id_sortable, o['uri']))
-        # List of positions, then 
-        for index, output in sorted(project_index_outputs):
-            out_row = "ABCDEFGHIJKLMNOP"
-            replicate_id = input_replicate_id.get(input, 0)
-            drow = replicate_id // 2
-            dcol = replicate_id % 2
-            input_replicate_id[input] = replicate_id + 1
-            out_pos = "{0}:{1}".format(out_row[(current_96well_index*2) % 16 + drow], ((current_96well_index*2)//16) + 1 + dcol)
-            placements.append((output, (output_container, out_pos)))
-            current_96well_index += 1
+    placements_96 = Step(lims, id=place_process.id).placements
+    placement_list = placements_96.get_placement_list()
+    # Assert require only one container, as we only want to deal with one output (384) here
+    assert len(set(c for _, (c, w) in placement_list)) == 1, "Exactly one container must be used on placement step"
 
-    step = Step(lims, process_id)
+    assert len(placements_96.selected_containers) == 1,\
+            "Exactly one container required for qPCR step."
+
+    output_container = next(iter(step.placements.selected_containers))
+
+    control_outputs = [o['uri'] for i, o in process.input_output_maps 
+            if o['output-generation-type'] == 'PerInput' and i['uri'].control_type]
+
+    if output_container.type_name == '96 well plate':
+        placements = place_standards_96(output_container, control_outputs)
+        pos = pos_96
+        assert not any(int(w.split(":")[1]) > 3 for _, (c, w) in placement_list),\
+                "You can only use the first 3 columns for 96 format qPCR."
+    elif output_container.type_name == '384 well plate':
+        placements = place_standards_384(output_container, control_outputs)
+        pos = pos_384
+    else:
+        print "Unexpected output container type '" + str(output_container.type_name) + "'."
+
+    outputs_per_input = {}
+    for i in sample_inputs:
+        outputs_per_input[i] = sorted(
+                (oo['uri'] for ii, oo in process.input_output_maps\
+                        if ii['limsid'] == i.id and oo['output-generation-type'] == 'PerInput'),
+                key=lambda artifact: artifact.id
+                )
+    placement_output_input = dict((oo['limsid'], ii['limsid']) for ii, oo in place_process.input_output_maps)
+    input_pos = dict((placement_output_input[output.id], w) for output, (c, w) in placement_list)
+    for i in sample_inputs:
+        row, col = input_pos[i.id].split(":")
+        irow = alpha.index(row)
+        icol = int(col)-1
+        for i_rep, o in enumerate(outputs_per_input[i]):
+            outrow, outcol = pos(irow, icol, i_rep)
+            outwell = "{0}:{1}".format(alpha[outrow], str(outcol+1))
+            placements.append((o.stateless, (output_container, outwell)))
     step.placements.set_placement_list(placements)
-    step.placements.put()
+    step.placements.post()
+
+def place_standards_384(container, controls):
+    placements = []
+    control_replicate = {}
+    for control in sorted(controls, key=lambda control: control.id):
+        m = re.match(r"QSTD ([A-F])1", control.name)
+        if m:
+            repl = control_replicate.get(control.name, 0)
+            control_replicate[control.name] = repl + 1
+            std_index = alpha.index(m.group(1))
+            row = alpha[(2*std_index)+1]
+            col = 2 + repl*2
+            placements.append((control.stateless, (container, "{0}:{1}".format(row, col))))
+        #elif control.name == "No Template Control":
+        #   placements.append((control, (container, "B:7")))
+    return placements
+
+
+def place_standards_96(container, controls):
+    placements = []
+    control_replicate = {}
+    for control in sorted(controls, key=lambda control: control.id):
+        m = re.match(r"QSTD ([A-F])1", control.name)
+        repl = control_replicate.get(control.name, 0)
+        control_replicate[control.name] = repl + 1
+        if m:
+            placements.append((control.stateless, (container, "{0}:{1}".format(m.group(1), repl+10))))
+        elif control.name.startswith("No Template Control"):
+            c_row = alpha[repl // 3 + 6]
+            c_col = repl % 3 + 10
+            placements.append((control.stateless, (container, "{0}:{1}".format(c_row, c_col))))
+    return placements
+
+def pos_384(row, col, repl):
+    return row * 2 + (repl // 2), col * 2 + (repl % 2)
+
+def pos_96(row, col, repl):
+    return row, col*3+repl
 
 main(sys.argv[1])
 
