@@ -11,7 +11,7 @@ def sort_key(elem):
     return (container, int(col), row)
 
 
-def main(process_id, concentration_source):
+def main(process_id, output_id, concentration_source):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
 
@@ -47,7 +47,7 @@ def main(process_id, concentration_source):
         print concentrations
     elif concentration_source == "quantit":
         try:
-            qc_results = lims.get_qc_results(inputs, "Quant-iT QC (low conc.) Diag 2.0")
+            qc_results = lims.get_qc_results_re(inputs, "Quant-iT")
         except KeyError, e:
             print "Missing QC result for", e
             sys.exit(1)
@@ -112,15 +112,17 @@ def main(process_id, concentration_source):
     out.writerow(header)
     out.writerows(rows)
 
-    outfiles = set((o['uri'] for i, o in process.input_output_maps if o['output-generation-type'] == "PerAllInputs"))
-    if len(outfiles) == 0:
-        print "No output file was configured"
-        sys.exit(1)
-    elif len(outfiles) > 1:
-        print "Too many output files were configured"
+    try:
+        outfile = next(
+                o['uri'] for i, o in process.input_output_maps
+                if o['output-generation-type'] == "PerAllInputs" and
+                o['limsid'] == output_id
+            )
+    except StopIteration:
+        print "Output file not found: ", output_id
         sys.exit(1)
 
-    gs = lims.glsstorage(outfiles.pop(), 'biomek-fortynning.csv')
+    gs = lims.glsstorage(outfile, 'biomek-fortynning.csv')
     file_obj = gs.post()
     file_obj.upload(out_buffer.getvalue())
 
@@ -129,5 +131,5 @@ def main(process_id, concentration_source):
         sys.exit(1)
 
 # Use:  PROCESS_ID OUTPUT_FILE_ID CONCENTRATION_SOURCE={"quantit"|"sample"}
-main(sys.argv[1], sys.argv[2])
+main(sys.argv[1], sys.argv[2], sys.argv[3])
 
