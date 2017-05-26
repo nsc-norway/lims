@@ -1,0 +1,9 @@
+p.error {
+	color: red;
+}
+
+div.main_box {
+	width: 800px;
+	height: 60%;
+	border: 1px solid black;
+}

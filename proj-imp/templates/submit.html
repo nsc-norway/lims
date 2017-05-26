@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>External project importer -- {{ special_type_name }}</title>
+<link rel="stylesheet" href="../static/style.css" type="text/css">
+<script src="../static/xpimp.js"></script>
+</head>
+<body>
+
+<h1><img src="../static/logo.png"></h1>
+<h2>Creating project: {{ project_title }}</h2>
+
+<div class="main_box">
+  {% for task in tasks %}
+  <div class="task">{{ task.title }}</div>
+  {% endfor %}
+</div>
+
+</body>
+</html>

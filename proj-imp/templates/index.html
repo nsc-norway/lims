@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>External project importer -- {{ special_type_name }}</title>
+<link rel="stylesheet" href="../static/style.css" type="text/css">
+</head>
+<body>
+
+<h1><img src="../static/logo.png"></h1>
+<h2>Create project for: {{ special_type_name }}</h2>
+
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+<form action="submit" method="post" enctype="multipart/form-data">
+<table>
+  <tr>
+    <td>Clarity Username:</td>
+    <td><input type="text" name="username"></td>
+  </tr>
+
+  <tr>
+    <td>Password:</td>
+    <td><input type="password" name="password"></td>
+  </tr>
+
+  <tr>
+    <td>Project title:</td>
+    <td><input type="text" name="project_title" value="{{ project_title }}"></td>
+  </tr>
+
+  <tr>
+    <td>Sample file:</td>
+    <td><input type="file" name="sample_file"></td>
+  </tr>
+
+</table>
+<p>
+<input type="reset" value="Clear">
+<input type="submit" value="Create project">
+</p>
+</form>
+
+</body>
+</html>
