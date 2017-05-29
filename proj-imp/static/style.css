@@ -7,3 +7,7 @@ div.main_box {
 	height: 60%;
 	border: 1px solid black;
 }
+
+img.logo {
+    height: 30px;
+}

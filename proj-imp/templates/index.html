@@ -6,23 +6,23 @@
 </head>
 <body>
 
-<h1><img src="../static/logo.png"></h1>
+<h1><img src="../static/logo.png" class="logo"></h1>
 <h2>Create project for: {{ special_type_name }}</h2>
 
-{% if error %}
-<p class="error">{{ error }}</p>
+{% if error_message %}
+<p class="error">{{ error_message }}</p>
 {% endif %}
 
 <form action="submit" method="post" enctype="multipart/form-data">
 <table>
   <tr>
     <td>Clarity Username:</td>
-    <td><input type="text" name="username"></td>
+    <td><input type="text" name="username" value="{{ username }}"></td>
   </tr>
 
   <tr>
     <td>Password:</td>
-    <td><input type="password" name="password"></td>
+    <td><input type="password" name="password" value="{{ password }}"></td>
   </tr>
 
   <tr>
@@ -37,7 +37,6 @@
 
 </table>
 <p>
-<input type="reset" value="Clear">
 <input type="submit" value="Create project">
 </p>
 </form>
