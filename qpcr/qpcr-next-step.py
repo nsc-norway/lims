@@ -25,7 +25,7 @@ def main(process_id):
                     rework_step = stage.workflow.stages[stage_index - 1].step
                     break
             action['action'] = "rework"
-            action['step-uri'] = default_next_step_uri
+            #action['step-uri'] = default_next_step_uri
             action['rework-step-uri'] = rework_step.uri
         else:
             action['action'] = "nextstep"
