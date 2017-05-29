@@ -1,4 +1,8 @@
 {
   "project_title_prefix": "TI-IMM1",
-  "special_type_name": "Immunologen"
+  "special_type_name": "Immunologen",
+  "udf": {
+	  "itest": "test",
+	  "teste": "test"
+  }
 }
