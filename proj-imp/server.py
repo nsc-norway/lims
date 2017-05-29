@@ -19,8 +19,8 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
 # Global dict mapping type name to job object for project type
 # (only one project may be created at a time)
-jobs = {}
-jobs_lock = threading.Lock()
+project_types = {}
+project_types_lock = threading.Lock()
 
 # Return 404 for root path and subpaths not ending with /
 @app.route("/")
@@ -78,11 +78,12 @@ def submit_project(project_type):
                 error_message="Sample file upload failure.",
                 **project_data)
 
-    with jobs_lock:
-        job = jobs.setdefault(project_type, Job(project_type))
-        if not job.active:
+    with project_types_lock:
+        project_type_worker = project_types.setdefault(project_type, ProjectTypeWorker(project_type))
+        if not project_type_worker.active:
             try:
-                job.start(username, password, project_data['project_title'], file_name, file_data.getvalue())
+                project_type_worker.start_job(username, password, project_data['project_title'],
+                        file_name, file_data.getvalue())
             except LimsCredentialsError:
                 # Why abort() here, not render_template?: We can't put the file back into the response,
                 # so better encourage the user to press back and try again (with the file).
@@ -129,18 +130,37 @@ class Task(object):
             return True
 
 class Job(object):
+    tasks = [
+            Task("Check for existing project",  self.check_existing_project),
+            Task("Create project",              self.create_project),
+        ]
+
+    def __init__(self, username, password, project_title, sample_filename, sample_file_data):
+        self.username = username
+        self.project_title = project_title
+        self.sample_filename = sample_filename
+        self.sample_file_data = sample_file_data
+
+    def run(self):
+        for task in self.tasks:
+            if not task():
+                break
+
+    def check_existing_project(self):
+        projects = lims.get_projects(name=self.project_title)
+        if projects:
+            raise ValueError("A project named {0} already exists.".format(self.project_title))
+
+    def create_project(self):
+        users = lims.get_researchers(username=lims.username)
+
+
+class ProjectTypeWorker(object):
     def __init__(self, project_type):
         self.project_type = project_type
-        self.project_title = None
-        self.sample_filename = None
-        self.sample_file_data = None
-        self.active = False
-        self.state = {}
-        self.tasks = [
-                Task("Create project", self.create_project)
-                ]
+        self.job = None
 
-    def start(self, username, password, project_title, sample_filename, sample_file_data):
+    def start_job(self, username, password, project_title, sample_filename, sample_file_data):
         """Start an import task with the specified parameters.
         
         This function is not thread safe! Syncrhonization must be handled by the caller.
@@ -155,25 +175,18 @@ class Job(object):
             # If the password is wrong, we will get a 401.
             raise LimsCredentialsError()
 
-        self.project_title = project_title
-        self.sample_filename = sample_filename
-        self.sample_file_data = sample_file_data
+        self.job = Job(project_type, username, password, project_title, sample_filename,
+                sample_file_data)
 
-        thread = threading.Thread(target=self.run)
+        thread = threading.Thread(target=self.run_job)
         self.active = True
         thread.start()
 
-    def run(self):
+    def run_job(self):
         try:
-            for task in self.tasks:
-                if not task():
-                    break
+            self.job.run()
         finally:
             self.active = False
-
-    def create_project(self):
-        pass
-
 
 
 # Start deveopment server if called on the command line
