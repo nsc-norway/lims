@@ -40,7 +40,7 @@ def main(process_id):
         else:
             result = indexes.get_reagents_for_category(reagents, index_analyte, category)
     except indexes.ReagentError as e:
-        print e.message
+        print str(e)
         sys.exit(1)
 
     process.udf[CATEGORY_UDF] = category

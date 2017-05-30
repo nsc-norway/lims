@@ -30,7 +30,7 @@ def main(analyte_ids):
     try:
         category, result = indexes.get_reagents_auto_category(reagents, index_analyte)
     except indexes.ReagentError as e:
-        print e.message
+        print str(e)
         sys.exit(1)
 
     # Assign the indexes
