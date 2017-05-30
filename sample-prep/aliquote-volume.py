@@ -60,14 +60,10 @@ def main(process_id, output_file_id, mode):
             outputs.append(output)
 
     try:
-        qc_results = lims.get_qc_results(inputs, "Quant-iT QC Diag 2.0")
+        qc_results = lims.get_qc_results_re(inputs, "Quant-iT QC")
     except KeyError, e:
-        try:
-            # TODO: remove fallback once previous version is no longer used
-            qc_results = lims.get_qc_results(inputs, "Quant-iT QC Diag 1.1")
-        except KeyError, e:
-            print "Missing QC result for:", e
-            sys.exit(1)
+        print "Missing QC result for:", e
+        sys.exit(1)
     lims.get_batch(inputs + outputs + qc_results)
     lims.get_batch(input.samples[0] for sample in inputs)
 

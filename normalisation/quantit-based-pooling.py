@@ -49,7 +49,7 @@ def main(process_id, def_sample_dna_quantity, output_file_id):
     lims.get_batch(input.samples[0] for input in inputs)
 
     try:
-        qc_results = lims.get_qc_results(inputs, "Quant-iT QC Diag 2.0")
+        qc_results = lims.get_qc_results_re(inputs, "Quant-iT QC")
     except KeyError, e:
         print "Missing QC result for", e
         sys.exit(1)
