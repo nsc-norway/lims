@@ -34,10 +34,14 @@ def main(process_id):
         category = None
 
     index_analyte = [(a.samples[0].udf[SAMPLE_INDEX_UDF].strip(" \t\xca\xa0\xc2"), a.name) for a in analytes]
-    if category == "Auto-detect":
-        category, result = indexes.get_reagents_auto_category(reagents, index_analyte)
-    else:
-        result = indexes.get_reagents_for_category(reagents, index_analyte, category)
+    try:
+        if category == "Auto-detect":
+            category, result = indexes.get_reagents_auto_category(reagents, index_analyte)
+        else:
+            result = indexes.get_reagents_for_category(reagents, index_analyte, category)
+    except indexes.ReagentError as e:
+        print e.message
+        sys.exit(1)
 
     process.udf[CATEGORY_UDF] = category
     process.put()

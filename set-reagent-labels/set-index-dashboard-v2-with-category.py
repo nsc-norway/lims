@@ -27,7 +27,11 @@ def main(category, analyte_ids):
     lims.get_batch(analyte.samples[0] for analyte in analytes)
     index_analyte = [(a.samples[0].udf[SAMPLE_INDEX_UDF].strip(" \t"), a.name) for a in analytes]
 
-    result = indexes.get_reagents_for_category(reagents, index_analyte, category)
+    try:
+        result = indexes.get_reagents_for_category(reagents, index_analyte, category)
+    except indexes.ReagentError as e:
+        print e.message
+        sys.exit(1)
 
     # Assign the indexes
     for analyte, reagent_name in zip(analytes, result):

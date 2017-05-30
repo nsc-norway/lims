@@ -1,6 +1,7 @@
 # Library for setting indexes
 
-import sys
+# NOTE: This file is also used from ../proj-imp/, via a symlink
+
 import re
 import urlparse
 
@@ -26,6 +27,11 @@ elif re.search(r"/dev-lims.sequencing.uio.no[:/]", config.BASEURI):
     BLACKLIST = set(range(501, 597))
     # Deleting Nextera Enrichment indexes to rename them:
     BLACKLIST |= set(['241', '242', '243', '244', '245', '246', '247', '248', '257', '258', '259', '260', '261', '262', '263', '264', '273', '274', '275', '276', '277', '278', '279', '280', '289', '290', '291', '292', '293', '294', '295', '296', '305', '306', '307', '308', '309', '310', '311', '312', '321', '322', '323', '324', '325', '326', '327', '328', '337', '338', '339', '340', '341', '342', '343', '344', '353', '354', '355', '356', '357', '358', '359', '360', '369', '370', '371', '372', '373', '374', '375', '376', '385', '386', '387', '388', '389', '390', '391', '392', '401', '402', '403', '404', '405', '406', '407', '408', '417', '418', '419', '420', '421', '422', '423', '424'])
+
+
+class ReagentError(Exception):
+    pass
+
 
 def get_all_reagent_types():
     """Load all reagent types with name only, from the API resource.
@@ -93,27 +99,23 @@ def get_reagents_auto_category(reagents, index_analyte, sequence_match=False):
             if not sequence_match or reagent.sequence == ana_match_string:
                 if reagent.category in candidate_categories:
                     if reagent.category in new_candidates:
-                        print "Ambiguous match for sample", analyte_name, ": in category", reagent.category,\
-                                "the specified index matches multiple reagent types:", reagent.name, "and",\
-                                category_indexes[reagent.category][-1]
-                        sys.exit(-1)
+                        raise ReagentError("Ambiguous match for sample" + analyte_name + ": in category" + reagent.category +\
+                                "the specified index matches multiple reagent types:" + reagent.name + "and" +\
+                                category_indexes[reagent.category][-1])
                     else:
                         new_candidates.add(reagent.category)
                         category_indexes[reagent.category].append(reagent.name)
         candidate_categories = new_candidates
 
     if ana_no_match:
-        print "Samples with no match at all: ", ", ".join(ana_no_match)
-        sys.exit(1)
+        raise ReagentError("Samples with no match at all: " + ", ".join(ana_no_match))
     elif len(candidate_categories) == 1:
         cat = next(iter(candidate_categories))
         return cat, category_indexes[cat]
     elif not candidate_categories:
-        print "No reagent category has all the given indexes"
-        sys.exit(1)
+        raise ReagentError("No reagent category has all the given indexes")
     elif len(candidate_categories) > 1:
-        print "Multiple categories match: ", ", ".join(candidate_categories)
-        sys.exit(1)
+        raise ReagentError("Multiple categories match: " + ", ".join(candidate_categories))
 
 
 def get_reagents_for_category(reagents, index_analyte, category, sequence_match=False):
@@ -130,10 +132,9 @@ def get_reagents_for_category(reagents, index_analyte, category, sequence_match=
             if not sequence_match or reagent.sequence == ana_match_string:
                 if reagent.category == category:
                     if match:
-                        print "Ambiguous match for sample", analyte_name, ": specified index "\
-                                "matches multiple reagent types:", reagent.name, "and",\
-                                match_reagents[-1]
-                        sys.exit(-1)
+                        raise ReagentError("Ambiguous match for sample" +  analyte_name + ": specified index "\
+                                "matches multiple reagent types:" + reagent.name +  "and" +\
+                                match_reagents[-1])
                     else:
                         match_reagents.append(reagent.name)
                         match = True
@@ -142,8 +143,7 @@ def get_reagents_for_category(reagents, index_analyte, category, sequence_match=
 
 
     if ana_no_match:
-        print "No matching reagent type found for samples: ", ", ".join(ana_no_match)
-        sys.exit(1)
+        raise ReagentError("No matching reagent type found for samples: " + ", ".join(ana_no_match))
     else:
         return match_reagents
 
