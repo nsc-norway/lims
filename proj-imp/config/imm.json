@@ -1,8 +1,20 @@
 {
+  "special_type_name": "Immunology",
   "project_title_prefix": "TI-IMM1",
-  "special_type_name": "Immunologen",
-  "udf": {
-	  "itest": "test",
-	  "teste": "test"
-  }
+  "project_fields": {
+	  "Project type": "Immunology",
+	  "Application": "Amplicon",
+      "Sample type": "Library",
+      "Library prep used": "HLA",
+      "Contact email": "m.k.viken@medisin.uio.no",
+      "Contact person": "Marte K. Viken",
+      "Contact institution": "Seksjon for transplantasjonsummunologi, OUS",
+      "Delivery method": "User HDD",
+      "Number of lanes": 1,
+      "Reference genome": "Human",
+  },
+  "sample_fields": {
+  },
+  "reagent_category": "Custom indexes 3 (16S)",
+  "workflow": "External MiSeq Project 1.0",
 }
