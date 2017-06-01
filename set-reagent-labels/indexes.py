@@ -11,24 +11,6 @@ from collections import defaultdict
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-BLACKLIST = set()
-
-if re.search(r"/cees-lims.sequencing.uio.no[:/]", config.BASEURI):
-    # Deleted index IDs
-    BLACKLIST = set([1301] + range(121, 145))
-elif re.search(r"/ous-lims.sequencing.uio.no[:/]", config.BASEURI):
-    # Deleted index IDs
-    # Second term after | is a result of a botched import of nextera v2 indexes Nxx-Sxx
-    BLACKLIST = set(range(709, 721)) | (set(range(1692,1793)) - set(range(1697,1793,8)))
-    BLACKLIST |= set(range(501, 597)) | set(range(613,709)) #SureSelect XT2 8bp indexes (replaced)
-    # Deleting Nextera Enrichment indexes to rename them:
-    BLACKLIST |= set(['241', '242', '243', '244', '245', '246', '247', '248', '257', '258', '259', '260', '261', '262', '263', '264', '273', '274', '275', '276', '277', '278', '279', '280', '289', '290', '291', '292', '293', '294', '295', '296', '305', '306', '307', '308', '309', '310', '311', '312', '321', '322', '323', '324', '325', '326', '327', '328', '337', '338', '339', '340', '341', '342', '343', '344', '353', '354', '355', '356', '357', '358', '359', '360', '369', '370', '371', '372', '373', '374', '375', '376', '385', '386', '387', '388', '389', '390', '391', '392', '401', '402', '403', '404', '405', '406', '407', '408', '417', '418', '419', '420', '421', '422', '423', '424'])
-elif re.search(r"/dev-lims.sequencing.uio.no[:/]", config.BASEURI):
-    BLACKLIST = set(range(501, 597))
-    # Deleting Nextera Enrichment indexes to rename them:
-    BLACKLIST |= set(['241', '242', '243', '244', '245', '246', '247', '248', '257', '258', '259', '260', '261', '262', '263', '264', '273', '274', '275', '276', '277', '278', '279', '280', '289', '290', '291', '292', '293', '294', '295', '296', '305', '306', '307', '308', '309', '310', '311', '312', '321', '322', '323', '324', '325', '326', '327', '328', '337', '338', '339', '340', '341', '342', '343', '344', '353', '354', '355', '356', '357', '358', '359', '360', '369', '370', '371', '372', '373', '374', '375', '376', '385', '386', '387', '388', '389', '390', '391', '392', '401', '402', '403', '404', '405', '406', '407', '408', '417', '418', '419', '420', '421', '422', '423', '424'])
-
-
 class ReagentError(Exception):
     pass
 
@@ -55,16 +37,12 @@ def get_all_reagent_types():
             # add a reagent type to the search index, indexed by all words
             name = node.attrib['name']
             uri = node.attrib['uri']
-            # Get ID, copy/paste from genologics lib
-            parts = urlparse.urlsplit(uri)
-            id = int(parts.path.split('/')[-1])
-            if not id in BLACKLIST:
-                for token in (
-                        tk.strip("()")
-                        for tk in name.split(" ")
-                        if tk != ""
-                        ):
-                    reagent_types[token].add(uri)
+            for token in (
+                    tk.strip("()")
+                    for tk in name.split(" ")
+                    if tk != ""
+                    ):
+                reagent_types[token].add(uri)
                 
         node = root.find('next-page')
         root = None
