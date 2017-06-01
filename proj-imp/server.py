@@ -59,9 +59,10 @@ def get_project_def(project_type):
 
 @app.route("/<project_type>/")
 def get_project_start_page(project_type):
+    project_data = get_project_def(project_type)
     project_title = project_data['project_title_prefix'] +\
             "-" + datetime.date.today().isoformat()
-    return render_template("index.html", project_title=project_title, **get_project_def(project_type))
+    return render_template("index.html", project_title=project_title, **project_data)
 
 
 @app.route("/<project_type>/submit", methods=["POST"])
@@ -105,6 +106,8 @@ def submit_project(project_type):
                 # Why abort() here, not render_template?: We can't put the file back into the response,
                 # so better encourage the user to press back and try again (with the file).
                 abort(403, "Incorrect username or password, please go back and try again.")
+            except Exception as e:
+                abort(500, "LIMS seems to be unreachable: {0}".format(e))
 
     return redirect(url_for('get_project_status', project_type=project_type))
 
@@ -301,7 +304,7 @@ class AssignWorkflow(Task):
         lims.route_artifacts(artifacts, workflow_uri=self.job.lims_workflow.uri)
 
 
-class RunPoolingStep(Taks):
+class RunPoolingStep(Task):
     NAME = "Run pooling step"
 
     def run(self):
@@ -378,6 +381,7 @@ class ProjectTypeWorker(object):
         self.project_type = project_type
         self.job = None
         self.indexes = []
+        self.active = False
 
     def start_job(self, username, password, project_title, sample_filename, sample_file_data):
         """Start an import task with the specified parameters.
@@ -389,10 +393,13 @@ class ProjectTypeWorker(object):
         uri = config.BASEURI.rstrip("/") +  '/api'
         r = requests.get(uri, auth=(username, password))
         if r.status_code not in [403, 200]:
-            # Note: 403 is OK! It indicates that we have a valid password, but
-            # are a Researcher user and thus not allowed to access the API. 
-            # If the password is wrong, we will get a 401.
-            raise LimsCredentialsError()
+            if r.status_code in [500]:
+                raise RuntimeError("Internal server error")
+            else:
+                # Note: 403 is OK! It indicates that we have a valid password, but
+                # are a Researcher user and thus not allowed to access the API. 
+                # If the password is wrong, we will get a 401.
+                raise LimsCredentialsError()
 
         self.job = Job(self, username, password, project_title,
                 sample_filename, sample_file_data)
