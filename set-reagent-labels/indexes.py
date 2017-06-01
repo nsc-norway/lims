@@ -3,7 +3,6 @@
 # NOTE: This file is also used from ../proj-imp/, via a symlink
 
 import re
-import urlparse
 
 from genologics.lims import *
 from genologics import config
