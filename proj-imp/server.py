@@ -4,11 +4,11 @@ import os
 import io
 import threading
 import json
+import queue
 from flask import Flask, url_for, abort, jsonify, Response, request,\
         render_template, redirect
 from werkzeug.utils import secure_filename
 
-from urlparse import urljoin
 import requests
 
 from genologics.lims import *
@@ -16,10 +16,21 @@ from genologics import config
 
 import indexes
 
+# External project creation backend server
+
+# Intentionally uses a lot of the same technology as the
+# base counter (in ../base-counter/). Does not use angular 
+# though.
+
+# This will be registered as a WSGI application under a path, 
+# PATH. It then accepts requests on PATH/CONF_ID/, where 
+# CONF_ID is the name of an external project type, represented
+# in a JSON file in the config/ directory.
+
 app = Flask(__name__)
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-# Global dict mapping type name to job object for project type
+# Global dict that maps type name to job object for project type
 # (only one project may be created at a time)
 project_types = {}
 project_types_lock = threading.Lock()
@@ -83,7 +94,9 @@ def submit_project(project_type):
                 **project_data)
 
     with project_types_lock:
-        project_type_worker = project_types.setdefault(project_type, ProjectTypeWorker(project_type))
+        project_type_worker = project_types.setdefault(
+                    project_type, ProjectTypeWorker(project_type)
+                    )
         if not project_type_worker.active:
             try:
                 project_type_worker.start_job(username, password, project_title,
@@ -103,12 +116,54 @@ def get_project_status(project_type):
 
 
 @app.route("/<project_type>/stream")
-def get_status():
+def get_stream(project_type):
     """SSE stream with progress."""
-    pass
+    with project_types_lock:
+        try:
+            project_type_worker = project_types.get[project_work]
+        except KeyError:
+            abort(404, "No such project type")
+        if project_type_worker.job is None:
+            abort(500, "No import has been started")
+    stream = StatusStream(project_type_worker.job)
+    return Response(stream, mimetype="text/event-stream")
+
+
+def status_repr(job):
+    task_statuses = [
+            {
+                "running": task.running,
+                "error": task.error,
+                "completed": task.completed,
+                "status": task.status,
+                "name": task.NAME
+            } for task in job.tasks
+        ]
+    return json.dumps({
+            "task_statuses": task_statuses,
+            "running": job.running,
+            "error": job.error,
+            "completed": job.completed
+        })
+
+
+def status_stream(job):
+    yield "data: " + status_repr(job) + "\n\n"
+    while job.queue.get(block=True) == "status":
+        try:
+            # Discard entries if they pile up here
+            # Only latest (current) status is of interest
+            while job.queue.get(timeout=0) == "status":
+                pass
+        except queue.Empty:
+            yield "data: " + status_repr(job) + "\n\n"
+        else: # In case we received anything other than "status"
+            break
+
 
 class LimsCredentialsError(ValueError):
     pass
+
 
 class Task(object):
     NAME = None
@@ -116,14 +171,14 @@ class Task(object):
     def __init__(self, job):
         self.running = False
         self.completed = False
-        self.status = None
+        self._status = None
         self.error = False
-        self.error_message = None
         self.job = job
 
     def __call__(self):
         try:
             self.running = True
+            self.status = None
             self.run()
         except Exception as e:
             self.running = False
@@ -139,6 +194,15 @@ class Task(object):
     def run(self):
         pass
 
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, val):
+        self._status = val
+        self.job.signal.send(self)
+
 
 class ReadSampleFile(Task):
     """Refuse to create project if one with the same name exists."""
@@ -150,7 +214,7 @@ class ReadSampleFile(Task):
         if len(sample_table[0].split(",")) > 1:
             sep = ","
         elif len(sample_table[0].split(";")) > 1:
-            sep ";"
+            sep = ";"
         else:
             raise ValueError("Invalid csv sample file format.")
         cells = [line.split(sep) for line in sample_table]
@@ -253,21 +317,17 @@ class RunPoolingStep(Taks):
         self.status = "Starting step"
         step = lims.create_step(stepconf, my_artifacts)
         self.status = "Running step"
+        poolable = step.pools.available_inputs
+        step.pools.create_pool(
+            self.job.project_type['pool_name'],
+            poolable)
+        while step.current_state != "COMPLETED":
+            step.advance()
+            step.get(force=True)
 
 
 
 class Job(object):
-    tasks = [
-            ReadSampleFile(self),
-            CheckExistingProjects(self),
-            CreateProject(self),
-            UploadFile(self),
-            CreateSamples(self),
-            SetIndexes(self),
-            AssignWorkflow(self),
-            RunPoolingStep(self)
-        ]
-
     def __init__(self, worker, username, password, project_title,
             sample_filename, sample_file_data):
         self.worker = worker
@@ -279,11 +339,35 @@ class Job(object):
         self.samples = []
         self.lims_project = None
         self.lims_samples = None
+        self.queue = Queue.Queue()
+        self.tasks = [
+                ReadSampleFile(self),
+                CheckExistingProjects(self),
+                CreateProject(self),
+                UploadFile(self),
+                CreateSamples(self),
+                SetIndexes(self),
+                AssignWorkflow(self),
+                RunPoolingStep(self)
+            ]
+
 
     def run(self):
         for task in tasks:
             if not task(self):
                 break
+
+    @property
+    def running(self):
+        return any(task.running for task in self.tasks)
+
+    @property
+    def error(self):
+        return any(task.error for task in self.tasks)
+
+    @property
+    def completed(self):
+        return all(task.completed for task in self.tasks)
 
 
 class ProjectTypeWorker(object):
@@ -302,7 +386,7 @@ class ProjectTypeWorker(object):
         """
         assert not self.active
 
-        uri = urljoin(config.BASEURI, 'api')
+        uri = config.BASEURI.rstrip("/") +  '/api'
         r = requests.get(uri, auth=(username, password))
         if r.status_code not in [403, 200]:
             # Note: 403 is OK! It indicates that we have a valid password, but
@@ -310,8 +394,8 @@ class ProjectTypeWorker(object):
             # If the password is wrong, we will get a 401.
             raise LimsCredentialsError()
 
-        self.job = Job(self, username, password, project_title, sample_filename,
-                sample_file_data)
+        self.job = Job(self, username, password, project_title,
+                sample_filename, sample_file_data)
 
         thread = threading.Thread(target=self.run_job)
         self.active = True

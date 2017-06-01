@@ -11,10 +11,11 @@
       "Contact institution": "Seksjon for transplantasjonsummunologi, OUS",
       "Delivery method": "User HDD",
       "Number of lanes": 1,
-      "Reference genome": "Human",
+      "Reference genome": "Human"
   },
   "sample_fields": {
   },
   "reagent_category": "Custom indexes 3 (16S)",
   "workflow": "External MiSeq Project 1.0",
+  "pool_name": "Pool 1"
 }
