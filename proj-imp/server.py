@@ -1,4 +1,5 @@
 import datetime
+import time
 import re
 import os
 import io
@@ -78,7 +79,8 @@ def submit_project(project_type):
     if '' in [username, password, project_title]:
         return render_template("index.html", username=username, password=password,
                 project_title=project_title,
-                error_message="Please specify username, password and project title",
+                error_message=
+                        "Please specify username, password and project title",
                 **project_data)
 
     try:
@@ -103,9 +105,11 @@ def submit_project(project_type):
                 project_type_worker.start_job(username, password, project_title,
                         file_name, file_data.getvalue())
             except LimsCredentialsError:
-                # Why abort() here, not render_template?: We can't put the file back into the response,
-                # so better encourage the user to press back and try again (with the file).
-                abort(403, "Incorrect username or password, please go back and try again.")
+                # Why abort() here, not render_template?: We can't put the
+                # file back into the response, so better encourage the user
+                # to press back and try again (with the file).
+                abort(403, "Incorrect username or password, please go back "
+                        "and try again.")
             except Exception as e:
                 abort(500, "LIMS seems to be unreachable: {0}".format(e))
 
@@ -115,7 +119,10 @@ def submit_project(project_type):
 @app.route("/<project_type>/status")
 def get_project_status(project_type):
     """Status page"""
-    return render_template("status.html", **get_project_def(project_type))
+
+    parameters = get_project_def(project_type)
+    parameters['evtSourceUrl'] = url_for('get_stream', project_type=project_type)
+    return render_template("status.html", **parameters)
 
 
 @app.route("/<project_type>/stream")
@@ -123,13 +130,16 @@ def get_stream(project_type):
     """SSE stream with progress."""
     with project_types_lock:
         try:
-            project_type_worker = project_types.get[project_work]
+            project_type_worker = project_types[project_type]
         except KeyError:
             abort(404, "No such project type")
         if project_type_worker.job is None:
             abort(500, "No import has been started")
-    stream = StatusStream(project_type_worker.job)
-    return Response(stream, mimetype="text/event-stream")
+    if project_type_worker.job:
+        stream = status_stream(project_type_worker.job)
+        return Response(stream, mimetype="text/event-stream")
+    else:
+        abort(404, "No job found for this project type")
 
 
 def status_repr(job):
@@ -143,6 +153,7 @@ def status_repr(job):
             } for task in job.tasks
         ]
     return json.dumps({
+            "project_title": job.project_title,
             "task_statuses": task_statuses,
             "running": job.running,
             "error": job.error,
@@ -151,7 +162,20 @@ def status_repr(job):
 
 
 def status_stream(job):
-    yield "data: " + status_repr(job) + "\n\n"
+    if job.completed:
+        brief_status = json.dumps({
+            "project_title": job.project_title,
+            "task_statuses": [],
+            "running": False,
+            "error": job.error,
+            "completed": job.completed
+        })
+        yield "event: status\ndata: " + brief_status + "\n\n"
+        yield "event: shutdown\ndata: null\n\n"
+        return
+    else:
+        yield "event: status\ndata: " + status_repr(job) + "\n\n"
+
     while job.queue.get(block=True) == "status":
         try:
             # Discard entries if they pile up here
@@ -159,9 +183,9 @@ def status_stream(job):
             while job.queue.get(timeout=0) == "status":
                 pass
         except queue.Empty:
-            yield "data: " + status_repr(job) + "\n\n"
+            yield "event: status\ndata: " + status_repr(job) + "\n\n"
         else: # In case we received anything other than "status"
-            break
+            yield "event: shutdown\ndata: null\n\n"
 
 
 class LimsCredentialsError(ValueError):
@@ -204,7 +228,7 @@ class Task(object):
     @status.setter
     def status(self, val):
         self._status = val
-        self.job.signal.send(self)
+        self.job.queue.put(self)
 
 
 class ReadSampleFile(Task):
@@ -230,12 +254,15 @@ class ReadSampleFile(Task):
         if type == 1:
             self.job.samples = cells[1:]
         else:
-            self.job.samples = [[name] + "-".join([index1, index2]) for name, index1, index2 in cells]
+            self.job.samples = [
+                    [name] + "-".join([index1, index2])
+                    for name, index1, index2 in cells
+                    ]
 
         assert len(set(name for name, index in self.job.samples)) == len(self.job.samples), "Non-unique sample name"
 
 
-class CheckExistingProject(Task):
+class CheckExistingProjects(Task):
     """Refuse to create project if one with the same name exists."""
 
     NAME = "Check for existing project"
@@ -243,7 +270,8 @@ class CheckExistingProject(Task):
     def run(self):
         projects = lims.get_projects(name=self.job.project_title)
         if projects:
-            raise ValueError("A project named {0} already exists.".format(self.project_title))
+            raise ValueError("A project named {0} already exists.".format(
+                self.project_title))
 
 class CreateProject(Task):
     NAME = "Create project"
@@ -329,10 +357,9 @@ class RunPoolingStep(Task):
             step.get(force=True)
 
 
-
 class Job(object):
-    def __init__(self, worker, username, password, project_title,
-            sample_filename, sample_file_data):
+    def __init__(self, worker, username, project_title, sample_filename,
+            sample_file_data):
         self.worker = worker
         self.project_type = worker.project_type
         self.username = username
@@ -342,7 +369,7 @@ class Job(object):
         self.samples = []
         self.lims_project = None
         self.lims_samples = None
-        self.queue = Queue.Queue()
+        self.queue = queue.Queue()
         self.tasks = [
                 ReadSampleFile(self),
                 CheckExistingProjects(self),
@@ -356,8 +383,8 @@ class Job(object):
 
 
     def run(self):
-        for task in tasks:
-            if not task(self):
+        for task in self.tasks:
+            if not task():
                 break
 
     @property
@@ -383,12 +410,28 @@ class ProjectTypeWorker(object):
         self.indexes = []
         self.active = False
 
-    def start_job(self, username, password, project_title, sample_filename, sample_file_data):
+    def start_job(self, username, password, project_title, sample_filename,
+            sample_file_data):
         """Start an import task with the specified parameters.
         
-        This function is not thread safe! Syncrhonization must be handled by the caller.
+        This function is not thread safe! Syncrhonization must be handled
+        by the caller.
         """
         assert not self.active
+
+        self.check_lims_credentials(username, password)
+
+        self.job = Job(self, username, project_title, sample_filename,
+                sample_file_data)
+
+        thread = threading.Thread(target=self.run_job)
+        self.active = True
+        thread.start()
+
+    def check_lims_credentials(self, username, password):
+        """Check supplied username and password. Throws an
+        exception if they are incorrect, or if connection to
+        LIMS fails."""
 
         uri = config.BASEURI.rstrip("/") +  '/api'
         r = requests.get(uri, auth=(username, password))
@@ -400,13 +443,6 @@ class ProjectTypeWorker(object):
                 # are a Researcher user and thus not allowed to access the API. 
                 # If the password is wrong, we will get a 401.
                 raise LimsCredentialsError()
-
-        self.job = Job(self, username, password, project_title,
-                sample_filename, sample_file_data)
-
-        thread = threading.Thread(target=self.run_job)
-        self.active = True
-        thread.start()
 
     def run_job(self):
         try:

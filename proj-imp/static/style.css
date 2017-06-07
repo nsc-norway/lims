@@ -4,10 +4,42 @@ p.error {
 
 div.main_box {
 	width: 800px;
-	height: 60%;
 	border: 1px solid black;
+    margin: 10px;
+    padding: 10px;
+}
+
+div#error_box {
+    display: none;
+	width: 800px;
+    color: red;
+    font-weight: bold;
+}
+
+div#completion_box {
+	width: 800px;
+    display: none;
+}
+
+span#completion_project_title {
+    color: green;
+    font-weight: bold;
 }
 
 img.logo {
     height: 30px;
 }
+
+div.task {
+}
+
+div.running {
+}
+
+div.error {
+}
+
+div.completed {
+}
+
+
