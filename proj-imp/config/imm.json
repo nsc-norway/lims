@@ -5,6 +5,7 @@
 	  "Project type": "Immunology",
 	  "Application": "Amplicon",
       "Sample type": "Library",
+      "Sample prep requested": "None",
       "Library prep used": "HLA",
       "Contact email": "m.k.viken@medisin.uio.no",
       "Contact person": "Marte K. Viken",
