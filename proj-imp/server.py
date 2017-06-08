@@ -185,7 +185,9 @@ def status_stream(job):
         except queue.Empty:
             yield "event: status\ndata: " + status_repr(job) + "\n\n"
         else: # In case we received anything other than "status"
+            yield "event: status\ndata: " + status_repr(job) + "\n\n"
             yield "event: shutdown\ndata: null\n\n"
+            break
 
 
 class LimsCredentialsError(ValueError):
@@ -228,7 +230,7 @@ class Task(object):
     @status.setter
     def status(self, val):
         self._status = val
-        self.job.queue.put(self)
+        self.job.queue.put("status")
 
 
 class ReadSampleFile(Task):
@@ -386,6 +388,7 @@ class Job(object):
         for task in self.tasks:
             if not task():
                 break
+        self.queue.put("shutdown")
 
     @property
     def running(self):
