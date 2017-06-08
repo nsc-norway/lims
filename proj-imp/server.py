@@ -51,7 +51,10 @@ def get_project_def(project_type):
         project_type_safe = secure_filename(project_type)
         if project_type_safe == "":
             raise ValueError("Invalid project name")
-        with open(os.path.join("config", project_type_safe + ".json")) as f:
+        with open(os.path.join(
+                os.path.dirname(__file__),
+                "config", project_type_safe + ".json")
+                ) as f:
             project_data = json.load(f)
             return project_data
     except IOError:
