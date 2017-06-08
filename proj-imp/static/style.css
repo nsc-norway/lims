@@ -31,15 +31,27 @@ img.logo {
 }
 
 div.task {
+	padding-left: 23px;
 }
 
 div.running {
+	background-image: url("chevron.png");
+	background-size: contain;
+	background-repeat: no-repeat;
 }
 
 div.error {
+	background-image: url("cross.png");
+	background-size: contain;
+	background-repeat: no-repeat;
+	color:red;
+	font-weight: bold;
 }
 
 div.completed {
+	background-image: url("check.png");
+	background-size: contain;
+	background-repeat: no-repeat;
 }
 
 
