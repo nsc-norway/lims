@@ -5,7 +5,7 @@ import os
 import io
 import threading
 import json
-import queue
+import Queue as Mod_Queue # Due to name conflict with genologics
 from flask import Flask, url_for, abort, jsonify, Response, request,\
         render_template, redirect
 from werkzeug.utils import secure_filename
@@ -98,7 +98,7 @@ def submit_project(project_type):
 
     with project_types_lock:
         project_type_worker = project_types.setdefault(
-                    project_type, ProjectTypeWorker(project_type)
+                    project_type, ProjectTypeWorker(project_data)
                     )
         if not project_type_worker.active:
             try:
@@ -182,7 +182,7 @@ def status_stream(job):
             # Only latest (current) status is of interest
             while job.queue.get(timeout=0) == "status":
                 pass
-        except queue.Empty:
+        except Mod_Queue.Empty:
             yield "event: status\ndata: " + status_repr(job) + "\n\n"
         else: # In case we received anything other than "status"
             yield "event: status\ndata: " + status_repr(job) + "\n\n"
@@ -247,21 +247,29 @@ class ReadSampleFile(Task):
         else:
             raise ValueError("Invalid csv sample file format.")
         cells = [line.split(sep) for line in sample_table]
-        if cells[0] == ["name", "index"]:
+        if [v.lower() for v in cells[0]] == ["name", "index"]:
             type = 1
-        elif cells[0] == ["name", "index1", "index2"]:
+        elif [v.lower() for v in cells[0]] == ["name", "index1", "index2"]:
             type = 2
         else:
             raise ValueError("Headers must be Name and Index, or Name, Index1 and Index2.")
         if type == 1:
             self.job.samples = cells[1:]
         else:
+            usable_cells = [row for row in cells[1:] if len(row) == 3]
             self.job.samples = [
-                    [name] + "-".join([index1, index2])
-                    for name, index1, index2 in cells
+                    [name, "-".join([index1, index2])]
+                    for name, index1, index2 in usable_cells
                     ]
 
         assert len(set(name for name, index in self.job.samples)) == len(self.job.samples), "Non-unique sample name"
+        assert len(set(index for name, index in self.job.samples)) == len(self.job.samples), "Non-unique indexes detected"
+        assert all(c.isalnum() or c == "-"
+                for name, index in self.job.samples
+                for c in name), "Invalid characters in name, A-Z, 0-9 and - allowed."
+        assert all(c in "ACGT-"
+                for name, index in self.job.samples
+                for c in index), "Invalid characters in index."
 
 
 class CheckExistingProjects(Task):
@@ -273,18 +281,18 @@ class CheckExistingProjects(Task):
         projects = lims.get_projects(name=self.job.project_title)
         if projects:
             raise ValueError("A project named {0} already exists.".format(
-                self.project_title))
+                self.job.project_title))
 
 class CreateProject(Task):
     NAME = "Create project"
 
     def run(self):
         user = lims.get_researchers(username=self.job.username)[0]
-        job.lims_project = lims.create_project(
-                name=job.project_title,
+        self.job.lims_project = lims.create_project(
+                name=self.job.project_title,
                 researcher=user,
                 open_date=datetime.date.today(),
-                udf=job.project_type['project_fields']
+                udf=self.job.project_type['project_fields']
                 )
         
 class UploadFile(Task):
@@ -301,7 +309,7 @@ class CreateSamples(Task):
     NAME = "Create samples"
 
     def run(self):
-        for sample in job.samples:
+        for sample in self.job.samples:
             lims_sample = lims.create_sample(sample[0], self.job.lims_project,
                     udf=self.job.project_type['sample_fields'])
             self.job.lims_samples.append(lims_sample)
@@ -313,7 +321,7 @@ class SetIndexes(Task):
         if not ProjectTypeWorker.all_reagent_types:
             ProjectTypeWorker.all_reagent_types = indexes.get_all_reagent_types()
         result = indexes.get_reagents_for_category(ProjectTypeWorker.all_reagent_types,
-                self.job.samples, self.job.project_type['reagent_category'])
+                (reversed(s) for s in self.job.samples), self.job.project_type['reagent_category'])
         artifacts = [sample.artifact for sample in self.job.lims_samples]
         lims.get_batch(artifacts)
         for artifact, rgt in zip(artifacts, result):
@@ -340,23 +348,24 @@ class RunPoolingStep(Task):
     def run(self):
         # First, get the pooling step ID and the queue
         stepconf = self.job.lims_workflow.protocols[0].steps[0]
-        self.status = "Waiting for samples to appear in queue"
+        self.status = "Waiting for samples to appear in queue..."
         my_artifacts = [sample.artifact for sample in self.job.lims_samples]
         for attempt in range(10):
             queue = stepconf.queue()
             if set(queue.artifacts) >= set(my_artifacts):
                 time.sleep(1)
                 queue.get(force=True)
-        self.status = "Starting step"
-        step = lims.create_step(stepconf, my_artifacts)
+        self.status = "Starting step..."
+        step = lims.create_step(stepconf, my_artifacts, container_type="Tube")
         self.status = "Running step"
         poolable = step.pools.available_inputs
-        step.pools.create_pool(
-            self.job.project_type['pool_name'],
-            poolable)
-        while step.current_state != "COMPLETED":
+        step.pools.create_pool( self.job.project_type['pool_name'], poolable)
+        while step.current_state.upper() != "COMPLETED":
+            if step.current_state == "Assign Next Steps":
+                lims.set_default_next_step(step)
             step.advance()
             step.get(force=True)
+            self.status = "Completing step (" + str(step.current_state) + ")"
 
 
 class Job(object):
@@ -370,8 +379,8 @@ class Job(object):
         self.sample_file_data = sample_file_data
         self.samples = []
         self.lims_project = None
-        self.lims_samples = None
-        self.queue = queue.Queue()
+        self.lims_samples = []
+        self.queue = Mod_Queue.Queue()
         self.tasks = [
                 ReadSampleFile(self),
                 CheckExistingProjects(self),

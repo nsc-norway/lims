@@ -36,13 +36,13 @@ div.task {
 
 div.running {
 	background-image: url("chevron.png");
-	background-size: contain;
+	background-size: 18px;
 	background-repeat: no-repeat;
 }
 
 div.error {
 	background-image: url("cross.png");
-	background-size: contain;
+	background-size: 18px;
 	background-repeat: no-repeat;
 	color:red;
 	font-weight: bold;
@@ -50,7 +50,7 @@ div.error {
 
 div.completed {
 	background-image: url("check.png");
-	background-size: contain;
+	background-size: 18px;
 	background-repeat: no-repeat;
 }
 
