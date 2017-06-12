@@ -2,7 +2,7 @@ import sys
 import re
 from genologics.lims import *
 from genologics import config
-from collection import defaultdict
+from collections import defaultdict
 
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
