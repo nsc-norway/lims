@@ -4,7 +4,7 @@ from genologics import config
 from collections import defaultdict
 import re
 
-alpha = "ABCDEFGHIJKLMNO"
+alpha = "ABCDEFGHIJKLMNOP"
 
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
