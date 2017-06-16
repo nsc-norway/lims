@@ -45,7 +45,7 @@ def main(process_id, file_ids):
                     i_o = by_output_pos.get("{0}:{1}".format(row, col))
                     if i_o:
                         input, output = i_o
-                        sample_no = re.match(r"([0-9]+)-", input.name)
+                        sample_no = re.match(r"([A-Za-z0-9]+)-", input.name)
                         sample_no = sample_no.group(1) if sample_no else input.name
                         rows.append((str(base + irow + icol*8), sample_no))
         

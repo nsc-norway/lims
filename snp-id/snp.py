@@ -51,7 +51,7 @@ def main(process_id, filecfg, file_id):
 
         well = "%s%d" % (row[index % 8], (index // 8) + 1)
 
-        sample_no = re.match(r"([0-9]+)-", sample_name)
+        sample_no = re.match(r"([A-Za-z0-9]+)-", sample_name)
         sample_no = sample_no.group(1) if sample_no else sample_name
         if filecfg == "biomek1":
             filename = "biomek-snp1.csv"
