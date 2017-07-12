@@ -38,12 +38,11 @@ def main(process_id, file_ids):
         outfile = Artifact(lims, id=file_id)
         first_col = 1+file_index*3 # Each file has 3 columns of output samples (total: 24 samples per file)
         rows = []
-        for base in range(1, 384, 24):
-            for icol, col in enumerate(range(first_col, first_col+3)):
-                for irow, row in enumerate("ABCDEFGH"):
-                    #for index, (input, output) in enumerate(i_o, 1):
-                    i_o = by_output_pos.get("{0}:{1}".format(row, col))
-                    if i_o:
+        for icol, col in enumerate(range(first_col, first_col+3)):
+            for irow, row in enumerate("ABCDEFGH"):
+                i_o = by_output_pos.get("{0}:{1}".format(row, col))
+                if i_o:
+                    for base in range(1, 384, 24):
                         input, output = i_o
                         sample_no = re.match(r"([A-Za-z0-9]+)-", input.name)
                         sample_no = sample_no.group(1) if sample_no else input.name
