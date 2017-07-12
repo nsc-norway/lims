@@ -5,12 +5,9 @@ from genologics import config
 
 # Generates a list of Well, Sample name, in tab separated format.
 
-def sort_key(elem):
-    input, output = elem
-    container, well = output.location
+def row_col_index(well):
     row, col = well.split(":")
-    return (container, int(col), row)
-
+    return (ord(row) - ord('A'), int(col) - 1)
 
 def main(process_id, file_ids):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
@@ -27,8 +24,12 @@ def main(process_id, file_ids):
 
     lims.get_batch(inputs + outputs)
     
-    all_i_o = sorted(zip(inputs, outputs), key=sort_key)
-    by_output_pos = dict((i_o[1].location[1], i_o) for i_o in all_i_o)
+    input_by_output_pos = dict(
+            (row_col_index(i_o[1].location[1]), i_o[0])
+            for i_o in zip(inputs, outputs)
+            )
+
+    max_col = max(well[1] for well in input_by_output_pos)
 
     if len(set(o.container.id for o in outputs)) != 1:
         print "Incorrect number of output containers. Only support one container per run."
@@ -36,18 +37,32 @@ def main(process_id, file_ids):
 
     for file_index, file_id in enumerate(file_ids):
         outfile = Artifact(lims, id=file_id)
-        first_col = 1+file_index*3 # Each file has 3 columns of output samples (total: 24 samples per file)
+        first_col_index = file_index*3 # Each file has 3 columns of output samples (total: 24 samples per file)
+        if first_col_index > max_col:
+            break
         rows = []
-        for icol, col in enumerate(range(first_col, first_col+3)):
-            for irow, row in enumerate("ABCDEFGH"):
-                i_o = by_output_pos.get("{0}:{1}".format(row, col))
-                if i_o:
-                    for base in range(1, 384, 24):
-                        input, output = i_o
-                        sample_no = re.match(r"([A-Za-z0-9]+)-", input.name)
-                        sample_no = sample_no.group(1) if sample_no else input.name
-                        rows.append((str(base + irow + icol*8), sample_no))
-        
+        for ocol_index in range(16): # Total # is 24, but last 8 cols have different placement
+            for orow_index in range(16):
+                source_row = orow_index // 2
+                source_col = (orow_index % 2) + first_col_index
+                input = input_by_output_pos.get((source_row, source_col))
+                if input:
+                    sample_no = re.match(r"([A-Za-z0-9]+)-", input.name)
+                    sample_no = sample_no.group(1) if sample_no else input.name
+                    well_no = orow_index + ocol_index*16 + 1
+                    rows.append((str(well_no), sample_no))
+
+        for ocol_index in range(16,24):
+            for orow_index in range(16):
+                source_row = "ABCDEFGH"[orow_index // 2]
+                source_col = first_col_index + 2
+                input = input_by_output_pos.get((source_row, source_col))
+                if input:
+                    sample_no = re.match(r"([A-Za-z0-9]+)-", input.name)
+                    sample_no = sample_no.group(1) if sample_no else input.name
+                    well_no = orow_index + ocol_index*16 + 1
+                    rows.append((str(well_no), sample_no))
+    
         if rows:
             gs = lims.glsstorage(outfile, 'quant_studio_' + str(file_index+1) + '.txt')
             file_obj = gs.post()
