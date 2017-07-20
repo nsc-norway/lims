@@ -41,26 +41,25 @@ def main(process_id, file_ids):
         if first_col_index > max_col:
             break
         rows = []
-        for ocol_index in range(16): # Total # is 24, but last 8 cols have different placement
-            for orow_index in range(16):
+        for orow_index in range(16):
+            for ocol_index in range(16): # Total # is 24, but last 8 cols have different placement
                 source_row = orow_index // 2
                 source_col = (orow_index % 2) + first_col_index
                 input = input_by_output_pos.get((source_row, source_col))
                 if input:
                     sample_no = re.match(r"([A-Za-z0-9]+)-", input.name)
                     sample_no = sample_no.group(1) if sample_no else input.name
-                    well_no = orow_index + ocol_index*16 + 1
+                    well_no = orow_index*24 + ocol_index + 1
                     rows.append((str(well_no), sample_no))
 
-        for ocol_index in range(16,24):
-            for orow_index in range(16):
-                source_row = "ABCDEFGH"[orow_index // 2]
+            for ocol_index in range(16,24):
+                source_row = orow_index // 2
                 source_col = first_col_index + 2
                 input = input_by_output_pos.get((source_row, source_col))
                 if input:
                     sample_no = re.match(r"([A-Za-z0-9]+)-", input.name)
                     sample_no = sample_no.group(1) if sample_no else input.name
-                    well_no = orow_index + ocol_index*16 + 1
+                    well_no = orow_index*24 + ocol_index + 1
                     rows.append((str(well_no), sample_no))
     
         if rows:

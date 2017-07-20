@@ -40,12 +40,12 @@ lims.get_batch([i for i,o in inputs_outputs] + [o for i,o in inputs_outputs])
 lims.get_batch(i.samples[0] for i, o in inputs_outputs)
 for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)):
     ws.write(row_index+1, 0, input.name)
-    ws.write(row_index+1, 1, "Rack{}".format(1 + (row_index + 7) // 32))
-    ws.write(row_index+1, 2, 1 + (row_index + 7) % 32 )
+    ws.write(row_index+1, 1, "Rack{}".format(1 + (row_index + 8) // 32))
+    ws.write(row_index+1, 2, 1 + (row_index + 8) % 32 )
     try:
         conc = input.samples[0].udf['Sample conc. (ng/ul)']
     except KeyError:
-        ws.write(row_index+1, column=3).value = "MISSING"
+        ws.write(row_index+1, 3, "MISSING")
         continue
     if conc >= 9 and conc <= 180:
         ws.write(row_index+1, 3, 2)
