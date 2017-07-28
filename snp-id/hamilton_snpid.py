@@ -50,12 +50,13 @@ for row_index in range(96):
             continue
         if conc >= 9 and conc <= 180:
             ws.write(row_index+1, 3, 2)
-        elif conc < 1:
-            ws.write(row_index+1, 3, 1)
         else:
             # Compute 3 ng/uL in 45 uL total volume
             sample_vol = (3 * 45) / conc
-            ws.write(row_index+1, 3, sample_vol)
+            if sample_vol < 1:
+                ws.write(row_index+1, 3, 1)
+            else:
+                ws.write(row_index+1, 3, sample_vol)
 
     ws.write(row_index+1, 4, well.replace(":", ""))
 
