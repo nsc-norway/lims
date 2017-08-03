@@ -33,15 +33,20 @@
 # header would be "[Data],,,,,," (This happens if it is edited in
 # Excel, and then it remains a valid sample sheet).
 
-# ** Format overview **
-#
+# *** Format overview ***
+# There are four sections: Header, Reads, Settings and Data
 
-#
 
 
 import sys
 from genologics.lims import *
 from genologics import config
+
+def header_section():
+    data = ['']
+
+def reads_section(reads_cycles):
+    return [[str(cycles)] for cycles in read_cycles]
 
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
