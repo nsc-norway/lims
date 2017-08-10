@@ -25,6 +25,10 @@ def parse_result_file(text):
     data = {}
     for row_label, row in zip("ABCDEFGH", rows):
         for col_label, cell in zip(range(1, 9), row):
+            # We sometimes get files with a decimal comma. I have never seen 
+            # a comma thousands separator, so here we go, hoping for the best
+            # float() will fail if there are multiple dots after this.
+            cell = cell.replace(",", ".")
             data["{0}:{1}".format(row_label, col_label)] = float(cell)
     return data
 
