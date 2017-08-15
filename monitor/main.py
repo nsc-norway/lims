@@ -202,9 +202,9 @@ def estimated_time_completion(process, instrument, rapid, dual, done_cycles, tot
     if total_cycles > 0 and done_cycles < total_cycles:
         now = datetime.datetime.now()
         if instrument == "HiSeq X":
-            time_per_cycle = 864
+            time_per_cycle = 864 
         elif instrument == "HiSeq 3000/4000":
-            time_per_cycle = 1008
+            time_per_cycle = 755 # Average measured from a 318 cy run
         elif instrument == "HiSeq 2500":
             if done_cycles < 5:
                 return "" # Cycle #5 is much longer than others. We can't give a reliable time.
