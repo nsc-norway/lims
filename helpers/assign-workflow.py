@@ -10,8 +10,12 @@ def main(process_id, workflow_name):
     process = Process(lims, id=process_id)
     if workflow_name != "None":
         workflows = lims.get_workflows(name=workflow_name)
-        workflow = workflows[0]
-        lims.route_analytes(process.all_inputs(unique=True), workflow)
+        if workflows:
+            workflow = workflows[0]
+            lims.route_analytes(process.all_inputs(unique=True), workflow)
+        else:
+            print('Error: Workflow "' + str(workflow_name) + '" not found.')
+            sys.exit(1)
 
 
 if __name__ == "__main__":
