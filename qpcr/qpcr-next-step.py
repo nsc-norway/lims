@@ -11,7 +11,13 @@ def main(process_id):
     lims.get_batch([o for i, o in i_os] + [i for i,o in i_os])
 
     step = Step(lims, id=process_id)
-    default_next_step_uri = step.configuration.transitions[0]['next-step-uri']
+    for tn in step.configuration.transitions:
+        if not tn['name'].startswith("qPCR QC manual entry"):
+            default_next_step_uri = tn['next-step-uri']
+            break
+    else:
+        print "Incorrect step configration: No valid next step."
+        sys.exit(1)
 
     inputs_no_control = [i for i,o in i_os if not i.control_type]
     if any(o.stateless.qc_flag == "FAILED" for i, o in i_os):
