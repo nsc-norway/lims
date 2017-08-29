@@ -72,11 +72,11 @@ def main(process_id, output_file_id):
             print "Missing value for Amount of DNA per sample (ng) on", output.name, "(and possibly others)"
             sys.exit(1)
 
-        output_vol = output.udf.get('Volume (uL)')
+        output_vol = output.udf.get('Volume (uL) SSXT')
         if output_vol is None:
             try:
                 output_vol = DEFAULT_OUTPUT_VOL[norm_mass]
-                output.udf['Volume (uL)'] = output_vol
+                output.udf['Volume (uL) SSXT'] = output_vol
                 updated_outputs.append(output)
             except KeyError:
                 print "No default volume available for mass", norm_mass, "ng"
