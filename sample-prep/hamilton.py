@@ -7,6 +7,9 @@ from genologics import config
 
 # Excel (xls) file generator for Hamilton robots for normalisation steps
 
+# This is for NEXTERA PROTOCOL
+# See also hamilton-sureselect-norm.py for SureSelect protocol.
+
 def sort_key(elem):
     input, output, sample = elem
     container, well = output.location
