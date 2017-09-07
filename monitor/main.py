@@ -558,6 +558,12 @@ def prepare_page():
     threading.Timer(60, prepare_page).start()
     
 
+def process_type_to_instrument(process_type):
+    for pt, inst in zip(SEQUENCING, INSTRUMENTS):
+        if process_type == pt:
+            return inst
+    return "UNKNOWN_INSTRUMENT"
+
 
 @app.route('/')
 def get_main():
@@ -587,6 +593,63 @@ def go_eval():
         return redirect(proc_url(process.id))
     else:
         return Response("Sorry, project evaluation not found for " + project_name, mimetype="text/plain")
+
+
+@app.route('/run-list')
+def run_list():
+    monitored_process_list = []
+    for ptype in set(SEQUENCING):
+        monitored_process_list += lims.get_processes(udf={'Monitor': True}, type=ptype)
+
+    #machinse = {} # Not used
+    #sequencing = [
+    #    read_sequencing(proc.type_name, proc, machines)
+    #        for proc in monitored_process_list
+    #    ]
+    data = []
+    # Row: 
+    #Run name        Instrument      Cleaned Transfered      Drive   ProjectName     Type    Name    Email  
+    # #SamplesProj    #SamplesRun     IssuesPrep      IssuesQC        DeliveryEmailDate       DeliveryMethod
+    for process in monitored_process_list:
+        first_part_of_row = [process.udf.get('Run ID', '')]
+        instrument_long = process_type_to_instrument(process.type_name)
+        # Should be HiSeq, NeSeq, MiSeq only
+        instrument = instrument_long.split()[0].replace("NextSeq", "NeSeq")
+        first_part_of_row.append(instrument)
+        first_part_of_row += [""] * 3
+        
+        lims_projects = set(art.samples[0].project for art in process.all_inputs())
+        for project in lims_projects:
+            row_p2 = [project.name]
+            lims_project_type = project.udf.get('Project Type', 'UNKNOWN')
+            ptype_map = {'Diagnostics': 'Diag', 'Immunology': 'Imm', 'Microbiology': 'Microb', 'Non-Sensitive': 'NS'}
+            row_p2.append(ptype_map.get(lims_project_type, lims_project_type))
+            row_p2.append(project.udf.get('Contact person', ''))
+            row_p2.append(project.udf.get('Contact email', ''))
+            num_samples_in_project = len(lims.get_samples(projectlimsid=project.id))
+            row_p2.append(str(num_samples_in_project))
+            num_samples_in_run = sum(
+                    1
+                    for art in process.all_inputs(unique=True)
+                    for sample in art.samples
+                    if sample.project == project
+                    )
+            row_p2.append(str(num_samples_in_run))
+            row_p2 += [""] * 3 # IssuesPrep, IssuesQC, DeliveryEmailDate
+            delivery_method = project.udf.get('Delivery method')
+            if lims_project_type == "Diagnostics":
+                row_p2.append("email")
+            elif 'HDD' in delivery_method:
+                row_p2.append("hard drive")
+            elif delivery_method == "Norstore":
+                row_p2.append("Norstore")
+            else:
+                row_p2.append(delivery_method or "ERROR")
+            data.append(first_part_of_row + row_p2)
+            first_part_of_row = [""] * len(first_part_of_row)
+
+        return render_template('run-list.xhtml', data=data)
+
 
 if __name__ == '__main__':
     app.debug=True
