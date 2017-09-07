@@ -648,7 +648,7 @@ def run_list():
             data.append(first_part_of_row + row_p2)
             first_part_of_row = [""] * len(first_part_of_row)
 
-        return render_template('run-list.xhtml', data=data)
+    return render_template('run-list.xhtml', data=data)
 
 
 if __name__ == '__main__':
