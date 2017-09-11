@@ -95,7 +95,10 @@ def main(process_id, filegen, file_id, params):
         sample_no = re.match(r"([0-9]+)-", sample_name)
         if filegen == "HamiltonDilution1":
             # (20 ng/uL * 25 uL) / conc = (500 ng) / conc
-            sample_volume = (norm_conc * vol * 1.0 / input_conc)
+            if input_conc == 0.0:
+                sample_volume = vol
+            else:
+                sample_volume = (norm_conc * vol * 1.0 / input_conc)
             buffer_volume = vol - sample_volume
 
             if buffer_volume < 0:
