@@ -635,7 +635,7 @@ def run_list():
                     if sample.project == project
                     )
             row_p2.append(str(num_samples_in_run))
-            row_p2 += [""] * 3 # IssuesPrep, IssuesQC, DeliveryEmailDate
+            row_p2 += [""] * 4 # Unusued, IssuesPrep, IssuesQC, DeliveryEmailDate
             delivery_method = project.udf.get('Delivery method')
             if lims_project_type == "Diagnostics":
                 row_p2.append("email")
