@@ -621,7 +621,7 @@ def run_list():
         lims_projects = set(art.samples[0].project for art in process.all_inputs())
         for project in lims_projects:
             row_p2 = [project.name]
-            lims_project_type = project.udf.get('Project Type', 'UNKNOWN')
+            lims_project_type = project.udf.get('Project type', 'UNKNOWN')
             ptype_map = {'Diagnostics': 'Diag', 'Immunology': 'Imm', 'Microbiology': 'Microb', 'Non-Sensitive': 'NS'}
             row_p2.append(ptype_map.get(lims_project_type, lims_project_type))
             row_p2.append(project.udf.get('Contact person', ''))
