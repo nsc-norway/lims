@@ -55,7 +55,7 @@ for row_index in range(96):
             if conc == 0.0:
                 sample_vol = (3 * 45) / conc
             else:
-                sample_vol = 5
+                sample_vol = 2
             if sample_vol < 1:
                 ws.write(row_index+1, 3, 1)
             else:

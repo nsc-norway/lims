@@ -70,7 +70,7 @@ for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)
     else:
         # Compute 3 ng/uL in 45 uL total volume
         if conc == 0.0:
-            sample_vol = 5
+            sample_vol = 2
         else:
             sample_vol = (3 * 45) / conc
         ws.cell(row=row_index, column=5).value = max(0, 45 - sample_vol)
