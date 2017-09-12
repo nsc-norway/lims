@@ -52,7 +52,10 @@ for row_index in range(96):
             ws.write(row_index+1, 3, 2)
         else:
             # Compute 3 ng/uL in 45 uL total volume
-            sample_vol = (3 * 45) / conc
+            if conc == 0.0:
+                sample_vol = (3 * 45) / conc
+            else:
+                sample_vol = 5
             if sample_vol < 1:
                 ws.write(row_index+1, 3, 1)
             else:
