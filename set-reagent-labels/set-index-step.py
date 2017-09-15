@@ -15,6 +15,9 @@ SAMPLE_INDEX_UDF = "Index requested/used"
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
+def reverse_complement(seq):
+    complement={'A':'T', 'C':'G', 'G':'C', 'T':'A'}
+    return "".join(reversed([complement[c] for c in seq]))
 
 def main(process_id):
     """Assign reagents based on available reagent types, the Index requested/used UDF,
@@ -33,7 +36,17 @@ def main(process_id):
     except KeyError:
         category = None
 
-    index_analyte = [(a.samples[0].udf[SAMPLE_INDEX_UDF].strip(" \t\xca\xa0\xc2"), a.name) for a in analytes]
+    split_indexes = [a.samples[0].udf[SAMPLE_INDEX_UDF].strip(" \t\xca\xa0\xc2").replace('+','-').split("-") for a in analytes]
+    analyte_names = [a.name for a in analytes]
+
+    if process.udf.get('Reverse complement index1'):
+        split_indexes = [[reverse_complement(i[0])] + i[1:] for i in split_indexes]
+    if process.udf.get('Reverse complement index2'):
+        index_analyte = [i[0:1] + [reverse_complement(i[1])] + i[1:] for i in split_indexes]
+    if process.udf.get('Swap index1 and index2'):
+        index_analyte = [reversed(i) for i in split_indexes]
+
+    index_analyte = zip(["-".join(i) for i in split_indexes], analyte_names)
     try:
         if category == "Auto-detect":
             category, result = indexes.get_reagents_auto_category(reagents, index_analyte)
