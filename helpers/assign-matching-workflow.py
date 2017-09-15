@@ -11,7 +11,7 @@ def main(process_id, workflow_pattern):
     if workflow_pattern != "None":
         workflow_data = lims.get_workflows(add_info=True)
         for workflow, info in zip(*workflow_data):
-            if info['status'] == "ACTIVE" or re.match(workflow_pattern, info['name']):
+            if info['status'] == "ACTIVE" and re.match(workflow_pattern, info['name']):
                 lims.route_analytes(process.all_inputs(unique=True), workflow)
                 break
         else: # If not breaked
