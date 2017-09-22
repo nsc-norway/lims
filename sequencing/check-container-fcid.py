@@ -24,6 +24,10 @@ def main(process_id):
             fc.name = fc.name[:-len("-50V2")] + "-050V2"
             print 'Reagent cartridge ID corrected: Should be 050V2 for 50 bp kit".'
             fc.put()
+        if fc.name.startswith("RGT"):
+            print 'RGT number "' + fc.name + '" shoud not be used as container ID. For MiSeq it should \
+                    be MSxxxxx-nnnVn, for HiSeq it is printed on the flow cell package.'
+            sys.exit(1)
 
     all_known = lims.get_containers(name=(container.name for container in flowcells))
     if len(all_known) > len(flowcells):
