@@ -42,9 +42,9 @@ def main(process_id):
     if process.udf.get('Reverse complement index1'):
         split_indexes = [[reverse_complement(i[0])] + i[1:] for i in split_indexes]
     if process.udf.get('Reverse complement index2'):
-        index_analyte = [i[0:1] + [reverse_complement(i[1])] + i[1:] for i in split_indexes]
+        split_indexes = [i[0:1] + [reverse_complement(i[1])] for i in split_indexes]
     if process.udf.get('Swap index1 and index2'):
-        index_analyte = [reversed(i) for i in split_indexes]
+        split_indexes = [reversed(i) for i in split_indexes]
 
     index_analyte = zip(["-".join(i) for i in split_indexes], analyte_names)
     try:
