@@ -232,21 +232,14 @@ def get_run_type(instrument, process):
         #if instrument == "HiSeq X":
         #elif instrument == "HiSeq 3000/4000":
         if instrument == "HiSeq 2500":
-            runmode = {
-                    "HiSeq Rapid Flow Cell v1": "Rapid",
-                    "HiSeq Rapid Flow Cell v2": "Rapid",
-                    "HiSeq Flow Cell v4": "High Output v4"
-                    }.get(process.udf.get("Flow Cell Version"), "Unknown")
+            runmode = process.udf.get("Run Mode", "?")
         elif instrument == "NextSeq":
-            runmode = process.udf.get("Chemistry", "Unknown")
+            runmode = process.udf.get("Chemistry", "?")
         elif instrument == "MiSeq":
-            container_name = process.all_inputs()[0].location[0].name
-            if container_name.endswith("V2"):
-                runmode = "MiSeq v2"
-            elif container_name.endswith("V3"):
-                runmode = "MiSeq v3"
-            else:
-                runmode = "Unknown"
+            try:
+                runmode = "MiSeq v" + process.udf["Chemistry Version"]
+            except KeyError:
+                runmode = "?"
         else:
             runmode = None
 
