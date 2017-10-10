@@ -168,9 +168,8 @@ def is_step_completed(step):
     return step.current_state.upper() == "COMPLETED"
 
 
-def proc_url(process_id):
-    global ui_server
-    step = Step(lims, id=process_id)
+def proc_url(process):
+    step = Step(process.lims, id=process.id)
     state = step.current_state.upper()
     if state == 'COMPLETED':
         page = "work-complete"
@@ -181,10 +180,12 @@ def proc_url(process_id):
     else:
         page = "work-details"
     second_part_limsid = re.match(r"[\d]+-([\d]+)$", process_id).group(1)
+    ui_server = process.lims.baseuri
     return "{0}clarity/{1}/{2}".format(ui_server, page, second_part_limsid)
 
 
 def read_project(lims_project):
+    ui_server = lims_project.lims.baseuri
     url = "{0}clarity/search?scope=Project&query={1}".format(ui_server, lims_project.id)
     eval_url = eval_url_base + "?project_name=" + lims_project.name
     return Project(url, lims_project.name, eval_url)
@@ -264,7 +265,7 @@ def get_run_type(instrument, process):
 
 
 def read_sequencing(process_name, process, machines):
-    url = proc_url(process.id)
+    url = proc_url(process)
     flowcell = process.all_inputs()[0].location[0]
     flowcell_id = flowcell.name
     instrument = INSTRUMENTS[SEQUENCING.index(process.type.name)]
@@ -337,8 +338,8 @@ def automation_state(process):
         return False, False, False
 
 def read_post_sequencing_process(process_name, process, sequencing_process):
-    url = proc_url(process.id)
-    seq_url = proc_url(sequencing_process.id)
+    url = proc_url(process)
+    seq_url = proc_url(sequencing_process)
     #flowcell_id = process.all_inputs()[0].location[0].name
     try:
         runid = sequencing_process.udf['Run ID']
@@ -386,13 +387,13 @@ def get_recent_run(fc):
 
     instrument_index = SEQUENCING.index(sequencing_process.type.name)
 
-    url = proc_url(sequencing_process.id)
+    url = proc_url(sequencing_process)
     try:
         demux_process = next(iter(lims.get_processes(
                 type=DATA_PROCESSING,
                 inputartifactlimsid=fc.placements.values()[0].id
                 )))
-        demultiplexing_url = proc_url(demux_process.id)
+        demultiplexing_url = proc_url(demux_process)
     except StopIteration:
         demultiplexing_url = ""
 
@@ -467,10 +468,8 @@ def get_batch(instances):
 
 def prepare_page():
     global page
-    global ui_server
 
     try:
-        ui_server = lims.baseuri
         all_process_types = SEQUENCING + [DATA_PROCESSING]
 
         # Get a list of all processes 
@@ -536,7 +535,6 @@ def prepare_page():
         variables = {
                 'updated': datetime.datetime.now(),
                 'static': static_url,
-                'server': lims.baseuri,
                 'sequencing': sequencing,
                 'post_sequencing': post_sequencing,
                 'recently_completed': recently_completed,
@@ -583,7 +581,7 @@ def go_eval():
     processes = lims.get_processes(projectname=project_name, type=PROJECT_EVALUATION)
     if len(processes) > 0:
         process = processes[-1]
-        return redirect(proc_url(process.id))
+        return redirect(proc_url(process))
     else:
         return Response("Sorry, project evaluation not found for " + project_name, mimetype="text/plain")
 
