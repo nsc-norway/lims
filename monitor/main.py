@@ -62,7 +62,9 @@ class LimsServer(object):
         self.SEQUENCING = settings['SEQUENCING']
         self.DATA_PROCESSING = settings['DATA_PROCESSING']
         if settings['CREDENTIALS_FILE']:
-            pass# TODO!
+            credentials_path = os.path.expanduser(settings['CREDENTIALS_FILE'])
+            BASEURI, USERNAME, PASSWORD, VERSION, MAIN_LOG = config.load_config(credentials_path)
+            self.lims = Lims(BASEURI, USERNAME, PASSWORD)
         else:
             self.lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 

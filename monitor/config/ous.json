@@ -5,7 +5,7 @@
         "FLOWCELL_TYPES": ["Patterned Flow Cell"],
         "SEQUENCING": [ "AUTOMATED - Sequence"],
         "DATA_PROCESSING": ["Demultiplexing and QC NSC 2.0"],
-        "CREDENTIALS_FILE": null
+        "CREDENTIALS_FILE": "~/genologicsrc_x-lims.conf"
     },
     {
         "INSTRUMENTS":  ["HiSeq X", "HiSeq 3000/4000", "HiSeq 2500", "NextSeq", "MiSeq"],
