@@ -73,7 +73,12 @@ servers = []
 # in the very bottom of this file.
 def run_init(site):
     global servers
-    with open("config/{0}.json".format(site)) as f:
+    configpath = os.path.join(
+            os.path.dirname(__file__),
+            "config",
+            "{0}.json".format(site)
+            )
+    with open(configpath) as f:
         data = json.load(f)
         servers = [LimsServer(i, server) for i, server in enumerate(data['SERVERS'])]
 
