@@ -5,6 +5,11 @@ import subprocess
 from genologics import config
 from genologics.lims import *
 
+# This script is obsolete, and no longer necessary. Instead one should use
+# the cron job in: workflow-run-last-step.py. The script is however still
+# active in version 1.2 of the diagnostics Tolkning protocol. When a new
+# version is deployed, this file is not used at all.
+
 # This script is only useful when a protocol can 
 # finish on two or more steps, such that there is no single step at the end.
 # In that case, one can add a dummy step, and this script will forward all 
