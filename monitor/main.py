@@ -19,52 +19,18 @@ from collections import defaultdict
 # ---------------------------------
 
 # Method for generating the progress overview:
-# 1. Queues:   No longer supported
-# 2. Processes:Process types which should be monitored have a boolean 
+#    Processes:Process types which should be monitored have a boolean 
 #              UDF called "Monitor", with a default of true. This program
 #              queries the API for any process of a given type, with the 
-#              Monitor flag set. The Monitor flag is cleared if the protocol
-#              step is closed in the LIMS.
+#              Monitor flag set. This script clears the Monitor flag if
+#              the protocol step is closed in the LIMS.
 
 app = Flask(__name__)
 
-lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
+# LIMS server configuration
+servers = [] #TODO
+        
 page = None
-
-SITE="TESTING"
-if SITE == "cees":
-    INSTRUMENTS = ["HiSeq 3000/4000", "HiSeq 2500"]
-
-    FLOWCELL_TYPES = set((
-            "Illumina Flow Cell",
-            "Illumina Rapid Flow Cell",
-            ))
-    # List of process types
-    SEQUENCING = [
-            "Illumina Sequencing (HiSeq 3000/4000) 1.0",
-            "Illumina Sequencing (Illumina SBS) 5.0",
-            ]
-else:
-    INSTRUMENTS = ["HiSeq X", "HiSeq 3000/4000", "HiSeq 2500", "NextSeq", "MiSeq"]
-
-    FLOWCELL_TYPES = set((
-            "Illumina Flow Cell",
-            "Illumina Rapid Flow Cell",
-            "NextSeq Reagent Cartridge", 
-            "MiSeq Reagent Cartridge",
-            "Patterned Flow Cell"
-            ))
-    # List of process types
-    SEQUENCING = [
-            "Illumina Sequencing (HiSeq X) 1.0",
-            "Illumina Sequencing (HiSeq 3000/4000) 1.0",
-            "Illumina Sequencing (Illumina SBS) 5.0",
-            "NextSeq Run (NextSeq) 1.0",
-            "MiSeq Run (MiSeq) 5.0"
-            ]
-
-# List of process types
-DATA_PROCESSING = "Demultiplexing and QC NSC 2.0"
 
 # Process type for project eval.
 PROJECT_EVALUATION = "Project Evaluation Step"
@@ -77,18 +43,24 @@ PROCESSED_DATE_UDF = "Processing completed date"
 JOB_STATUS_UDF = "Job status"
 JOB_STATE_CODE_UDF = "Job state code"
 CURRENT_JOB_UDF = "Current job"
-SEQ_PROCESSES=[
-        ('hiseqx', 'Illumina Sequencing (HiSeq X) 1.0'),
-        ('hiseq4k', 'Illumina Sequencing (HiSeq 3000/4000) 1.0'),
-        ('hiseq', 'Illumina Sequencing (Illumina SBS) 5.0'),
-        ('nextseq', 'NextSeq Run (NextSeq) 1.0'),
-        ('miseq', 'MiSeq Run (MiSeq) 5.0')
-        ]
 
 recent_run_cache = {}
 sequencing_process_type = []
 eval_url_base = ""
 template_loc = ""
+
+class LimsServer(object):
+    def __init__(self, server_id):
+        with open("config/{0}.json".format(server_id)) as f:
+            config = json.load(f)
+        self.INSTRUMENTS = config['INSTRUMENTS']
+        self.FLOWCELL_TYPES = config['FLOWCELL_TYPES']
+        self.SEQUENCING = config['SEQUENCING']
+        self.DATA_PROCESSING = config['DATA_PROCESSING']
+        if config['CREDENTIALS_FILE']:
+            pass# TODO!
+        else:
+            self.lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
 def get_sequencing_process(process):
     """Gets the sequencing process from a process object corresponing to a process
@@ -380,7 +352,7 @@ def get_recent_run(fc):
     
     Caching should be done by the caller."""
 
-    sequencing_process = next(iter(lims.get_processes(
+    sequencing_process = next(iter(fc.lims.get_processes(
             type=set(SEQUENCING),
             inputartifactlimsid=fc.placements.values()[0].id
             )))
@@ -389,7 +361,7 @@ def get_recent_run(fc):
 
     url = proc_url(sequencing_process)
     try:
-        demux_process = next(iter(lims.get_processes(
+        demux_process = next(iter(fc.lims.get_processes(
                 type=DATA_PROCESSING,
                 inputartifactlimsid=fc.placements.values()[0].id
                 )))

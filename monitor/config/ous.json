@@ -1,0 +1,7 @@
+{
+    "INSTRUMENTS":  ["HiSeq X", "HiSeq 3000/4000", "HiSeq 2500", "NextSeq", "MiSeq"],
+    "FLOWCELL_TYPES": ["Illumina Flow Cell", "Illumina Rapid Flow Cell", "NextSeq Reagent Cartridge", "MiSeq Reagent Cartridge", "Patterned Flow Cell"],
+    "SEQUENCING": ["Illumina Sequencing (HiSeq X) 1.0", "Illumina Sequencing (HiSeq 3000/4000) 1.0", "Illumina Sequencing (Illumina SBS) 5.0", "NextSeq Run (NextSeq) 1.0", "MiSeq Run (MiSeq) 5.0"],
+    "DATA_PROCESSING": ["Demultiplexing and QC NSC 2.0"],
+    "CREDENTIAL_FILE": null
+}
