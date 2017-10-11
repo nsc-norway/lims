@@ -1,7 +1,0 @@
-{
-    "INSTRUMENTS":  ["SeqLab"],
-    "FLOWCELL_TYPES": ["Patterned Flow Cell"],
-    "SEQUENCING": [ "AUTOMATED - Sequence"],
-    "DATA_PROCESSING": ["Demultiplexing and QC NSC 2.0"],
-    "CREDENTIAL_FILE": null
-}

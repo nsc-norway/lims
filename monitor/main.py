@@ -3,10 +3,12 @@ from genologics.lims import *
 from genologics import config
 import re
 import os
+import sys
 import datetime
 import traceback
 import threading
 import jinja2
+import json
 from functools import partial
 from collections import defaultdict
 
@@ -27,9 +29,6 @@ from collections import defaultdict
 
 app = Flask(__name__)
 
-# LIMS server configuration
-servers = [] #TODO
-        
 page = None
 
 # Process type for project eval.
@@ -49,20 +48,35 @@ sequencing_process_type = []
 eval_url_base = ""
 template_loc = ""
 
+# Site variable is updated by deployment script. Currently we have cees and ous.
+# The line below must not be changed, not even whitespace / comments.
+SITE="TESTING"
+
+
+# This class represents the configuration for a LIMS server
 class LimsServer(object):
-    def __init__(self, server_id):
-        with open("config/{0}.json".format(server_id)) as f:
-            config = json.load(f)
-        self.INSTRUMENTS = config['INSTRUMENTS']
-        self.FLOWCELL_TYPES = config['FLOWCELL_TYPES']
-        self.SEQUENCING = config['SEQUENCING']
-        self.DATA_PROCESSING = config['DATA_PROCESSING']
-        if config['CREDENTIALS_FILE']:
+    def __init__(self, index, settings):
+        self.index = index
+        self.INSTRUMENTS = settings['INSTRUMENTS']
+        self.FLOWCELL_TYPES = settings['FLOWCELL_TYPES']
+        self.SEQUENCING = settings['SEQUENCING']
+        self.DATA_PROCESSING = settings['DATA_PROCESSING']
+        if settings['CREDENTIALS_FILE']:
             pass# TODO!
         else:
             self.lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-def get_sequencing_process(process):
+servers = []
+# Load dynamic configuration settings from JSON file. This is called at the module level 
+# in the very bottom of this file.
+def run_init(site):
+    global servers
+    with open("config/{0}.json".format(site)) as f:
+        data = json.load(f)
+        servers = [LimsServer(i, server) for i, server in enumerate(data['SERVERS'])]
+
+
+def get_sequencing_process(server, process):
     """Gets the sequencing process from a process object corresponing to a process
     which is run after sequencing, such as demultiplexing. This function looks up
     the sequencing step by examining the sibling processes run on one of the
@@ -73,8 +87,8 @@ def get_sequencing_process(process):
     first_io = process.input_output_maps[0]
     first_in_artifact = first_io[0]['uri']
 
-    processes = process.lims.get_processes(inputartifactlimsid=first_in_artifact.id)
-    seq_processes = [proc for proc in processes if proc.type.name in [p[1] for p in SEQ_PROCESSES]]
+    processes = server.lims.get_processes(inputartifactlimsid=first_in_artifact.id)
+    seq_processes = [proc for proc in processes if proc.type_name in server.SEQUENCING]
     # Use the last sequencing process. In case of crashed runs, this will be the right one.
     try:
         return seq_processes[-1]
@@ -151,24 +165,24 @@ def proc_url(process):
         page = "work-setup"
     else:
         page = "work-details"
-    second_part_limsid = re.match(r"[\d]+-([\d]+)$", process_id).group(1)
+    second_part_limsid = re.match(r"[\d]+-([\d]+)$", process.id).group(1)
     ui_server = process.lims.baseuri
     return "{0}clarity/{1}/{2}".format(ui_server, page, second_part_limsid)
 
 
-def read_project(lims_project):
+def read_project(server, lims_project):
     ui_server = lims_project.lims.baseuri
     url = "{0}clarity/search?scope=Project&query={1}".format(ui_server, lims_project.id)
-    eval_url = eval_url_base + "?project_name=" + lims_project.name
+    eval_url = eval_url_base + "?project_name=" + lims_project.name + "&server=" + str(server.index)
     return Project(url, lims_project.name, eval_url)
 
 
-def get_projects(process):
+def get_projects(server, process):
     lims_projects = set(
             art.samples[0].project
             for art in process.all_inputs()
             )
-    return [read_project(p) for p in lims_projects if not p is None]
+    return [read_project(server, p) for p in lims_projects if not p is None]
 
 
 def estimated_time_completion(process, instrument, rapid, dual, done_cycles, total_cycles):
@@ -236,17 +250,17 @@ def get_run_type(instrument, process):
         return ""
 
 
-def read_sequencing(process_name, process, machines):
+def read_sequencing(server, process, machines):
     url = proc_url(process)
     flowcell = process.all_inputs()[0].location[0]
     flowcell_id = flowcell.name
-    instrument = INSTRUMENTS[SEQUENCING.index(process.type.name)]
+    instrument = server.INSTRUMENTS[server.SEQUENCING.index(process.type_name)]
     run_type = get_run_type(instrument, process)
     lims_projects = set(
             art.samples[0].project
             for art in process.all_inputs()
             )
-    projects = get_projects(process)
+    projects = get_projects(server, process)
     eta = None
     machine = None
     try:
@@ -266,7 +280,7 @@ def read_sequencing(process_name, process, machines):
                 eta = estimated_time_completion(
                         process, 
                         instrument,
-                        "Rapid" in flowcell.type.name,
+                        "Rapid" in flowcell.type_name,
                         other_flowcell_sequencing_info, #dual flowcell
                         int(cycles_re.group(1)), int(cycles_re.group(2))
                         )
@@ -287,7 +301,7 @@ def read_sequencing(process_name, process, machines):
         finished = ""
 
     seq_info = SequencingInfo(
-            process_name, url, flowcell_id, projects, status, eta, runid, run_type, finished
+            process.type_name, url, flowcell_id, projects, status, eta, runid, run_type, finished
             )
     if machine:
         machines[machine] = seq_info
@@ -309,7 +323,7 @@ def automation_state(process):
     else:
         return False, False, False
 
-def read_post_sequencing_process(process_name, process, sequencing_process):
+def read_post_sequencing_process(server, process, sequencing_process):
     url = proc_url(process)
     seq_url = proc_url(sequencing_process)
     #flowcell_id = process.all_inputs()[0].location[0].name
@@ -318,7 +332,7 @@ def read_post_sequencing_process(process_name, process, sequencing_process):
     except (KeyError, TypeError):
         runid = ""
         expt_name = ""
-    projects = get_projects(process)
+    projects = get_projects(server, process)
     automated, waiting, completed = automation_state(process)
 
     current_job = ""
@@ -340,29 +354,29 @@ def read_post_sequencing_process(process_name, process, sequencing_process):
     state_code = process.udf.get(JOB_STATE_CODE_UDF, "")
 
     return DataAnalysisInfo(
-            process_name, url, projects, current_job, state_code, status, seq_url, runid
+            process.type_name, url, projects, current_job, state_code, status, seq_url, runid
             )
 
 
 
-def get_recent_run(fc):
+def get_recent_run(server, fc):
     """Get the monitoring page's internal representation of a completed run.
     This will initiate a *lot* of requests, but it's just once per run
     (flowcell).
     
     Caching should be done by the caller."""
 
-    sequencing_process = next(iter(fc.lims.get_processes(
-            type=set(SEQUENCING),
+    sequencing_process = next(iter(server.lims.get_processes(
+            type=set(server.SEQUENCING),
             inputartifactlimsid=fc.placements.values()[0].id
             )))
 
-    instrument_index = SEQUENCING.index(sequencing_process.type.name)
+    instrument_index = server.SEQUENCING.index(sequencing_process.type_name)
 
     url = proc_url(sequencing_process)
     try:
         demux_process = next(iter(fc.lims.get_processes(
-                type=DATA_PROCESSING,
+                type=server.DATA_PROCESSING,
                 inputartifactlimsid=fc.placements.values()[0].id
                 )))
         demultiplexing_url = proc_url(demux_process)
@@ -373,7 +387,7 @@ def get_recent_run(fc):
         runid = sequencing_process.udf['Run ID']
     except KeyError:
         runid = ""
-    projects = get_projects(sequencing_process)
+    projects = get_projects(server, sequencing_process)
 
     return CompletedRunInfo(
             url,
@@ -386,55 +400,54 @@ def get_recent_run(fc):
     
 
 
-def get_recently_completed_runs():
-    # Look for any flowcells which have a value for this udf
-    flowcells = lims.get_containers(
-            udf={RECENTLY_COMPLETED_UDF: True},
-            type=FLOWCELL_TYPES
-            )
+def get_recently_completed_runs(servers):
+    all_results = []
+    for server in servers:
+        # Look for any flowcells which have a value for this udf
+        flowcells = server.lims.get_containers(
+                udf={RECENTLY_COMPLETED_UDF: True},
+                type=server.FLOWCELL_TYPES
+                )
 
-    cutoff_date = datetime.date.today() - datetime.timedelta(days=30)
-    results = [list() for i in range(len(SEQUENCING))]
-    for fc in reversed(flowcells):
-        try:
-            date = fc.udf[PROCESSED_DATE_UDF]
-        except KeyError:
-            fc.get(force=True)
+        cutoff_date = datetime.date.today() - datetime.timedelta(days=30)
+        server_results = [list() for i in range(len(server.SEQUENCING))]
+        for fc in reversed(flowcells):
             try:
                 date = fc.udf[PROCESSED_DATE_UDF]
             except KeyError:
-                date = cutoff_date
+                fc.get(force=True)
+                try:
+                    date = fc.udf[PROCESSED_DATE_UDF]
+                except KeyError:
+                    date = cutoff_date
 
-        if date <= cutoff_date:
-            try:
-                del recent_run_cache[fc.id]
-            except KeyError:
-                pass
-            fc.get(force=True)
-            fc.udf[RECENTLY_COMPLETED_UDF] = False
-            fc.put()
-        else:
-            run_info = recent_run_cache.get(fc.id)
+            if date <= cutoff_date:
+                try:
+                    del recent_run_cache[(server, fc.id)]
+                except KeyError:
+                    pass
+                fc.get(force=True)
+                fc.udf[RECENTLY_COMPLETED_UDF] = False
+                fc.put()
+            else:
+                run_info = recent_run_cache.get((server, fc.id))
+                if not run_info:
+                    run_info = get_recent_run(server, fc)
+                    recent_run_cache[(server, fc.id)] = run_info
 
-            if not run_info:
-                run_info = get_recent_run(fc)
-                recent_run_cache[fc.id] = run_info
+                server_results[run_info.instrument_index].append(run_info)
 
-            results[run_info.instrument_index].append(run_info)
-
+        all_results += server_results
         
-    return results
+    return all_results
 
 
-def get_batch(instances):
-    """Lame replacement for batch call, API only support batch resources for 
-    some types of objects.
+def refresh(instances):
+    """Refresh all instances.
     
-    Note: when / if batch is implemented for these, we'll need to specify 
-    force=True for the batch call."""
+    This could be replaced by a few batch calls if that becomes available for Process / Step."""
     for instance in instances:
         instance.get(force=True)
-
     return instances
 
 
@@ -442,67 +455,78 @@ def prepare_page():
     global page
 
     try:
-        all_process_types = SEQUENCING + [DATA_PROCESSING]
+        servers_seq_process_types = [
+            (server, proctype) for server in servers for proctype in server.SEQUENCING]
+
+        servers_data_process_types = [
+            (server, proctype) for server in servers for proctype in server.DATA_PROCESSING]
+
+        all_servers_process_types = servers_seq_process_types + servers_data_process_types
 
         # Get a list of all processes 
         # Of course it can't be this efficient :( Multiple process types not supported
         #monitored_process_list = lims.get_processes(udf={'Monitor': True}, type=all_process_types)
         monitored_process_list = []
-        for ptype in set(all_process_types):
-            monitored_process_list += lims.get_processes(udf={'Monitor': True}, type=ptype)
+        for server, ptype in set(all_servers_process_types):
+            monitored_process_list += [ (server, proc) for
+                            proc in server.lims.get_processes(udf={'Monitor': True}, type=ptype)
+                            ]
 
         # Refresh data for all processes (need this for almost all monitored procs, so
         # doing a batch request)
-        processes_with_data = get_batch(monitored_process_list)
+        refresh(proc for server, proc in monitored_process_list)
+
         # Need Steps to see if COMPLETED, this loads them into cache
-        steps = [Step(lims, id=p.id) for p in processes_with_data]
-        get_batch(steps)
+        steps = [Step(s.lims, id=p.id) for s, p in monitored_process_list]
+        refresh(steps)
 
         seq_processes = defaultdict(list)
         post_processes = []
         completed = []
-        for p, step in zip(processes_with_data, steps):
-            if p.type.name in SEQUENCING:
+        for (server, p), step in zip(monitored_process_list, steps):
+            if p.type_name in server.SEQUENCING:
                 if is_step_completed(step):
                     completed.append(p)
                 else:
-                    seq_processes[p.type.name].append(p)
+                    seq_processes[p.type_name].append(p)
 
             else:
                 if is_step_completed(step):
                     completed.append(p)
                 else:
-                    post_processes.append(p)
+                    post_processes.append((server,p))
 
         clear_monitor(completed)
 
         # Keep track of machine-ID, to estimate correct time for single/dual flow cell runs
         machines = {}
 
-        # List of three elements -- Hi,Next,MiSeq, each contains a list of 
-        # sequencing processes
+        # List of one element per (server, machine type), then one element per process inside of
+        # that
         sequencing = [
-            [read_sequencing(sp, proc, machines) 
+            [read_sequencing(server, proc, machines) 
                 for proc in seq_processes[sp]]
-                for sp in SEQUENCING
+                for (server, sp) in servers_seq_process_types
             ]
 
 
-        # List of three sequencer types (containing lists within them)
+        # List of the sequencer types (containing lists within them)
         post_sequencing = []
+
+        # Find sequencing process for each post process
+        sequencing_processes = [get_sequencing_process(server, process) for server, process in post_processes]
+
         # One workflow for each sequencer type
-        for index in range(len(SEQUENCING)):
+        for index in range(len(servers_seq_process_types)):
             machine_items = [] # all processes for a type of sequencing machine
-            for process in post_processes:
-                sequencing_process = get_sequencing_process(process)
-                if sequencing_process and sequencing_process.type.name == SEQUENCING[index]:
-                    machine_items.append(read_post_sequencing_process(
-                        DATA_PROCESSING, process, sequencing_process
-                        ))
+            for (server, process), sequencing_process in zip(post_processes, sequencing_processes):
+                if sequencing_process and sequencing_process.type_name == servers_seq_process_types[index][1]:
+                    machine_items.append(read_post_sequencing_process(server, process, sequencing_process))
             post_sequencing.append(machine_items)
             
 
-        recently_completed = get_recently_completed_runs()
+        recently_completed = get_recently_completed_runs(servers)
+
 
         variables = {
                 'updated': datetime.datetime.now(),
@@ -510,7 +534,7 @@ def prepare_page():
                 'sequencing': sequencing,
                 'post_sequencing': post_sequencing,
                 'recently_completed': recently_completed,
-                'instruments': INSTRUMENTS
+                'instruments': sum((server.INSTRUMENTS for server in servers), [])
                 }
         page = jinja2.Environment(
                 loader=jinja2.FileSystemLoader(template_loc)
@@ -521,8 +545,8 @@ def prepare_page():
     threading.Timer(60, prepare_page).start()
     
 
-def process_type_to_instrument(process_type):
-    for pt, inst in zip(SEQUENCING, INSTRUMENTS):
+def process_type_to_instrument(server, process_type):
+    for pt, inst in zip(server.SEQUENCING, server.INSTRUMENTS):
         if process_type == pt:
             return inst
     return "UNKNOWN_INSTRUMENT"
@@ -550,7 +574,8 @@ def get_main():
 @app.route('/go-eval')
 def go_eval():
     project_name = request.args.get('project_name')
-    processes = lims.get_processes(projectname=project_name, type=PROJECT_EVALUATION)
+    server = int(request.args.get('server', 0))
+    processes = servers[server].lims.get_processes(projectname=project_name, type=PROJECT_EVALUATION)
     if len(processes) > 0:
         process = processes[-1]
         return redirect(proc_url(process))
@@ -561,21 +586,19 @@ def go_eval():
 @app.route('/run-list')
 def run_list():
     monitored_process_list = []
-    for ptype in set(SEQUENCING):
-        monitored_process_list += lims.get_processes(udf={'Monitor': True}, type=ptype)
+    for server, ptype in [(server, ptype) for server in servers for ptype in server.SEQUENCING]:
+        monitored_process_list += [
+                                (server, process) 
+                                for process in server.lims.get_processes(udf={'Monitor': True}, type=ptype)
+                                ]
 
-    #machinse = {} # Not used
-    #sequencing = [
-    #    read_sequencing(proc.type_name, proc, machines)
-    #        for proc in monitored_process_list
-    #    ]
     data = []
     # Row: 
     #Run name        Instrument      Cleaned Transfered      Drive   ProjectName     Type    Name    Email  
     # #SamplesProj    #SamplesRun     IssuesPrep      IssuesQC        DeliveryEmailDate       DeliveryMethod
-    for process in monitored_process_list:
+    for server, process in monitored_process_list:
         first_part_of_row = [process.udf.get('Run ID', '')]
-        instrument_long = process_type_to_instrument(process.type_name)
+        instrument_long = process_type_to_instrument(server, process.type_name)
         # Should be HiSeq, NeSeq, MiSeq only
         instrument = instrument_long.split()[0].replace("NextSeq", "NeSeq")
         first_part_of_row.append(instrument)
@@ -589,7 +612,7 @@ def run_list():
             row_p2.append(ptype_map.get(lims_project_type, lims_project_type))
             row_p2.append(project.udf.get('Contact person', ''))
             row_p2.append(project.udf.get('Contact email', ''))
-            num_samples_in_project = len(lims.get_samples(projectlimsid=project.id))
+            num_samples_in_project = len(server.lims.get_samples(projectlimsid=project.id))
             row_p2.append(str(num_samples_in_project))
             num_samples_in_run = sum(
                     1
@@ -615,6 +638,11 @@ def run_list():
 
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        SITE = sys.argv[1]
+    run_init(SITE)
     app.debug=True
     app.run(host="0.0.0.0", port=5001)
+else:
+    run_init(SITE)
 
