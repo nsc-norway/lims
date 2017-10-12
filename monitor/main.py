@@ -82,6 +82,11 @@ def run_init(site):
         data = json.load(f)
         servers = [LimsServer(i, server) for i, server in enumerate(data['SERVERS'])]
 
+def get_run_id(process):
+    try:
+        return process.udf['Run ID']
+    except KeyError:
+        return process.udf.get('RunID', '')
 
 def get_sequencing_process(server, process):
     """Gets the sequencing process from a process object corresponing to a process
@@ -271,7 +276,7 @@ def read_sequencing(server, process, machines):
     eta = None
     machine = None
     try:
-        runid = process.udf['Run ID']
+        runid = get_run_id(process)
         if runid:
             machine = re.match(r"\d{6}_([\dA-Z])+_", runid).group(1)
     except KeyError:
@@ -337,7 +342,7 @@ def read_post_sequencing_process(server, process, sequencing_process):
     seq_url = proc_url(sequencing_process)
     #flowcell_id = process.all_inputs()[0].location[0].name
     try:
-        runid = sequencing_process.udf['Run ID']
+        runid = get_run_id(sequencing_process)
     except (KeyError, TypeError):
         runid = ""
         expt_name = ""
@@ -393,7 +398,7 @@ def get_recent_run(server, fc):
         demultiplexing_url = ""
 
     try:
-        runid = sequencing_process.udf['Run ID']
+        runid = get_run_id(sequencing_process)
     except KeyError:
         runid = ""
     projects = get_projects(server, sequencing_process)
@@ -606,7 +611,7 @@ def run_list():
     #Run name        Instrument      Cleaned Transfered      Drive   ProjectName     Type    Name    Email  
     # #SamplesProj    #SamplesRun     IssuesPrep      IssuesQC        DeliveryEmailDate       DeliveryMethod
     for server, process in monitored_process_list:
-        first_part_of_row = [process.udf.get('Run ID', '')]
+        first_part_of_row = [get_run_id(process)]
         instrument_long = process_type_to_instrument(server, process.type_name)
         # Should be HiSeq, NeSeq, MiSeq only
         instrument = instrument_long.split()[0].replace("NextSeq", "NeSeq")
