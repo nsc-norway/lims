@@ -298,7 +298,9 @@ def read_sequencing(server, process, machines):
                 other_flowcell_sequencing_info.eta = eta
 
     except KeyError:
-        if instrument.startswith("HiSeq"):
+        if 'Run Status' in process.udf:
+            status = process.udf['Run Status']
+        elif instrument.startswith("HiSeq"):
             status = "Not yet started"
         else:
             status = "Pending/running"
