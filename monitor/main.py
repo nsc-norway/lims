@@ -622,6 +622,7 @@ def run_list():
         for project in lims_projects:
             row_p2 = [project.name]
             lims_project_type = project.udf.get('Project type', 'UNKNOWN')
+
             ptype_map = {'Diagnostics': 'Diag', 'Immunology': 'Imm', 'Microbiology': 'Microb', 'Non-Sensitive': 'NS'}
             row_p2.append(ptype_map.get(lims_project_type, lims_project_type))
             row_p2.append(project.udf.get('Contact person', ''))
@@ -637,7 +638,7 @@ def run_list():
             row_p2.append(str(num_samples_in_run))
             row_p2 += [""] * 4 # Unusued, IssuesPrep, IssuesQC, DeliveryEmailDate
             delivery_method = project.udf.get('Delivery method')
-            if lims_project_type == "Diagnostics":
+            if lims_project_type == "Diagnostics" or 'x-lims' in server.lims.baseuri:
                 row_p2.append("email")
             elif 'HDD' in delivery_method:
                 row_p2.append("hard drive")
