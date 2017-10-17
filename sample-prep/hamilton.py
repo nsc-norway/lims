@@ -92,6 +92,10 @@ def main(process_id, filegen, file_id, params):
 
         well = output.location[1].replace(":","")
 
+        if input_conc == 0.0:
+            print "Error: Zero input concentration for sample", input.name
+            sys.exit(1)
+
         sample_no = re.match(r"([0-9]+)-", sample_name)
         if filegen == "HamiltonDilution1":
             # (20 ng/uL * 25 uL) / conc = (500 ng) / conc
@@ -153,6 +157,7 @@ def main(process_id, filegen, file_id, params):
             
             sample_volume = norm_mass * 1.0 / input_conc
             buffer_volume = vol - sample_volume
+
 
             if buffer_volume < 0:
                 buffer_volume = 0.0
