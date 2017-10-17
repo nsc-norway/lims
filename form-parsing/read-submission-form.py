@@ -25,16 +25,17 @@ PLACEHOLDER_STRING = "Click here to enter text."
 
 
 DNA_PREPS = {
-        "Regular TruSeqTM adapter ligation": "Regular TruSeq adapter ligation",
-        "TruSeqTM PCR-free prep": "TruSeq PCR-free prep",
-        "Tagmentation (NexteraTM) sample prep": "Tagmentation Nextera sample prep",
-        "I\x60m unsure, please advise": "User unsure"
+        ".*TruSeq.*adapter ligation": "TruSeq Nano adapter ligation",
+        "TruSeq.*PCR-free prep": "TruSeq PCR-free prep",
+        "Tagmentation.*Nextera": "Tagmentation Nextera sample prep",
+        "ThruPLEX": "ThruPLEX low-input sample prep",
+        ".* unsure, please advise": "User unsure"
         }
 RNA_PREPS = {
         "Regular TruSeqTM RNA-seq library prep": "Regular TruSeq RNA-seq library prep",
         "Strand-specific TruSeqTM RNA-seq library prep": "Strand-specific TruSeq RNA-seq library prep",
         "small RNA library preparation": "Small RNA library preparation",
-        "I\x60m unsure, please advise": "User unsure"
+        ".* unsure, please advise": "User unsure"
         }
 SEQUENCING_TYPES = {
         "Single Read": "Single Read",
@@ -43,13 +44,12 @@ SEQUENCING_TYPES = {
 SEQUENCING_INSTRUMENTS = {
         "HiSeq X": "HiSeq X",
         "HiSeq 4000": "HiSeq 4000",
+        "HiSeq 3/4000": "HiSeq 4000",
         "HiSeq 2500, high output mode": "HiSeq high output",
         "HiSeq 2500, rapid mode": "HiSeq rapid mode",
         "HiSeq 2000": "HiSeq high output",
-        "NextSeq 500 (mid output reagents)": "NextSeq mid output", # WARNING: NextSeq string broken up in docx
-        "NextSeq 500 (Mid output reagents)": "NextSeq mid output",
-        "NextSeq 500 (high output reagents)": "NextSeq high output",
-        "NextSeq 500 (High output reagents)": "NextSeq high output",
+        "NextSeq 500 .*Mid Output": "NextSeq mid output", # WARNING: NextSeq string broken up in docx
+        "NextSeq 500 .*High Output": "NextSeq high output",
         "MiSeq": "MiSeq"
         }
 
@@ -94,18 +94,32 @@ def is_checked(checkbox_elem):
 
 # Parsing various inputs
 def get_text_single(cell):
-    val = "".join(t.text for t in cell.getiterator(TEXT))
+    val = "".join(t.text for t in cell.getiterator(TEXT)).rstrip(".")
     if val.strip() == PLACEHOLDER_STRING:
         return None
     else:
         return val.strip()
 
+
 def get_text_lower(cell):
-    val = "".join(t.text for t in cell.getiterator(TEXT))
-    if val.strip() == PLACEHOLDER_STRING:
-        return None
-    else:
-        return val.strip().lower()
+    val = get_text_single(cell)
+    return val.lower() if val else None
+
+
+def get_substring(prefix, cell):
+    """Get a substring of the cell value. Reads from after prefix, to the next line break"""
+    data = get_text_multi(cell)
+    if data:
+        try:
+            substring_index = data.index(prefix)
+            value_index = substring_index + len(prefix)
+            suffix = data[value_index:]
+            val = suffix.partition("\n")[0]
+            if val.strip() != PLACEHOLDER_STRING:
+                return val
+        except (ValueError, IndexError):
+            return None
+
 
 def get_checkbox(cell):
     checkboxes = cell.getiterator(CHECKBOX)
@@ -114,6 +128,7 @@ def get_checkbox(cell):
         return is_checked(checkboxes[0])
     else:
         return None
+
 
 def get_yes_no_checkbox(cell):
     is_selected = None
@@ -138,6 +153,13 @@ def get_yes_no_checkbox(cell):
 
     return None
 
+
+def match_key(value_map, partial_key):
+    for key_pattern, value in value_map.items():
+        if re.match(key_pattern, partial_key, re.IGNORECASE):
+            return value
+
+
 def single_choice_checkbox(values, cell):
     yes = False
     choice = None
@@ -153,10 +175,11 @@ def single_choice_checkbox(values, cell):
         elif yes and node.tag == TEXT:
             text += node.text
             if values:
-                choice = values.get(text.strip())
+                choice = match_key(values, text.strip())
             else:
                 choice = node.text.strip()
     return choice
+
 
 def read_length(cell):
     yes = False
@@ -178,6 +201,7 @@ def read_length(cell):
                 yes = False # no need to read more
 
     return choice
+
 
 def single_checkbox(value, cell):
     if get_checkbox(cell):
@@ -213,11 +237,9 @@ def is_library(cell):
 def library_prep_used(cell):
     text_nodes = cell.getiterator(TEXT)
     if len(text_nodes) > 2:
-        if text_nodes[0].text.strip() == "If yes, please state which kit / method you used here:":
+        if "If yes, please state which kit / method you used here" in text_nodes[0].text.strip():
             return "".join(text_node.text for text_node in text_nodes[1:])
         
-
-
 
 def get_portable_hard_drive(cell):
     # First checkbox is User HDD, second is New HDD
@@ -229,6 +251,16 @@ def get_portable_hard_drive(cell):
             return "New HDD"
 
 
+def get_delivery_method(cell):
+    # First checkbox is User HDD, second is New HDD
+    selected = [is_checked(node) for node in cell.getiterator(CHECKBOX)]
+    if len(selected) == 4 and sum(1 for s in selected if s) == 1:
+        try:
+            return ["Norstore", "NeLS project", "User HDD", "New HDD"][selected.index(True)]
+        except IndexError:
+            return None
+
+
 # List of (label, udf, parser_func)
 LABEL_UDF_PARSER = [
         ("Method used to purify DNA / RNA", 'Method used to purify DNA/RNA', get_text_single),
@@ -236,9 +268,10 @@ LABEL_UDF_PARSER = [
         ("Buffer in which samples dissolved", 'Sample buffer', get_text_single),
         ("Are samples hazardous", 'Hazardous', get_yes_no_checkbox),
         ("Are the samples ready to sequence?", 'Sample type', is_library),
-        ("For DNA samples:", 'Sample prep requested', partial(single_choice_checkbox, DNA_PREPS)),
-        ("For RNA samples:", 'Sample prep requested', partial(single_choice_checkbox, RNA_PREPS)),
-        ("Reference genome; release version:", 'Reference genome', get_text_single),
+        ("For DNA samples", 'Sample prep requested', partial(single_choice_checkbox, DNA_PREPS)),
+        ("For RNA samples", 'Sample prep requested', partial(single_choice_checkbox, RNA_PREPS)),
+        ("Species:", 'Species', get_text_single),
+        ("Reference genome.*release version:", 'Reference genome', get_text_single),
         ("Sequencing type", 'Sequencing method', partial(single_choice_checkbox, SEQUENCING_TYPES)),
         ("Desired insert size", 'Desired insert size', get_text_single),
         ("Sequencing Instrument requested", 'Sequencing instrument requested', 
@@ -247,8 +280,9 @@ LABEL_UDF_PARSER = [
         ("Total number lanes", 'Total # of lanes requested', get_text_single),
         ("Project Goal", 'Project goal', get_text_multi),
         ("REK approval number", 'REK approval number', get_text_single),
-        ("Upload to https site", 'Delivery method', partial(single_checkbox, 'Norstore')),
-        ("Portable hard drive", 'Delivery method', get_portable_hard_drive),
+        ("Upload to https site", 'Delivery method', partial(single_checkbox, 'Norstore')), # Support old form versions
+        ("Portable hard drive", 'Delivery method', get_portable_hard_drive),    # Support old form versions
+        ("Upload to https site", 'Delivery method', get_delivery_method),       # New delivery method table
         ("Contact Name", 'Contact person', get_text_single),
         ("Institution", 'Institution', get_text_single),# Needs post-processing (Contact / Billing same field name)
         ("Address", 'Contact address', get_text_multi),
@@ -256,10 +290,16 @@ LABEL_UDF_PARSER = [
         ("Telephone", 'Telephone', get_text_single), # Needs post-processing
         ("Billing contact person", 'Billing contact person', get_text_single),
         ("Billing Address", 'Billing address', get_text_multi),
+        ("Postcode", 'Billing postcode', get_text_single),
         ("Purchase Order Number", 'Purchase order number', get_text_single),
         ("Project is fully or", 'Funded by Norsk Forskningsradet', get_yes_no_checkbox),
         ("Kontostreng", 'Kontostreng (Internal orders only)', get_text_single),
         ("", 'Library prep used', library_prep_used)
+        ]
+
+
+LABEL_CONTENT_UDF_PARSER = [
+        ("Upload to https site", 'NeLS project identifier', partial(get_substring, "please enter it here: ")),
         ]
 
 
@@ -271,8 +311,13 @@ def get_values_from_doc(xml_tree):
             label = get_text_single(cells[0])
             data = cells[1]
             for test_label, udf, parser_func in LABEL_UDF_PARSER:
-                if label.startswith(test_label):
+                if re.match(test_label, label, re.IGNORECASE):
                     value = parser_func(data)
+                    if not value is None:
+                        results.append((udf, value))
+            for test_label, udf, parser_func in LABEL_CONTENT_UDF_PARSER:
+                if re.match(test_label, label, re.IGNORECASE):
+                    value = parser_func(cells[0])
                     if not value is None:
                         results.append((udf, value))
 
@@ -354,6 +399,29 @@ def add_defaults(fields):
             fields.append((key, value))
 
 
+def parse(docx_data):
+    try:
+        document = zipfile.ZipFile(StringIO.StringIO(docx_data))
+        xml_content = document.read('word/document.xml')
+        tree = XML(xml_content)
+        document.close()
+    except:
+        print "Could not read sample submission form."
+        print ""
+        print "Please convert it to docx format."
+        sys.exit(1)
+
+    try:
+        fields = get_values_from_doc(tree)
+        post_process_values(fields)
+        add_defaults(fields)
+        return fields
+    except Exception, e:
+        print "Something went wrong in the main parsing code"
+        print e
+        sys.exit(0)
+
+
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
@@ -376,27 +444,9 @@ def main(process_id):
         #process.put()
         return
 
-    try:
-        document = zipfile.ZipFile(StringIO.StringIO(docx_data))
-        xml_content = document.read('word/document.xml')
-        tree = XML(xml_content)
-        document.close()
-    except:
-        print "Could not read sample submission form."
-        print ""
-        print "Please convert it to docx format."
-        sys.exit(1)
-
-    try:
-        fields = get_values_from_doc(tree)
-        post_process_values(fields)
-        add_defaults(fields)
-        for uname, uvalue in fields:
-            process.udf[uname] = uvalue
-    except Exception, e:
-        print "Something went wrong in the main parsing code"
-        print e
-        sys.exit(0)
+    fields = parse(docx_data)
+    for uname, uvalue in fields:
+        process.udf[uname] = uvalue
 
     try:
         process.udf['Sample submission form imported'] = True
@@ -407,5 +457,14 @@ def main(process_id):
         print "LIMS wouldn't let us fill in the form: " + str(e)
         # Unfortunately, there's no way to report this...
 
-main(sys.argv[1])
+def test(filename):
+    fields = parse(open(filename).read())
+    for key, value in sorted(fields):
+        print u"{0:20}: {1}".format(key, value).encode('utf-8')
+
+
+if sys.argv[1] == "test":
+    test(sys.argv[2])
+else:
+    main(sys.argv[1])
 
