@@ -614,7 +614,7 @@ def run_list():
         first_part_of_row = [get_run_id(process)]
         instrument_long = process_type_to_instrument(server, process.type_name)
         # Should be HiSeq, NeSeq, MiSeq only
-        instrument = instrument_long.split()[0].replace("NextSeq", "NeSeq")
+        instrument = instrument_long.split()[0].replace("NextSeq", "NeSeq").replace("SeqLab", "X")
         first_part_of_row.append(instrument)
         first_part_of_row += [""] * 3
         
