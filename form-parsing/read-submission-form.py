@@ -93,12 +93,13 @@ def is_checked(checkbox_elem):
 
 
 # Parsing various inputs
-def get_text_single(cell):
-    val = "".join(t.text for t in cell.getiterator(TEXT)).rstrip(".")
+def get_text_single(cell, line_sep=","):
+    multiline = get_text_multi(cell)
+    val = re.sub(r"\n+", ", ", multiline.strip("\n"))
     if val.strip() == PLACEHOLDER_STRING:
         return None
     else:
-        return val.strip()
+        return val.strip().rstrip(".")
 
 
 def get_text_lower(cell):
@@ -220,7 +221,6 @@ def get_text_multi(cell):
             text += "\n"
         elif node.tag == TEXT:
             text += node.text
-
     if text.strip() == PLACEHOLDER_STRING:
         return None
     else:
