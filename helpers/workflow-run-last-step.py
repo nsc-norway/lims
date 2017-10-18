@@ -21,6 +21,7 @@ def main(workflow_pattern):
     except:
         return # If LIMS not reachable then die
     workflow_data = lims.get_workflows(add_info=True)
+    errors = 0
     for workflow, info in zip(*workflow_data):
         if info['status'] == "ACTIVE" and re.match(workflow_pattern, info['name']):
             q = workflow.stages[-1].step.queue()
@@ -30,7 +31,13 @@ def main(workflow_pattern):
                     if step.current_state == "Assign Next Steps":
                         lims.set_default_next_step(step)
                     if not step.program_status or step.program_status.status not in ["QUEUED", "RUNNING"]:
-                        step.advance()
+                        try:
+                            step.advance()
+                        except:
+                            errors += 1
+                            if errors == 5:
+                                print "Too many errors trying to advance step"
+                                sys.exit(1)
                     time.sleep(0.5)
                     step.get(force=True)
                     if step.program_status:
