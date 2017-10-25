@@ -25,16 +25,16 @@ PLACEHOLDER_STRING = "Click here to enter text."
 
 
 DNA_PREPS = {
-        ".*TruSeq.*adapter ligation": "TruSeq Nano adapter ligation",
-        "TruSeq.*PCR-free prep": "TruSeq PCR-free prep",
-        "Tagmentation.*Nextera": "Tagmentation Nextera sample prep",
-        "ThruPLEX": "ThruPLEX low-input sample prep",
+        ".*TruSeq.*adapter ligation": "TruSeq Nano",
+        "TruSeq.*PCR-free prep": "TruSeq PCR-free",
+        "Tagmentation.*Nextera": "Nextera XT",
+        "ThruPLEX": "ThruPLEX",
         ".* unsure, please advise": "User unsure"
         }
 RNA_PREPS = {
-        "Regular TruSeqTM RNA-seq library prep": "Regular TruSeq RNA-seq library prep",
-        "Strand-specific TruSeqTM RNA-seq library prep": "Strand-specific TruSeq RNA-seq library prep",
-        "small RNA library preparation": "Small RNA library preparation",
+        "Regular TruSeqTM RNA-seq library prep": "TruSeq Stranded RNA",
+        "Strand-specific TruSeqTM RNA-seq library prep": "TruSeq Stranded RNA",
+        "small RNA library preparation": "NEBNext miRNA",
         ".* unsure, please advise": "User unsure"
         }
 SEQUENCING_TYPES = {
