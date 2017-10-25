@@ -3,9 +3,9 @@
   "project_title_prefix": "TI-IMM",
   "project_fields": {
 	  "Project type": "Immunology",
-	  "Application": "Amplicon",
-      "Sample type": "Library",
+      "Sample type": "Amplicon",
       "Sample prep requested": "None",
+      "Evaluation type": "None",
       "Library prep used": "HLA",
       "Contact email": "m.k.viken@medisin.uio.no",
       "Contact person": "Marte K. Viken",

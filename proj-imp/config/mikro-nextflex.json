@@ -3,8 +3,8 @@
   "project_title_prefix": "MB-Proj",
   "project_fields": {
     "Project type": "Microbiology",
-    "Application": "Amplicon",
-    "Sample type": "Library",
+    "Evaluation type": "None",
+    "Sample type": "Amplicon",
     "Sample prep requested": "None",
     "Library prep used": "Kapa HyperPlus Kit",
     "Contact email": "Mariann.Nilsen@rr-research.no; Stephan.Frye@rr-research.no; UXKAVG@ous-hf.no; UXMOLB@ous-hf.no",
