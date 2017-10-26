@@ -15,7 +15,12 @@ def main(process_id):
 
     controls = [i for i in inputs if i.control_type]
 
-    other_processes = lims.get_processes(inputartifactlimsid=next((i for i in inputs if not i.control_type)).id)
+    try:
+        other_processes = lims.get_processes(inputartifactlimsid=next((i for i in inputs if not i.control_type)).id)
+    except StopIteration:
+        print "Error: Only controls found, no samples."
+        sys.exit(1)
+
     for place_process in reversed(sorted(other_processes, key=lambda p: p.id)):
         if place_process.type_name.startswith("qPCR Plate Setup") and\
                 set(place_process.all_inputs()) == set(inputs) - set(controls):

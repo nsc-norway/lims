@@ -14,10 +14,11 @@ def main(process_id):
     for tn in step.configuration.transitions:
         if not tn['name'].startswith("qPCR QC manual entry"):
             default_next_step_uri = tn['next-step-uri']
+            default_next_action = "nextstep"
             break
     else:
-        print "Incorrect step configration: No valid next step."
-        sys.exit(1)
+            default_next_step_uri = None
+            default_next_action = "complete"
 
     inputs_no_control = [i for i,o in i_os if not i.control_type]
     if any(o.stateless.qc_flag == "FAILED" for i, o in i_os):
@@ -47,8 +48,9 @@ def main(process_id):
             print Step(lims, place_process.id).uri
             action['rework-step-uri'] = place_process.uri.replace("/processes/", "/steps/")
         else:
-            action['action'] = "nextstep"
-            action['step-uri'] = default_next_step_uri
+            action['action'] = defatult_next_action
+            if default_next_step_uri:
+                action['step-uri'] = default_next_step_uri
 
     step.actions.put()
 
