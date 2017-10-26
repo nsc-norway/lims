@@ -433,7 +433,9 @@ def get_recently_completed_runs(servers):
                 try:
                     date = fc.udf[PROCESSED_DATE_UDF]
                 except KeyError:
-                    date = cutoff_date
+                    # Set a date (Necessary for SeqLab, can't hook into the Sequence process)
+                    fc.udf[PROCESSED_DATE_UDF] = datetime.date.today()
+                    fc.put()
 
             if date <= cutoff_date:
                 try:
@@ -614,7 +616,8 @@ def run_list():
         first_part_of_row = [get_run_id(process)]
         instrument_long = process_type_to_instrument(server, process.type_name)
         # Should be HiSeq, NeSeq, MiSeq only
-        instrument = instrument_long.split()[0].replace("NextSeq", "NeSeq").replace("SeqLab", "X")
+        instrument_map = {"NextSeq": "NeSeq", "SeqLab": "X", "HiSeq X": "X", "HiSeq 3000/4000": "HiSeq", "HiSeq 2500": "HiSeq"}
+        instrument = instrument_map.get(instrument_long, instrument_long)
         first_part_of_row.append(instrument)
         first_part_of_row += [""] * 3
         
@@ -629,12 +632,12 @@ def run_list():
             row_p2.append(project.udf.get('Contact email', ''))
             num_samples_in_project = len(server.lims.get_samples(projectlimsid=project.id))
             row_p2.append(str(num_samples_in_project))
-            num_samples_in_run = sum(
-                    1
+            num_samples_in_run = len(set(
+                    sample
                     for art in process.all_inputs(unique=True)
                     for sample in art.samples
                     if sample.project == project
-                    )
+                    ))
             row_p2.append(str(num_samples_in_run))
             row_p2 += [""] * 4 # Unusued, IssuesPrep, IssuesQC, DeliveryEmailDate
             delivery_method = project.udf.get('Delivery method')
