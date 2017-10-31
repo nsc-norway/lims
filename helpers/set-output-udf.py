@@ -17,16 +17,16 @@ def main(process_id, key_value_pairs):
 
     outputs = []
     for i,o in process.input_output_maps:
-        if o and o['output-type'] == 'Analyte' and o['output-generation-type'] == 'PerInput':
+        if o and o['output-type'] == 'Analyte':
             output = o['uri']
             outputs.append(output)
 
-    lims.get_batch(outputs)
+    outputs = lims.get_batch(set(outputs))
     for output in outputs:
         for key,value in zip(key_value_pairs[::2], key_value_pairs[1::2]):
             output.udf[key] = value
 
-    lims.put_batch(output)
+    lims.put_batch(outputs)
     
 
 main(sys.argv[1], sys.argv[2:])

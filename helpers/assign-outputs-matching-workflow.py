@@ -12,7 +12,7 @@ def main(process_id, workflow_pattern):
         workflow_data = lims.get_workflows(add_info=True)
         for workflow, info in zip(*workflow_data):
             if info['status'] == "ACTIVE" and re.match(re.escape(workflow_pattern), info['name']):
-                lims.route_analytes(process.all_inputs(unique=True), workflow)
+                lims.route_analytes(process.all_outputs(unique=True), workflow)
                 break
         else: # If not breaked
             print('Error: No workflow matching "' + str(workflow_pattern) + '" was found.')
