@@ -645,6 +645,8 @@ def run_list():
                 row_p2.append("email")
             elif 'HDD' in delivery_method:
                 row_p2.append("hard drive")
+            elif delivery_method == "NeLS project":
+                row_p2.append("NeLS")
             elif delivery_method == "Norstore":
                 row_p2.append("Norstore")
             else:
