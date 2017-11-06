@@ -48,7 +48,7 @@ def main(process_id):
             print Step(lims, place_process.id).uri
             action['rework-step-uri'] = place_process.uri.replace("/processes/", "/steps/")
         else:
-            action['action'] = defatult_next_action
+            action['action'] = default_next_action
             if default_next_step_uri:
                 action['step-uri'] = default_next_step_uri
 
