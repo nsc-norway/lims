@@ -58,7 +58,6 @@ DEFAULTS = [
         ("Sample prep requested", "None"),
         ("Date samples received", datetime.date.today()),
         ("Reference genome", "-- Not provided --"),
-        ("Application", "-- Not provided --"),
         ("Sample type", "-- Not provided --"),
         ("Sample buffer", "-- Not provided --"),
         ("Method used to determine concentration", "-- Not provided --"),
@@ -95,6 +94,8 @@ def is_checked(checkbox_elem):
 # Parsing various inputs
 def get_text_single(cell, line_sep=","):
     multiline = get_text_multi(cell)
+    if multiline is None:
+        return None
     val = re.sub(r"\n+", ", ", multiline.strip("\n"))
     if val.strip() == PLACEHOLDER_STRING:
         return None
