@@ -56,20 +56,19 @@ def main(process_id):
     else:
         print "Unexpected output container type '" + str(output_container.type_name) + "'."
 
-    outputs_per_input = {}
-    for i in sample_inputs:
-        outputs_per_input[i] = sorted(
-                (oo['uri'] for ii, oo in process.input_output_maps\
-                        if ii['limsid'] == i.id and oo['output-generation-type'] == 'PerInput'),
-                key=lambda artifact: artifact.id
-                )
+    outputs_per_input = defaultdict(list)
+    sample_input_ids = set(i.id for i in sample_inputs)
+    for ii,oo in process.input_output_maps:
+        if oo['output-generation-type'] == "PerInput" and ii['limsid'] in sample_input_ids:
+            outputs_per_input[ii['limsid']].append(oo['uri'])
+
     placement_output_input = dict((oo['limsid'], ii['limsid']) for ii, oo in place_process.input_output_maps)
     input_pos = dict((placement_output_input[output.id], w) for output, (c, w) in placement_list)
     for i in sample_inputs:
         row, col = input_pos[i.id].split(":")
         irow = alpha.index(row)
         icol = int(col)-1
-        for i_rep, o in enumerate(outputs_per_input[i]):
+        for i_rep, o in enumerate(sorted(outputs_per_input[i.id], key=lambda a: a.id)):
             outrow, outcol = pos(irow, icol, i_rep)
             outwell = "{0}:{1}".format(alpha[outrow], str(outcol+1))
             placements.append((o.stateless, (output_container, outwell)))
