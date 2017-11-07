@@ -53,19 +53,21 @@ SEQUENCING_INSTRUMENTS = {
         "MiSeq": "MiSeq"
         }
 
+# Some defaults are necessary for put() on required fields
 DEFAULTS = [
-        ("Prepaid account", "No"),
+        ("Evaluation type", "-- Select one --"),
         ("Sample prep requested", "None"),
-        ("Date samples received", datetime.date.today()),
-        ("Reference genome", "-- Not provided --"),
         ("Sample type", "-- Not provided --"),
-        ("Sample buffer", "-- Not provided --"),
-        ("Method used to determine concentration", "-- Not provided --"),
-        ("Method used to purify DNA/RNA", "-- Not provided --"),
+        ("Reference genome", "-- Not provided --"),
         ("Contact person", "-- Not provided --"),
-        ("Contact email", "-- Not provided --"),
         ("Contact institution", "-- Not provided --"),
+        ("Contact email", "-- Not provided --"),
         ("Billing institution", "-- Not provided --"),
+        ("Prepaid account", "No"),
+        ("Date samples received", datetime.date.today()),
+        ("Sample buffer", "-- Not provided --"),
+        ("Method used to purify DNA/RNA", "-- Not provided --"),
+        ("Method used to determine concentration", "-- Not provided --"),
         ("Billing address", "-- Not provided --"),
         ]
 
