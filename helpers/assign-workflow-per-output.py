@@ -1,4 +1,6 @@
 # Assign outputs of a given process to a workflow specified as a Artifact UDF
+# The value can be a prefix of the workflow name (e.g. excluding the version number)
+
 from __future__ import print_function
 import sys
 import re
@@ -11,6 +13,7 @@ def main(process_id, workflow_udf):
     process = Process(lims, id=process_id)
     outputs = process.all_outputs(unique=True, resolve=True)
     workflow_outputs = defaultdict(list)
+    # Identify workflow for each of the samples
     for output in outputs:
         if output.type == "Analyte" and not output.control_type:
             try:
@@ -20,16 +23,20 @@ def main(process_id, workflow_udf):
                 sys.exit(1)
             workflow_outputs[workflow].append(output)
 
-    for workflow_name, outputs in workflow_outputs.items():
-        workflows = lims.get_workflows(name=workflow_name)
-        if workflows:
-            workflow = workflows[0]
+    # Load all workflows in the system
+    workflow_data = lims.get_workflows(add_info=True)
+
+    # Look up each workflow name in the list of workflows, and assign it if available
+    for workflow_prefix, outputs in workflow_outputs.items():
+        for workflow, info in zip(*workflow_data):
+            if info['status'] == "ACTIVE" and info['name'].startswith(workflow_prefix):
+                lims.route_analytes(outputs, workflow)
+                break
         else:
-            print ("Error: Unknown workflow '" + str(workflow_name) + "' for samples "+
+            print ("Error: Unknown workflow '" + str(workflow_prefix) + "' for samples "+
                     ", ".join(output.name for output in outputs) +
                     ".")
             sys.exit(1)
-        lims.route_analytes(process.all_inputs(unique=True), workflow)
 
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2])
