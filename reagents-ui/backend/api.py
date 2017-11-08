@@ -91,8 +91,8 @@ def get_kit(ref):
     except KeyError, e:
         return ("Kit not found", 404)
 
-@app.route('/kits', methods=['POST'])
-def new_kit():
+@app.route('/kits/<group>', methods=['POST'])
+def new_kit(group):
     data = request.json
     try:
         ref = data['ref']
@@ -100,7 +100,7 @@ def new_kit():
         if kits.has_key(data['ref']):
             return ("Kit " + str(ref) + " already exists", 400)
         try:
-            get_lims_kit(data['name'], data.get('group'))
+            get_lims_kit(data['name'], group)
         except KitDoesNotExistError as e:
             return (str(e), 400)
         kit = {}
