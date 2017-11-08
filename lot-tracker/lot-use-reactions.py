@@ -32,6 +32,9 @@ def main(process_id):
     except KeyError:
         print("Missing 'Lots used' field, this is a configuration error.")
         sys.exit(1)
+    if not lots_used:
+        print("Enter some text for 'Lots used'. If not tracking lots, enter 'None'.")
+        sys.exit(1)
     match_string = r"Name:\s*([^,]+),\s*Lot#:\s*([^,]+),\s*Remaining:\s*(\d+),\s*Use:\s*(\d+)"
     lots_to_put = []
     for line in process.udf['Lots used'].splitlines():
