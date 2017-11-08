@@ -33,6 +33,7 @@ def main(process_id):
         print("Missing 'Lots used' field, this is a configuration error.")
         sys.exit(1)
     match_string = r"Name:\s*([^,]+),\s*Lot#:\s*([^,]+),\s*Remaining:\s*(\d+),\s*Use:\s*(\d+)"
+    lots_to_put = []
     for line in process.udf['Lots used'].splitlines():
         match = re.match(match_string, line)
         if match:
@@ -62,9 +63,15 @@ def main(process_id):
 
             new_remaining_reactions = before_remaining_reactions - int(used)
             lot.notes = re.sub(r"\d+", str(new_remaining_reactions), lot.notes)
+            if new_remaining_reactions < 0:
+                print("Error: Attempted to use", used, "reactions from lot", name, lotnum + ", but only", before_remaining_reactions, "available.")
+                sys.exit(1)
             if new_remaining_reactions == 0:
                 lot.state = "ARCHIVED"
-            lot.put()
+            lots_to_put.append(lot)
+
+    for lot in lots_to_put: # commit
+        lot.put()
 
 
 if __name__ == "__main__":
