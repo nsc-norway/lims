@@ -32,6 +32,16 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
 kits_file = "kits.yml"
 
+# Hard coded name mapping for various "groups"
+# The idea is that multiple groups may use completely disjoint kits in LIMS, but want
+# to scan based on the REF# etc. So the client sends an additional parameter "group",
+# which determines which LIMS kit is used for a given REF#.
+GROUP_KIT_NAME_FUNCTION = {
+        "Diag": lambda name: "Diag_" + name,
+        "NSC": lambda name: "NSC_" + name,
+        None: lambda name: name
+        }
+
 kits = {}
 
 def load_kits():
@@ -55,13 +65,17 @@ def get_date_string():
     seq_number_date = datetime.date.today()
     return seq_number_date.strftime("%y%m%d")
 
-def get_lims_kit(name):
-    if not lims_kits.has_key(name):
+def get_lims_kit(name, group=None):
+    try:
+        kitname = GROUP_KIT_NAME_FUNCTION[group](name)
+    except KeyError:
+        raise KitDoesNotExistError("Group " + str(group) + " is not known")
+    if not lims_kits.has_key(kitname):
         try:
-            lims_kits[name] = lims.get_reagent_kits(name=name)[0]
+            lims_kits[kitname] = lims.get_reagent_kits(name=kitname)[0]
         except IndexError:
-            raise KitDoesNotExistError("Kit " + str(name) + " does not exist in LIMS")
-    return lims_kits[name]
+            raise KitDoesNotExistError("Kit " + str(kitname) + " does not exist in LIMS")
+    return lims_kits[kitname]
 
 @app.route('/kits/<ref>')
 def get_kit(ref):
@@ -86,9 +100,9 @@ def new_kit():
         if kits.has_key(data['ref']):
             return ("Kit " + str(ref) + " already exists", 400)
         try:
-            get_lims_kit(data['name'])
-        except KitDoesNotExistError:
-            return ("Kit type " + data['name'] + " does not exist in LIMS", 400)
+            get_lims_kit(data['name'], data.get('group'))
+        except KitDoesNotExistError as e:
+            return (str(e), 400)
         kit = {}
         for prop in ['ref', 'hasUniqueId', 'name', 'lotcode', 'setActive']: 
             kit[prop] = data[prop]
@@ -106,22 +120,25 @@ def new_kit():
     except KeyError, e:
         return ("Missing field " + str(e) + " in request", 400) 
 
-def get_next_seq_number(kitname, lotcode):
+
+def get_next_seq_number(kitname, lotcode, group):
     for i in itertools.count(1):
         name = "{0}-{1}-#{2}".format(get_date_string(), lotcode, i)
-        lots = lims.get_reagent_lots(kitname=kitname, name=name)
+        lots = lims.get_reagent_lots(kitname=GROUP_KIT_NAME_FUNCTION[group], name=name)
         if not lots:
             return i
 
-def get_next_name(kit):
+
+def get_next_name(kit, group):
     if kit['hasUniqueId']:
         return ""
     else:
-        seq_number = get_next_seq_number(kit['name'], kit['lotcode'])
+        seq_number = get_next_seq_number(kit['name'], kit['lotcode'], group)
         return "{0}-{1}-#{2}".format(get_date_string(), kit['lotcode'], seq_number)
 
-@app.route('/lots/<ref>/<lotnumber>', methods=['GET'])
-def get_lot(ref, lotnumber):
+
+@app.route('/lots/<ref>/<lotnumber>/<group>', methods=['GET']):
+def get_lot(ref, lotnumber, group):
     """Get information about lots with the requested
     lot number. There may be multiple lots in the system
     with the same lot number, if they have different lot
@@ -131,8 +148,9 @@ def get_lot(ref, lotnumber):
         kit = kits[ref]
     except KeyError:
         return ("Kit not found", 404)
+    kitname = 
     lots = lims.get_reagent_lots(kitname=kit['name'], number=lotnumber)
-    next_lot_name =  get_next_name(kit)
+    next_lot_name = get_next_name(kit, group)
     if lots:
         lot = next(iter(lots))
         return jsonify({
@@ -154,8 +172,8 @@ def get_lot(ref, lotnumber):
 		"ref": ref
     	})
 
-@app.route('/lots/<ref>/<lotnumber>', methods=['POST'])
-def create_lot(ref, lotnumber):
+@app.route('/lots/<ref>/<lotnumber>/<group>', methods=['POST'])
+def create_lot(ref, lotnumber, group):
     try:
         kit = kits[ref]
     except KeyError:
@@ -168,13 +186,13 @@ def create_lot(ref, lotnumber):
             unique_id = data.get('assignedUniqueId')
             if not unique_id:
                 if not kit.get('hasUniqueId'):
-                    unique_id = get_next_name(kit)
+                    unique_id = get_next_name(kit, group)
                 elif kit.get('lotcode'):
                     unique_id = "{0}-{1}".format(data['uniqueId'], kit['lotcode'])
                 else:
                     unique_id = data['uniqueId']
             lot = lims.create_lot(
-                get_lims_kit(kit['name']),
+                get_lims_kit(kit['name'], group),
                 unique_id,
                 lotnumber,
                 data['expiryDate'].replace("/", "-"),
@@ -185,7 +203,7 @@ def create_lot(ref, lotnumber):
                 return ("Lot with same name and number already exists", 400)
             else:
                 return ("There was a protocol error between the backend and the LIMS server.", 500)
-        except KitDoesNotExistError, e:
+        except KitDoesNotExistError as e:
             return (str(e), 500)
     except KeyError, e:
         return ("Missing required field " + str(e), 400)
