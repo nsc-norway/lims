@@ -28,16 +28,18 @@ def main(process_id):
                     set(place_process.all_inputs()) == set(inputs_no_control):
                 break
         else:
-            print("Process not found")
+            print("Plate setup process not found, something went wrong")
             sys.exit(1)
 
     for action in step.actions.next_actions:
+        artifact_uri = action['artifact-uri']
+        action.clear()
+        action['artifact-uri'] = artifact_uri
         input = Artifact(lims, uri=action['artifact-uri'])
         repeat = any(o.stateless.qc_flag == "FAILED" for i, o in i_os if i == input)
         if input.control_type:
             action['action'] = "remove"
         elif repeat:
-            
             for stage in input.workflow_stages:
                 if stage.step == step.configuration:
                     stage_index = stage.workflow.stages.index(stage)
@@ -45,7 +47,6 @@ def main(process_id):
                     break
             action['action'] = "rework"
             action['step-uri'] = rework_step.uri
-            print Step(lims, place_process.id).uri
             action['rework-step-uri'] = place_process.uri.replace("/processes/", "/steps/")
         else:
             action['action'] = default_next_action
