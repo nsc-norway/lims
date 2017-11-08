@@ -1,10 +1,10 @@
-- {hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Box 1: Nextera Rapid Capture/TruSight
+- {hasUniqueId: true, lotcode: TruSight One, name: 'Box 1: Nextera Rapid Capture/TruSight
     One/Cardio', ref: '15046892', setActive: false}
-- {hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Box 2: Nextera Rapid Capture/TruSightOne/Cardio',
+- {hasUniqueId: true, lotcode: TruSight One, name: 'Box 2: Nextera Rapid Capture/TruSightOne/Cardio',
   ref: '15046897', setActive: false}
-- {hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Indices: Nextera Rapid Capture/TruSight
+- {hasUniqueId: true, lotcode: TruSight One, name: 'Indices: Nextera Rapid Capture/TruSight
     One/Cardio', ref: '15046902', setActive: false}
-- {hasUniqueId: true, lotcode: TruSight One, name: 'Diag_Oligos: Nextera Rapid Capture/TruSight
+- {hasUniqueId: true, lotcode: TruSight One, name: 'Oligos: Nextera Rapid Capture/TruSight
     One/Cardio', ref: '15047151', setActive: false}
 - {hasUniqueId: true, lotcode: V4, name: HiSeq 2500 Cluster Kit 1/2, ref: '15049946',
   setActive: true}
