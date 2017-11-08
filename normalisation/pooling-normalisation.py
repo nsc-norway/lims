@@ -79,8 +79,9 @@ def main(process_id, output_file_id):
                     print input.udf['Molarity'], ", which is less than the target per-sample molarity",
                     print target_sample_conc, "."
                     error = True
+
                 sample_volumes.append(
-                        pool_pool_volume * target_sample_conc / input.udf['Molarity']
+                        pool_pool_volume * target_sample_conc / max(input.udf['Molarity'], 0.0000001)
                         )
             except KeyError:
                 unknown_molarity.append(input.name)
