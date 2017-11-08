@@ -35,7 +35,7 @@ function dateConverterInterceptor(response) {
 
 app.factory('Lot', function($resource) {
 	return $resource(
-		"../lots/:ref/:lotnumber", {'ref':'@ref', 'lotnumber': '@lotnumber'}, {
+		"../lots/:ref/:lotnumber/:group", {'ref':'@ref', 'lotnumber': '@lotnumber', 'group': '@group'}, {
 			'get': {},
 			'put': {method: 'POST'}
 		}
@@ -110,7 +110,7 @@ app.controller('scanningController', function ($scope, $timeout, Kit, Lot, Refre
 			$scope.scanMode = false;
 		}
 		if ($scope.lotnumber != "") {
-			$scope.lot = Lot.get({'ref': $scope.ref, 'lotnumber': $scope.lotnumber},
+			$scope.lot = Lot.get({'ref': $scope.ref, 'lotnumber': $scope.lotnumber, 'group': 'NSC'},
 			function() {
 				if ($scope.lot.known && !$scope.kit.hasUniqueId) {
 					if ($scope.scanMode) {
