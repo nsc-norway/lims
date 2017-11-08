@@ -93,7 +93,7 @@ def get_kit(ref):
 
 @app.route('/kits/<group>', methods=['POST'])
 def new_kit(group):
-    data = request.json
+    data = request.get_json()
     try:
         ref = data['ref']
         load_kits()
@@ -137,7 +137,7 @@ def get_next_name(kit, group):
         return "{0}-{1}-#{2}".format(get_date_string(), kit['lotcode'], seq_number)
 
 
-@app.route('/lots/<ref>/<lotnumber>/<group>', methods=['GET']):
+@app.route('/lots/<ref>/<lotnumber>/<group>', methods=['GET'])
 def get_lot(ref, lotnumber, group):
     """Get information about lots with the requested
     lot number. There may be multiple lots in the system
@@ -148,8 +148,11 @@ def get_lot(ref, lotnumber, group):
         kit = kits[ref]
     except KeyError:
         return ("Kit not found", 404)
-    kitname = 
-    lots = lims.get_reagent_lots(kitname=kit['name'], number=lotnumber)
+    try:
+        kitname = GROUP_KIT_NAME_FUNCTION[group](kit['name'])
+    except KeyError:
+        return ("Group not found", 404)
+    lots = lims.get_reagent_lots(kitname=kitname, number=lotnumber)
     next_lot_name = get_next_name(kit, group)
     if lots:
         lot = next(iter(lots))
@@ -178,7 +181,7 @@ def create_lot(ref, lotnumber, group):
         kit = kits[ref]
     except KeyError:
         return ("Kit not found", 404)
-    data = request.json
+    data = request.get_json()
     try:
         if lotnumber != data['lotnumber']:
             return ("Lot number does not match URI", 400)
@@ -220,7 +223,7 @@ def create_lot(ref, lotnumber, group):
 
 @app.route('/editlot/<limsId>', methods=['PUT'])
 def edit_lot(limsId):
-    data = request.json
+    data = request.get_json()
     try:
         lot = ReagentLot(lims, id=data['limsId'])
     except KeyError:
