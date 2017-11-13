@@ -124,7 +124,7 @@ def new_kit(group):
 def get_next_seq_number(kitname, lotcode, group):
     for i in itertools.count(1):
         name = "{0}-{1}-#{2}".format(get_date_string(), lotcode, i)
-        lots = lims.get_reagent_lots(kitname=GROUP_KIT_NAME_FUNCTION[group], name=name)
+        lots = lims.get_reagent_lots(kitname=GROUP_KIT_NAME_FUNCTION[group](kitname), name=name)
         if not lots:
             return i
 
@@ -201,8 +201,8 @@ def create_lot(ref, lotnumber, group):
                 data['expiryDate'].replace("/", "-"),
                 status='ACTIVE' if kit['setActive'] else 'PENDING'
             )
-        except requests.HTTPError, e:
-            if 'Duplicate lot' in e.message:
+        except requests.HTTPError as e:
+            if 'Duplicate lot' in str(e):
                 return ("Lot with same name and number already exists", 400)
             else:
                 return ("There was a protocol error between the backend and the LIMS server.", 500)
