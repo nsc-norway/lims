@@ -93,7 +93,7 @@ def get_kit(ref):
 
 @app.route('/kits/<group>', methods=['POST'])
 def new_kit(group):
-    data = request.get_json()
+    data = request.json
     try:
         ref = data['ref']
         load_kits()
@@ -181,7 +181,7 @@ def create_lot(ref, lotnumber, group):
         kit = kits[ref]
     except KeyError:
         return ("Kit not found", 404)
-    data = request.get_json()
+    data = request.json
     try:
         if lotnumber != data['lotnumber']:
             return ("Lot number does not match URI", 400)
@@ -223,7 +223,7 @@ def create_lot(ref, lotnumber, group):
 
 @app.route('/editlot/<limsId>', methods=['PUT'])
 def edit_lot(limsId):
-    data = request.get_json()
+    data = request.json
     try:
         lot = ReagentLot(lims, id=data['limsId'])
     except KeyError:
