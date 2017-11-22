@@ -35,7 +35,7 @@ def main(process_id):
     if not lots_used:
         print("Enter some text for 'Lots used'. If not tracking lots, enter 'None'.")
         sys.exit(1)
-    match_string = r"Name:\s*([^,]+),\s*Lot#:\s*([^,]+),\s*Remaining:\s*(\d+),\s*Use:\s*(\d+)"
+    match_string = r"Name:\s*([^,]+),\s*Lot#:\s*([^,]+),\s*Reactions:\s*(\d+),\s*Use:\s*(\d+)"
     lots_to_put = []
     for line in process.udf['Lots used'].splitlines():
         match = re.match(match_string, line)

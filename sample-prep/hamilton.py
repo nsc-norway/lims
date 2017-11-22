@@ -27,6 +27,8 @@ def main(process_id, filegen, file_id, params):
 
     if filegen in ["HamiltonDilution1", "HamiltonDilution2"]:
         norm_conc, vol = float(params[0]), float(params[1])
+    elif filegen == "Inputfil_Hamilton_Normalisering_NSC":
+        default_norm_dna, default_vol = float(params[0]), float(params[1])
 
     book = xlwt.Workbook()
     sheet1 = book.add_sheet('Sheet1')
@@ -41,7 +43,7 @@ def main(process_id, filegen, file_id, params):
             outputs.append(output)
 
     lims.get_batch(inputs + outputs)
-    if filegen in ["HamiltonDilution1", "Inputfil_Hamilton_Normalisering"]:
+    if filegen in ["HamiltonDilution1", "Inputfil_Hamilton_Normalisering", "Inputfil_Hamilton_Normalisering_NSC"]:
         samples = [input.samples[0] for input in inputs]
         lims.get_batch(samples)
         concentrations = [sample.udf.get('Sample conc. (ng/ul)') for sample in samples]
@@ -163,6 +165,41 @@ def main(process_id, filegen, file_id, params):
                 buffer_volume = 0.0
                 sample_volume = vol
                 warning.append(output.name)
+            columns = [
+                    ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
+                    ("Labware", "Rack%d" % ((index // 32) + 1)),
+                    ("Position_ID", str((index % 32) + 1)),
+                    ("Volume_DNA", sample_volume),
+                    ("Volume_EB", buffer_volume),
+                    ("Destination_Well_ID", well),
+                ]
+        elif filegen == "Inputfil_Hamilton_Normalisering_NSC":
+
+            # NSC general quantity-based normalization
+            try:
+                norm_mass = output.udf['Input (ng)']
+            except KeyError:
+                norm_mass = default_norm_dna
+                output.udf['Input (ng)'] = norm_mass
+
+            try:
+                vol = output.udf['Volume (uL)']
+            except KeyError:
+                vol = default_vol
+                output.udf['Volume (uL)'] = vol
+            
+            if input_conc == 0.0:
+                sample_volume = vol + 1 # Will produce a warning below
+            else:
+                sample_volume = norm_mass * 1.0 / input_conc
+
+            buffer_volume = vol - sample_volume
+
+            if buffer_volume < 0:
+                buffer_volume = 0.0
+                sample_volume = vol
+                warning.append(output.name)
+
             columns = [
                     ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
                     ("Labware", "Rack%d" % ((index // 32) + 1)),

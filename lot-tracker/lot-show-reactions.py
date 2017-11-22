@@ -42,7 +42,7 @@ def main(process_id):
 
         use_reactions = min(lot_remaining_reactions, reactions_needed)
         reactions_needed -= use_reactions
-        output_text = "Name: {0}, Lot#: {1}, Remaining: {2}, Use: {3}".format(
+        output_text = "Name: {0}, Lot#: {1}, Reactions: {2}, Use: {3}".format(
                         lot.name,
                         lot.lot_number,
                         lot_remaining_reactions,
