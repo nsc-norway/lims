@@ -39,6 +39,7 @@ kits_file = "kits.yml"
 GROUP_KIT_NAME_FUNCTION = {
         "Diag": lambda name: "Diag_" + name,
         "NSC": lambda name: "NSC_" + name,
+        "TI": lambda name: "TI_" + name,
         None: lambda name: name
         }
 
