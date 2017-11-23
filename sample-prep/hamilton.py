@@ -46,7 +46,11 @@ def main(process_id, filegen, file_id, params):
     if filegen in ["HamiltonDilution1", "Inputfil_Hamilton_Normalisering", "Inputfil_Hamilton_Normalisering_NSC"]:
         samples = [input.samples[0] for input in inputs]
         lims.get_batch(samples)
-        concentrations = [sample.udf.get('Sample conc. (ng/ul)') for sample in samples]
+        try:
+            concentrations = [sample.udf['Sample conc. (ng/ul)'] for sample in samples]
+        except KeyError:
+            print "Missing value for 'Sample conc. (ng/ul)'."
+            sys.exit(1)
     elif filegen == "HamiltonDilution2":
         # Look for sibling processes with QC information. Note that this only works
         # because we know that the artifacts are generated directly above in the workflow,
