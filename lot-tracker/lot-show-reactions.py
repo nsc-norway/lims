@@ -16,29 +16,26 @@ def main(process_id):
 
     # Get the name of the kit type
     lots = step.reagentlots.reagent_lots
-    kit_names = set(lot.reagent_kit_name for lot in lots)
-    if len(kit_names) != 1:
-        print("This script only supports steps with exactly one configured kit type")
-        sys.exit(1)
-    kit_name = next(iter(kit_names))
-
-    # Get the total number of reactions in each box of this kit type
-    rxn_match = re.search(r"\b(\d+)rxn\b", kit_name)
-    if not rxn_match:
-        print("The kit name does not include the number of reactions (Nrxn).")
-        sys.exit(1)
-    kit_type_num_reactions = int(rxn_match.group(1))
 
     # Constructing one line for each lot, with textual information
     lot_data_lines = []
     for lot in lots:
         # For new lots, we only have this information
-        lot_remaining_reactions = kit_type_num_reactions
+        lot_remaining_reactions = None
+
         # Try to get remaining reactions from notes
         if lot.notes:
             reactions_match = re.match(r"\d+", lot.notes)
             if reactions_match:
                 lot_remaining_reactions = int(reactions_match.group(0))
+
+        # Get the total number of reactions in box from lot name
+        if lot_remaining_reactions is None:
+            r_match = re.search(r"\b(\d+)R\b", lot.name)
+            if not r_match:
+                print("The lot name", lot.name, "does not include the number of reactions (nR).")
+                sys.exit(1)
+            lot_remaining_reactions = int(r_match.group(1))
 
         use_reactions = min(lot_remaining_reactions, reactions_needed)
         reactions_needed -= use_reactions
