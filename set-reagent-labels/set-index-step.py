@@ -36,7 +36,8 @@ def main(process_id):
     except KeyError:
         category = None
 
-    split_indexes = [a.samples[0].udf[SAMPLE_INDEX_UDF].strip(" \t\xca\xa0\xc2").replace('+','-').split("-") for a in analytes]
+    split_indexes_1 = [a.samples[0].udf[SAMPLE_INDEX_UDF].replace('+','-').split("-") for a in analytes]
+    split_indexes = [map(lambda i: i.strip(" \t\xca\xa0\xc2"), ixs) for ixs in split_indexes_1]
     analyte_names = [a.name for a in analytes]
 
     if process.udf.get('Reverse complement index1'):
