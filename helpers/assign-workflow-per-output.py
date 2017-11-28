@@ -8,7 +8,7 @@ from collections import defaultdict
 from genologics.lims import *
 from genologics import config
 
-def main(process_id, workflow_udf):
+def main(process_id, workflow_udf, prefix=""):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
     outputs = process.all_outputs(unique=True, resolve=True)
@@ -17,7 +17,7 @@ def main(process_id, workflow_udf):
     for output in outputs:
         if output.type == "Analyte" and not output.control_type:
             try:
-                workflow = output.udf[workflow_udf]
+                workflow = prefix + output.udf[workflow_udf]
             except KeyError:
                 print("Error: workflow name (" +str(workflow_udf)+") not specified for sample ", output.name)
                 sys.exit(1)
@@ -39,5 +39,5 @@ def main(process_id, workflow_udf):
             sys.exit(1)
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(*sys.argv[1:])
 
