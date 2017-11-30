@@ -44,7 +44,7 @@ def make_plot(sample_volume, x, y, intercept, slope, graph_file_id):
     plt.savefig(graph_file_id + ".png")
 
 
-def main(process_id, graph_file_id, sample_volume):
+def main(process_id, graph_file_id, sample_volume, input_file_ids):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
     lims.get_batch(process.all_inputs() + process.all_outputs())
@@ -52,49 +52,52 @@ def main(process_id, graph_file_id, sample_volume):
     standards_concs = [float(v) for v in process.udf['Concentrations of standards (ng/uL)'].split(",")]
     assert len(standards_concs) == 8, "Invalid number of standards"
 
-    datafiles = next((
-            o['uri']
-            for i,o in process.input_output_maps
-            if o['output-generation-type'] == "PerAllInputs" and o['uri'].name == "Quant-iT results"
-            )).files
-    if not datafiles:
-        print "No result file found"
-        sys.exit(1)
+    result_files = set([o['uri'] for i,o in process.input_output_maps if o['output-generation-type'] == "PerInput"])
+    assert len(result_files) > 0, "No output artifacts found"
+    output_containers = sorted(set(rf.container for rf in result_files), key=lambda cont: cont.id)
 
-    try:
-        data = parse_result_file(datafiles[0].download().decode("utf-16"))
-    except ValueError, e:
-        print "Result file has invalid format (" + str(e) + ")."
-        sys.exit(1)
+    assert len(input_file_ids) >= len(output_containers),\
+            "This step is only configured for {0} plates".format(len(input_file_ids))
 
-    standards_values = [data["{0}:{1}".format(row, 1)] for row in ROWS]
-    print standards_values
+    container_data = {}
+    for index, container in enumerate(output_containers):
+        try:
+            file_obj = Artifact(lims, id=input_file_ids[index]).files[0]
+        except IndexError:
+            print "No input file for plate number", (index+1)
+            sys.exit(1)
+        try:
+            container_data[container] = parse_result_file(file_obj.download().decode("utf-16"))
+        except ValueError, e:
+            print "Result file has invalid format (" + str(e) + ")."
+            sys.exit(1)
+
+    first_container = output_containers[0]
+    standards_values = [container_data[first_container]["{0}:{1}".format(row, 1)] for row in ROWS]
     scaled_concs = [sv * STANDARD_VOLUME / sample_volume for sv in standards_concs]
-
     slope, intercept, r_value, p_value, std_err = stats.linregress(scaled_concs, standards_values)
-
     process.udf['R^2'] = r_value**2
 
-    result_files = set([o['uri'] for i,o in process.input_output_maps if o['output-generation-type'] == "PerInput"])
-    assert len(set(rf.container for rf in result_files)) == 1, "This script can only read one plate at a time"
-
     for o in result_files:
-        conc = (data[o.location[1]] - intercept) / slope
+        if o.location[0] == first_container and o.location[1].endswith(":1"):
+            print "Detected a sample in the position", o.location[1], "which should be a standard."
+            sys.exit(1)
+        conc = (container_data[o.location[0]][o.location[1]] - intercept) / slope
         o.udf['Concentration'] = conc
-
 
     make_plot(sample_volume, scaled_concs, standards_values, intercept, slope, graph_file_id)
     lims.put_batch(result_files)
 
     process.put()
-    print "Successfully imported data from", datafiles[0].original_location, "."
+    print "Successfully imported data from", len(container_data), "file(s)."
 
 
 if __name__ == "__main__":
     if len(sys.argv) == 3:
-        main(sys.argv[1], sys.argv[2], DEFAULT_SAMPLE_VOLUME)
+        print "Usage with two parameters is no longer supported! The step configuration should be updated."
+        sys.exit(1)
     elif len(sys.argv) >= 4:
-        main(sys.argv[1], sys.argv[2], float(sys.argv[3]))
+        main(sys.argv[1], sys.argv[2], float(sys.argv[3]), sys.argv[4:])
     else:
         print("Incorrect usage (see script)")
         sys.exit(1)
