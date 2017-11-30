@@ -17,7 +17,7 @@ def main(process_id, workflow_prefix):
                 lims.route_analytes(process.all_outputs(unique=True), workflow)
                 break
         else: # If not breaked
-            print('Error: No workflow matching "' + str(workflow_prefix) + '" was found.')
+            print(('Error: No workflow matching "' + str(workflow_prefix) + '" was found.').encode('utf-8'))
             sys.exit(1)
 
 

@@ -17,9 +17,9 @@ def main(process_id, workflow_udf, prefix=""):
     for output in outputs:
         if output.type == "Analyte" and not output.control_type:
             try:
-                workflow = prefix + output.udf[workflow_udf]
+                workflow = prefix.decode('utf-8') + output.udf[workflow_udf]
             except KeyError:
-                print("Error: workflow name (" +str(workflow_udf)+") not specified for sample ", output.name)
+                print("Error: workflow name (" +str(workflow_udf)+u") not specified for sample " + output.name)
                 sys.exit(1)
             workflow_outputs[workflow].append(output)
 
@@ -33,9 +33,9 @@ def main(process_id, workflow_udf, prefix=""):
                 lims.route_analytes(outputs, workflow)
                 break
         else:
-            print ("Error: Unknown workflow '" + str(workflow_prefix) + "' for samples "+
-                    ", ".join(output.name for output in outputs) +
-                    ".")
+            print ((u"Error: Unknown workflow '" + unicode(workflow_prefix) + u"' for samples "+
+                    u", ".join(output.name for output in outputs) +
+                    u".").encode('utf-8'))
             sys.exit(1)
 
 if __name__ == "__main__":
