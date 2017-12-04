@@ -33,11 +33,11 @@ def parse_result_file(text):
     return data
 
 
-def make_plot(sample_volume, x, y, intercept, slope, graph_file_id):
+def make_plot(sample_volume, x, y, slope, graph_file_id):
     plt.ioff()
     f = plt.figure()
     plt.plot(x, y, 'ro')
-    plt.plot(x, [xi*slope + intercept for xi in x])
+    plt.plot(x, [xi*slope for xi in x])
     plt.xlim(x[0] - 5, x[-1] + 5)
     plt.xlabel("Concentration x {0} (ng/uL)".format(STANDARD_VOLUME / sample_volume))
     plt.ylabel("Fluorescence counts")
@@ -80,21 +80,23 @@ def main(process_id, graph_file_id, sample_volume, input_file_ids):
     standards_values = [container_data[first_container]["{0}:{1}".format(row, 1)] for row in ROWS]
     std0_value = scaled_concs[0]
     process.udf['Std0 value'] = std0_value
-    shifted_values = numpy.array([c - std0_value for c in scaled_concs])
+    shifted_standards_values = numpy.array([c - std0_value for c in standards_values])
     
     stdcurve_fn = lambda x, a: a*x # y=ax
     xdata = numpy.matrix([scaled_concs]).T
-    ydata = numpy.array(shifted_values)
+    ydata = numpy.array(shifted_standards_values)
 
     slopes, _, _, _ = numpy.linalg.lstsq(xdata, ydata)
     slope = slopes[0]
+    print xdata, "|||", ydata
+    print slope
 
     # Calculate R^2: we need the "total" sum of squares rel to mean, and residuals
-    mean = numpy.mean(shifted_values)
-    totalsum2 = ((shifted_values - mean)**2).sum()
-    residualsum2 = ((shifted_values - slope*scaled_concs)**2).sum()
+    mean = numpy.mean(shifted_standards_values)
+    totalsum2s = ((shifted_standards_values - mean)**2).sum()
+    residualsum2s = ((shifted_standards_values - slope*scaled_concs)**2).sum()
 
-    process.udf['R^2'] = 1 - residualsum2 / totalsum2
+    process.udf['R^2'] = 1 - residualsum2s / totalsum2s
 
     for o in result_files:
         if o.location[0] == first_container and o.location[1].endswith(":1"):
@@ -105,7 +107,7 @@ def main(process_id, graph_file_id, sample_volume, input_file_ids):
 
     # Plot the data and the curve
     # Intercept parameter is now fixed at 0
-    make_plot(sample_volume, scaled_concs, standards_values, 0, slope, graph_file_id)
+    make_plot(sample_volume, scaled_concs, shifted_standards_values, slope, graph_file_id)
     lims.put_batch(result_files)
 
     process.put()
