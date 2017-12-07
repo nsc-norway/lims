@@ -58,7 +58,7 @@ for i, header in enumerate(headers, 1):
     for i in range(1, len(headers)+1):
         ws.cell(row=1, column=i).border = border_style
 
-for i, width in enumerate([16, 16, 8, 8, 6, 12, 12, 16]):
+for i, width in enumerate([20, 16, 8, 8, 6, 12, 12, 16]):
     ws.column_dimensions[chr(ord('A')+i)].width = width
 
 i_os = process.input_output_maps
