@@ -1,25 +1,39 @@
 import sys
 import re
+from collections import defaultdict
 from genologics.lims import *
 from genologics import config
 
-# NOTE! This script needs to be run with Python 3 in order to correctly
-# match nbsp characters in the regex.
 
-def main(process_id):
+
+def get_remaining_reactions(lot):
+    rm = re.search(r"-\d+R$", lot.name)
+    if rm:
+        return int(rm.group(1))
+    else:
+        raise ValueError("Unknown number of reactions for lot {0} / {1}.".format(lot.name, lot.lot_number))
+
+def update_remaining_reactions(lot, new_reactions):
+    lot.name = re.sub(r"-\d+R$", str(new_reactions), lot.name)
+
+def main(process_id, mode):
     """Script to register lot usage and disable expired lots."""
 
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
     process = Process(lims, id=process_id)
     step = Step(lims, id=process_id)
-    
-    # Get the name of the kit type (same as in the "show lots")
-    lots = step.reagentlots.reagent_lots
 
-    lots_used = process.udf.get('Lots used')
-    if not lots_used:
-        print("Enter any text in the 'Lots used' box. If not tracking lots, enter 'None'.")
-        sys.exit(1)
+    num_reactions_to_use = len(process.all_inputs(unique=True))
+    
+    lots = step.reagentlots.reagent_lots
+    kits_lots = defaultdict(list)
+    for lot in lots:
+        kits_lots[lot.reagent_kit].append(lot)
+
+    for kit, this_kit_lots in kits_lots.items():
+        lot_used = get_suggested_reactions_used_per_lot(this_kit_lots, num_reactions_to_use, False)
+
+
 
     match_string = r"Name:\s*([^,]+),\s*Lot#:\s*([^,]+),\s*Reactions:\s*(\d+),\s*Use:\s*(\d+)"
     lots_to_put = []
