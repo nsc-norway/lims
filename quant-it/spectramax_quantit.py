@@ -88,8 +88,6 @@ def main(process_id, graph_file_id, sample_volume, input_file_ids):
 
     slopes, _, _, _ = numpy.linalg.lstsq(xdata, ydata)
     slope = slopes[0]
-    print xdata, "|||", ydata
-    print slope
 
     # Calculate R^2: we need the "total" sum of squares rel to mean, and residuals
     mean = numpy.mean(shifted_standards_values)
@@ -102,7 +100,7 @@ def main(process_id, graph_file_id, sample_volume, input_file_ids):
         if o.location[0] == first_container and o.location[1].endswith(":1"):
             print "Detected a sample in the position", o.location[1], "which should be a standard."
             sys.exit(1)
-        conc = (container_data[o.location[0]][o.location[1]]) / slope
+        conc = (container_data[o.location[0]][o.location[1]] - float(std0_value)) / slope
         o.udf['Concentration'] = conc
 
     # Plot the data and the curve
