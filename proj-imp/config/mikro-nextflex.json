@@ -15,7 +15,7 @@
   },
   "sample_fields": {
   },
-  "reagent_category": "BioO NextFlex 96 Indexes",
+  "reagent_category": ["BioO NextFlex 96 Indexes", "BioO NEXTflex"],
   "workflow": "External MiSeq Project 1.0",
   "pool_name": "M_Pool"
 }
