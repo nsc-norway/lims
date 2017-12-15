@@ -17,5 +17,5 @@
   },
   "reagent_category": ["BioO NextFlex 96 Indexes", "BioO NEXTflex"],
   "workflow": "MIK MiSeq 1.0",
-  "pool_name": "M_Pool"
+  "pool_name": "MIK_Pool"
 }
