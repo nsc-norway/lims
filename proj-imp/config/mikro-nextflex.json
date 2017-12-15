@@ -1,12 +1,12 @@
 {
   "special_type_name": "Microbiology (NextFlex96)",
-  "project_title_prefix": "MB-Proj",
+  "project_title_prefix": "MB-xxxx",
   "project_fields": {
     "Project type": "Microbiology",
-    "Evaluation type": "None",
     "Sample type": "Amplicon",
-    "Sample prep requested": "None",
+    "Evaluation type": "None",
     "Library prep used": "Kapa HyperPlus Kit",
+    "Sample prep requested": "None",
     "Contact email": "Mariann.Nilsen@rr-research.no; Stephan.Frye@rr-research.no; UXKAVG@ous-hf.no; UXMOLB@ous-hf.no",
     "Contact person": "Mariann Nilsen, Stephan Frye, Gunilla Løvgården, Mona Holberg-Petersen",
     "Contact institution": "Molekylærbiologisk seksjon",
@@ -17,5 +17,5 @@
   },
   "reagent_category": "BioO NextFlex 96 Indexes",
   "workflow": "External MiSeq Project 1.0",
-  "pool_name": "Pool"
+  "pool_name": "M_Pool"
 }
