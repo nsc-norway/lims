@@ -28,6 +28,8 @@
   setActive: true}
 - {hasUniqueId: true, lotcode: RAPID-50-V2, name: HiSeq 2500 SBS Reagents 2/2, ref: '15059901',
   setActive: true}
+- {hasUniqueId: true, lotcode: V1, name: HiSeq 2500 cBot 2 Manifold, ref: '15067566',
+  setActive: true}
 - {hasUniqueId: true, lotcode: PE-V1, name: HiSeq 3000/4000 Cluster Kit 1/2, ref: '15067099',
   setActive: true}
 - {hasUniqueId: true, lotcode: SR-V1, name: HiSeq 3000/4000 Cluster Kit 1/2, ref: '15071459',
