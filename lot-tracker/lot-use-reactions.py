@@ -30,7 +30,7 @@ def subtract_reactions(lot, num_reactions):
     else:
         raise RuntimeError("Attempted to use {0} reactions from lot {1} / {2}, but there are "
                 "only {3} reactions left.".format(
-            lot.name, lot.lot_number, current
+            num_reactions, lot.name, lot.lot_number, current
             ))
 
 
@@ -103,7 +103,7 @@ def main(process_id):
             for lot in all_lots:
                 subtract_reactions(lot, num_reactions_to_use)
         else:
-            print("Multiple lots used. Please use the 'Show remaining rections' button to specify "
+            print("Multiple lots used. Use the 'Show remaining rections' button to specify "
                    "how many reactions to use from each lot.")
             sys.exit(1)
 
