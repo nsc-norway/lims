@@ -130,8 +130,7 @@ def start_programs():
             
             if process.udf.get('Close when finished'):
                 seq_proc = get_sequencing_process(process)
-                seq_step = Step(lims, id=seq_proc.id)
-                if not seq_step or seq_step.current_state.upper() == "COMPLETED":
+                if not seq_proc or Step(lims, id=seq_proc.id).current_state.upper() == "COMPLETED":
                     logging.debug("Yes, will finish if no program is running.")
                     next_program = None
                 else:
