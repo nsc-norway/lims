@@ -22,7 +22,6 @@ def main(sample_sheet_file_object, path, instrument):
         with open(dest_path, "w") as f:
             f.write(data)
     else:
-        print "Sample sheet file is not ready"
         sys.exit(1)
 
 if __name__ == "__main__":

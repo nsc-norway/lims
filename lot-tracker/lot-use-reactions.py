@@ -1,10 +1,55 @@
 import sys
 import re
+from collections import defaultdict
 from genologics.lims import *
 from genologics import config
 
-# NOTE! This script needs to be run with Python 3 in order to correctly
-# match nbsp characters in the regex.
+
+
+def get_remaining_reactions(lot):
+    rm = re.search(r"-(\d+)R$", lot.name)
+    if rm:
+        return int(rm.group(1))
+    else:
+        raise ValueError("Unknown number of reactions for lot {0} / {1}.".format(lot.name, lot.lot_number))
+
+
+def update_remaining_reactions(lot, new_reactions):
+    if new_reactions > 0:
+        lot.name = re.sub(r"-\d+R$", "-{0:02d}R".format(new_reactions), lot.name)
+    elif new_reactions == 0:
+        lot.name = re.sub(r"-\d+R$", "", lot.name)
+        lot.status = "ARCHIVED"
+
+
+def subtract_reactions(lot, num_reactions):
+    current = get_remaining_reactions(lot)
+    remain = current - num_reactions
+    if remain >= 0:
+        update_remaining_reactions(lot, remain)
+    else:
+        raise RuntimeError("Attempted to use {0} reactions from lot {1} / {2}, but there are "
+                "only {3} reactions left.".format(
+            num_reactions, lot.name, lot.lot_number, current
+            ))
+
+
+def parse_used_lots(used_lots_string):
+    """Returns a dict kit_name => [(lot_name, lot_number, reactions), ...]."""
+    kit = None
+    result = defaultdict(list)
+    for line in used_lots_string.splitlines():
+        m1 = re.match(r"-- Kit: (.*) --", line)
+        if m1:
+            kit = m1.group(1)
+        elif kit:
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) == 4:
+                m2 = re.match(r"use: (\d+)$", parts[3])
+                if m2:
+                    result[kit].append((parts[0], parts[1], int(m2.group(1))) )
+    return result
+
 
 def main(process_id):
     """Script to register lot usage and disable expired lots."""
@@ -12,59 +57,58 @@ def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD) 
     process = Process(lims, id=process_id)
     step = Step(lims, id=process_id)
+
+    num_reactions_to_use = len(process.all_inputs(unique=True))
     
-    # Get the name of the kit type (same as in the "show lots")
-    lots = step.reagentlots.reagent_lots
+    all_lots = step.reagentlots.reagent_lots
+    kits_lots = defaultdict(list)
+    for lot in all_lots:
+        kits_lots[lot.reagent_kit].append(lot)
 
-    lots_used = process.udf.get('Lots used')
-    if not lots_used:
-        print("Enter any text in the 'Lots used' box. If not tracking lots, enter 'None'.")
-        sys.exit(1)
-
-    match_string = r"Name:\s*([^,]+),\s*Lot#:\s*([^,]+),\s*Reactions:\s*(\d+),\s*Use:\s*(\d+)"
-    lots_to_put = []
-    for line in process.udf['Lots used'].splitlines():
-        match = re.match(match_string, line)
-        if match:
-            name, lotnum, remaining, used = match.groups()
-            lots = [lot for lot in lots if lot.name == name and lot.lot_number == lotnum]
-            if len(lots) == 0:
-                print("Lot number", lotnum, ", lot name", name, "not found.")
+    lot_usage_text = process.udf.get('Lots used')
+    if lot_usage_text:
+        # Parse the text and update lot reactions as specified
+        used_lot_dict = parse_used_lots(lot_usage_text)
+        if set(used_lot_dict.keys()) != set(kit.name for kit in kits_lots.keys()):
+            print("The kits in the Lots used box do not match the kits in the Reagent Lot Tracking screeen")
+            sys.exit(1)
+        for field_kit, field_lots in used_lot_dict.items():
+            try:
+                kit_lots = next(lots for kit, lots in kits_lots.items() if kit.name == field_kit)
+            except StopIteration:
+                print("Kit {0} appears in Lots used, but is not configured for this step.")
                 sys.exit(1)
-            elif len(lots) > 1:
-                print("Lot number", lotnum, ", lot name", name, "matches multiple lots, which should not be possible.")
-                sys.exit(1)
-            lot = lots[0]
-
-            # Get reactions from the lot notes again (to limit race conditions if multiple steps are open)
-            before_remaining_reactions = None
-            if lot.notes:
-                reactions_match = re.match(r"\d+", lot.notes)
-                if reactions_match:
-                    before_remaining_reactions = int(reactions_match.group(0))
-            if before_remaining_reactions is None:
-                # If there is nothing to be found in notes, we'll use the default number. Temporarily set the previous number
-                # of remaining reactions, we'll update it soon
-                r_match = re.search(r"\b(\d+)R\b", name)
-                if not r_match:
-                    print("The lot name", name, "does not include the number of reactions (nR).")
+            
+            for (lot_name, lot_number, use_reactions) in field_lots:
+                name_less_suffix = re.sub(r"\dR$", "", lot_name)
+                try:
+                    step_lot = next(lot for lot in kit_lots if 
+                            lot.name.startswith(name_less_suffix) and
+                            lot.lot_number == lot_number)
+                except StopIteration:
+                    print("Lot {0} / {1} specified in the Lots used field is not selected under Reagent "
+                            "Lot Tracking at the top of the page.".format(lot_name, lot_number))
                     sys.exit(1)
-                before_remaining_reactions = int(r_match.group(1))
-                prev_notes_text = lot.notes
-                lot.notes = "{0} reactions remaining.".format(before_remaining_reactions)
-                if prev_notes_text:
-                    lot.notes += " " + prev_notes_text
+                subtract_reactions(step_lot, use_reactions)
+                kit_lots.remove(step_lot)
 
-            new_remaining_reactions = before_remaining_reactions - int(used)
-            lot.notes = re.sub(r"^\d+", str(new_remaining_reactions), lot.notes)
-            if new_remaining_reactions < 0:
-                print("Error: Attempted to use", used, "reactions from lot", name, lotnum + ", but only", before_remaining_reactions, "available.")
+            if kit_lots:
+                print("Found {0} lots in Reagent Lot Tracking section which does not appear in the Lots used box"
+                        " for kit {1}.".format(len(kit_lots), field_kit))
                 sys.exit(1)
-            if new_remaining_reactions == 0:
-                lot.state = "ARCHIVED"
-            lots_to_put.append(lot)
 
-    for lot in lots_to_put: # commit
+    else:
+        # For a single lot per kit, use the specified number of reactions. Otherwise, show an error.
+        if all(len(lots) == 1 for lots in kits_lots.values()):
+            for lot in all_lots:
+                subtract_reactions(lot, num_reactions_to_use)
+        else:
+            print("Multiple lots used. Use the 'Show remaining rections' button to specify "
+                   "how many reactions to use from each lot.")
+            sys.exit(1)
+
+
+    for lot in all_lots: # commit if no error
         lot.put()
 
 

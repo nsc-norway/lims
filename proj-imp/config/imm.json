@@ -16,7 +16,7 @@
   },
   "sample_fields": {
   },
-  "reagent_category": "Custom indexes 3 (16S)",
+  "reagent_category": ["Custom indexes 3 (16S)"],
   "workflow": "TI MiSeq 1.0",
   "pool_name": "TI_pool"
 }

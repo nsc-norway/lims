@@ -179,6 +179,10 @@ def main(process_id, filegen, file_id, params):
                 ]
         elif filegen == "Inputfil_Hamilton_Normalisering_NSC":
 
+            # NOTE: NSC output format is no longer used (in fact, it wasn't ever used)
+            # It is still included in some sample prep protocols, but could be removed
+            # soon.
+
             # NSC general quantity-based normalization
             try:
                 norm_mass = output.udf['Input (ng)']

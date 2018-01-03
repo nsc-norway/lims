@@ -599,64 +599,6 @@ def go_eval():
         return Response("Sorry, project evaluation not found for " + project_name, mimetype="text/plain")
 
 
-@app.route('/run-list')
-def run_list():
-    monitored_process_list = []
-    for server, ptype in [(server, ptype) for server in servers for ptype in server.SEQUENCING]:
-        monitored_process_list += [
-                                (server, process) 
-                                for process in server.lims.get_processes(udf={'Monitor': True}, type=ptype)
-                                ]
-
-    data = []
-    # Row: 
-    #Run name        Instrument      Cleaned Transfered      Drive   ProjectName     Type    Name    Email  
-    # #SamplesProj    #SamplesRun     IssuesPrep      IssuesQC        DeliveryEmailDate       DeliveryMethod
-    for server, process in monitored_process_list:
-        first_part_of_row = [get_run_id(process)]
-        instrument_long = process_type_to_instrument(server, process.type_name)
-        # Should be HiSeq, NeSeq, MiSeq only
-        instrument_map = {"NextSeq": "NeSeq", "SeqLab": "X", "HiSeq X": "X", "HiSeq 3000/4000": "HiSeq", "HiSeq 2500": "HiSeq"}
-        instrument = instrument_map.get(instrument_long, instrument_long)
-        first_part_of_row.append(instrument)
-        first_part_of_row += [""] * 3
-        
-        lims_projects = set(art.samples[0].project for art in process.all_inputs())
-        for project in lims_projects:
-            row_p2 = [project.name]
-            lims_project_type = project.udf.get('Project type', 'UNKNOWN')
-
-            ptype_map = {'Diagnostics': 'Diag', 'Immunology': 'Imm', 'Microbiology': 'Microb', 'Non-Sensitive': 'NS'}
-            row_p2.append(ptype_map.get(lims_project_type, lims_project_type))
-            row_p2.append(project.udf.get('Contact person', ''))
-            row_p2.append(project.udf.get('Contact email', ''))
-            num_samples_in_project = len(server.lims.get_samples(projectlimsid=project.id))
-            row_p2.append(str(num_samples_in_project))
-            num_samples_in_run = len(set(
-                    sample
-                    for art in process.all_inputs(unique=True)
-                    for sample in art.samples
-                    if sample.project == project
-                    ))
-            row_p2.append(str(num_samples_in_run))
-            row_p2 += [""] * 4 # Unusued, IssuesPrep, IssuesQC, DeliveryEmailDate
-            delivery_method = project.udf.get('Delivery method')
-            if lims_project_type == "Diagnostics" or 'x-lims' in server.lims.baseuri:
-                row_p2.append("email")
-            elif 'HDD' in delivery_method:
-                row_p2.append("hard drive")
-            elif delivery_method == "NeLS project":
-                row_p2.append("NeLS")
-            elif delivery_method == "Norstore":
-                row_p2.append("Norstore")
-            else:
-                row_p2.append(delivery_method or "ERROR")
-            data.append(first_part_of_row + row_p2)
-            first_part_of_row = [""] * len(first_part_of_row)
-
-    return render_template('run-list.xhtml', data=data)
-
-
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         SITE = sys.argv[1]
