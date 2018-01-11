@@ -232,9 +232,9 @@ def get_text_multi(cell):
 
 def is_library(cell):
     if get_checkbox(cell):
-        return "Library"
+        return "QC only"
     else:
-        return None
+        return "Prep"
 
 
 def library_prep_used(cell):
@@ -270,7 +270,7 @@ LABEL_UDF_PARSER = [
         ("Method used to determine concentration", 'Method used to determine concentration', get_text_single),
         ("Buffer in which samples dissolved", 'Sample buffer', get_text_single),
         ("Are samples hazardous", 'Hazardous', get_yes_no_checkbox),
-        ("Are the samples ready to sequence?", 'Sample type', is_library),
+        ("Are the samples ready to sequence?", 'Evaluation type', is_library),
         ("For DNA samples", 'Sample prep requested', partial(single_choice_checkbox, DNA_PREPS)),
         ("For RNA samples", 'Sample prep requested', partial(single_choice_checkbox, RNA_PREPS)),
         ("Species:", 'Species', get_text_single),
