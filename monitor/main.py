@@ -278,7 +278,7 @@ def read_sequencing(server, process, machines):
     try:
         runid = get_run_id(process)
         if runid:
-            machine = re.match(r"\d{6}_([\dA-Z])+_", runid).group(1)
+            machine = re.match(r"\d{6}_([\dA-Z]+)_", runid).group(1)
     except KeyError:
         runid = ""
 
