@@ -30,9 +30,9 @@ def main(process_id):
 
     if invalid_names:
         print "The following sample(s) have unsupported characters (" +\
-                ", ".join("'" + c + "'" for c in invalid_chars) + \
+                ", ".join("'" + c.encode('utf-8') + "'" for c in invalid_chars) + \
                 ") in their sample names, please correct using Modify Samples: ",\
-                ", ".join(invalid_names), "."
+                ", ".join(name.encode('utf-8') for name in invalid_names), "."
         sys.exit(1)
     if len(set(names)) < len(names):
         for name in set(names):
