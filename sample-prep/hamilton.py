@@ -127,7 +127,7 @@ def main(process_id, filegen, file_id, params):
             if input_conc > 0:
                 sample_volume = (norm_conc * vol * 1.0 / input_conc)
             else:
-                sample_volume = vol
+                sample_volume = vol+1
             buffer_volume = vol - sample_volume 
 
             if buffer_volume < 0:
