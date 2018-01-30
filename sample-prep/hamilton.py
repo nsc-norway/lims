@@ -124,7 +124,10 @@ def main(process_id, filegen, file_id, params):
             output.udf['Volume (uL)'] = vol
 
         elif filegen == "HamiltonDilution2":
-            sample_volume = (norm_conc * vol * 1.0 / input_conc)
+            if input_conc > 0:
+                sample_volume = (norm_conc * vol * 1.0 / input_conc)
+            else:
+                sample_volume = vol
             buffer_volume = vol - sample_volume 
 
             if buffer_volume < 0:
