@@ -5,6 +5,8 @@
 # This script is designed to output an Excel file to help with RNA sample
 # prep.
 
+# See the dna equivalent: dna_norm_worksheet.py, for how to install requirements
+
 from openpyxl.styles import Border, Side, Alignment
 from openpyxl import Workbook
 import openpyxl

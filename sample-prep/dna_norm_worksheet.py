@@ -2,8 +2,15 @@
 
 # Note: Python 3 source code, run under SCL.
 
-# This script is designed to output an Excel file to help with RNA sample
+# This script is designed to output an Excel file to help with DNA sample
 # prep.
+
+# Installation of requirements on RHEL6/Centos6:
+#$ sudo yum install rh-python35
+#$ sudo scl enable rh-python35 bash # This opens a sub-shell, run the following in the sub-shell:
+## pip install openpyxl
+## pip install requests
+# (exit; done)
 
 from openpyxl.styles import Border, Side, Alignment
 from openpyxl import Workbook
