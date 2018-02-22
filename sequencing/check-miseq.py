@@ -11,7 +11,7 @@ def main(process_id):
     # analytes() returns tuples ('Output', [Analyte, ...]).
     flowcells = set(ana.location[0] for ana in lims.get_batch(process.analytes()[0]))
     if len(flowcells) > 1:
-        print("There should only be one flow cell in each MiSeq Run step, but {0} flow cells found.".format(len(flowcells)))
+        print("There should be a separate MiSeq Run step for each flowcell, but {0} flowcells found in inputs.".format(len(flowcells)))
         sys.exit(1)
 
 main(sys.argv[1])
