@@ -1,0 +1,1 @@
+../../sequencing/check-miseq.py
