@@ -55,11 +55,16 @@ def parseinputFile():
     columnHeaders = data[HeaderRow - 1].split( delim )
 
     results = {}
-    for row in data[HeaderRow:]:
+    for i_row, row in enumerate(data[HeaderRow:], HeaderRow + 1):
         values = row.split( delim )
         UDFresults = {}
         for column, UDF in artifactUDFMap.items():
-            UDFresults[ UDF ] = values[ columnHeaders.index( column ) ]
+            try:
+                UDFresults[ UDF ] = values[ columnHeaders.index( column ) ]
+            except ValueError:
+                raise ValueError("Error: Column {0} was not found in the headers.".format(column))
+            except KeyError:
+                raise ValueError("Error: Incorrect number of columns {0} for row {1}.".format(i_row))
         results[ values[ MappingColumn - 1 ]] = UDFresults
     if DEBUG: print results
     return results
