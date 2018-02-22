@@ -11,6 +11,10 @@ def main(process_id):
     # analytes() returns tuples ('Output', [Analyte, ...]).
     # Not using a batch for the container list because it will almost always be one
     flowcells = set(lims.get_batch(ana.location[0] for ana in lims.get_batch(process.analytes()[0])))
+    if len(flowcells) > 1:
+        print "There should only be one flow cell in each clustering/denature step."
+        sys.exit(1)
+
     if any(fc.name == fc.id for fc in flowcells):
         print "Please make sure container names are changed before continuing."
         sys.exit(1)
