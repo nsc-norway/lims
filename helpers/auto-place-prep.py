@@ -25,11 +25,20 @@ def main(process_id):
     for ii,oo in process.input_output_maps:
         if oo['output-generation-type'] == "PerInput":
             i = ii['uri']
-            input_list.append((i.samples[0].project.name, parse_sample_name(i)))
+            input_list.append((i.samples[0].project.name, parse_sample_name(i.name), oo['uri']))
 
     placements = []
 
-    for _, _, i, o in sorted(input_list):
+    outwell_index = 999
+    for _, _, o in sorted(input_list):
+        outwell_index += 1
+        if outwell_index >= 96:
+            try:
+                output_container = next(output_containers_iter)
+            except StopIteration:
+                output_container = None
+            outwell_index = 0
+        outwell = "{}:{}".format("ABCDEFGH"[outwell_index % 8], 1 + outwell_index // 8)
         placements.append((o.stateless, (output_container, outwell)))
     step.placements.set_placement_list(placements)
     step.placements.post()
