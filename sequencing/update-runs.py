@@ -47,11 +47,11 @@ INSTRUMENT_NAME_MAP = {
             'M02980': 'Mike',
 
             'J00146': 'Hiawatha',
+            'E00401': 'Hippo',
 
-            'E00401': 'Roxanne',
             'E00396': 'Dexter',
             'E00426': 'Pixie',
-            'E00423': 'Box'
+            'E00423': 'Roxanne'
             }
 
 

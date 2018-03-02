@@ -35,11 +35,11 @@ SEQUENCERS = {
     'M02980': ('miseq', 'Mike'),
 
     'J00146': ('hiseq3k', 'Hiawatha'),
+    'E00401': ('hiseq4k', 'Hippo'),
 
-    'E00401': ('hiseqx', 'Roxanne'),
     'E00396': ('hiseqx', 'Dexter'),
     'E00426': ('hiseqx', 'Pixie'),
-    'E00423': ('hiseqx', 'Box')
+    'E00423': ('hiseqx', 'Roxanne')
     }
 
 
