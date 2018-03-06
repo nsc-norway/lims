@@ -17,7 +17,7 @@ def main(process_id, workflow_udf, prefix=""):
     process = Process(lims, id=process_id)
     use_outputs = any(output.type == 'Analyte' for output in process.all_outputs(unique=True, resolve=True))
     if use_outputs:
-        analytes = process.all_outputs(unique=True)
+        analytes = [output for output in process.all_outputs(unique=True) if output.type == 'Analyte']
     else: # Use inputs
         analytes = process.all_inputs(unique=True, resolve=True)
 
