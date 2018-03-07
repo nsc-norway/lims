@@ -23,14 +23,13 @@ def main(process_id):
         "ouslims_indexes.txt"
         )) as index_file:
         reagents = sorted( name for 
-            name, category, sequence
+            category, name, sequence
             in (line.split("\t") for line in index_file)
             if category == reagent_category)
     sorted_outputs = sorted( (o.location[0].id, o.location[1], o)
             for o in outputs
             if o.type == 'Analyte')
     for index, (_, _, output) in zip( cycle(reagents), sorted_outputs ):
-        print "Loule"
         step.reagents.output_reagents[output] = index
     step.reagents.post()
 
