@@ -21,8 +21,8 @@ two_hours_ago = (datetime.utcnow() - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%
 processes = lims.get_processes(last_modified=two_hours_ago)
 takeover_user = Researcher(lims, id="3")
 for process in processes:
-    escalation = Step(lims, id=process.id).actions.escalation
-    if escalation and escalation['author'] == process.technician:
+    step = Step(lims, id=process.id)
+    if step.current_state == "Under Review":
         if process.technician != takeover_user:
             process.technician = takeover_user
             process.put()
