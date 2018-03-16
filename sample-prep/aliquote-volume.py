@@ -5,10 +5,8 @@ from genologics.lims import *
 from genologics import config
 
 # Computation for SSXT Aliquote DNA step at the beginning of Target Enrichment protocol
-# Because of the hard-coded DEFAULT_QUANTITY, it requires modification before it should
-# be used anywhere else.  
 
-DEFAULT_QUANTITY = 750
+MAX_VOL = 30
 
 
 WORKSHEET_HEADER = [
@@ -75,7 +73,11 @@ def main(process_id, output_file_id, mode):
 
         quantity = process.udf['DNA per sample (ng)']
         input_conc = qc_result.udf['Concentration']
-        volume = quantity * 1.0 / input_conc
+    
+        if input_conc <= 0:
+            volume = MAX_VOL
+        else: 
+            volume = min(quantity * 1.0 / input_conc, MAX_VOL)
 
         rows.append(ROW[mode](
                 input, output, qc_result,
