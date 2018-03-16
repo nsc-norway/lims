@@ -49,7 +49,6 @@ def get_or_default(udfname):
 
 headers = [
     "Sample name",
-    "Input 200pM",
     "Sample conc. [nM]",
     "Conc. Input 2.2/3.2nM",
     "Volum final [uL]",
