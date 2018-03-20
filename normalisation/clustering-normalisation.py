@@ -14,13 +14,16 @@
 ## pip install requests
 # (exit; done)
 
-from openpyxl.styles import Border, Side, Alignment
+from openpyxl.styles import Border, Side, Alignment, Font
 from openpyxl import Workbook
 from genologics.lims import *
 from genologics import config
 import sys
 import re
 
+
+START_COL = 2
+START_ROW = 2
 
 warning = []
 
@@ -30,7 +33,6 @@ process = Process(lims, id=sys.argv[1])
 wb = Workbook()
 ws = wb.active
 side_style = Side(border_style="thin")
-border_style = Border(top=side_style, left=side_style, right=side_style, bottom=side_style)
 thick_side_style = Side(border_style="thick")
 
 def sort_key(elem):
@@ -47,79 +49,78 @@ def get_or_default(udfname):
         output.udf[udfname] = val
         return val
 
-headers = [
-    "Sample name",
-    "Sample conc. [nM]",
-    "Conc. Input 2.2/3.2nM",
-    "Volum final [uL]",
-    "Input [uL]",
-    "RSB [uL]",
-    "Well strip",
+formatting = [
+    ("Sample name",         16, None),
+    ("Sample conc. [nM]",   10, '0.00'),
+    ("Conc. Input 2.2/3.2nM",10,'0.0'),
+    ("Volum final [uL]",    10, '0'),
+    ("Input [uL]",          10, '0.00'),
+    ("RSB [uL]",            10, '0.00'),
+    ("Well strip",          9,  '0')
     ]
 
-for i, header in enumerate(headers, 1):
-    cell = ws.cell(row=1, column=i)
+for i, (header, width, number_format) in enumerate(formatting):
+    cell = ws.cell(row=START_ROW, column=i+START_COL)
+    left_style = thick_side_style if i == 0 else side_style
+    right_style = thick_side_style if i == len(formatting)-1 else side_style
+    border_style = Border(top=thick_side_style, left=left_style, right=right_style, bottom=side_style)
+    cell.border = border_style
+    cell.alignment = Alignment(wrapText=True, horizontal='center')
+    cell.font = Font(bold=True)
     cell.value = header
-    ws.column_dimensions[chr(ord('A')+i)].bestFit=True
-    ws.column_dimensions[chr(ord('A')+i)].hidden=False
-    for i in range(1, len(headers)+1):
-        ws.cell(row=1, column=i).border = border_style
-
-for i, width in enumerate([20, 16, 8, 8, 6, 12, 12, 16]):
-    ws.column_dimensions[chr(ord('A')+i)].width = width
+    ws.column_dimensions[chr(ord('A')+i+START_COL-1)].width = width
 
 i_os = process.input_output_maps
 inputs_outputs = [(i['uri'], o['uri']) for i,o in i_os if o['output-generation-type'] == 'PerInput']
 lims.get_batch([i for i,o in inputs_outputs] + [o for i,o in inputs_outputs])
 
-for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key), 2):
-    ws.cell(row=row_index, column=1).border = Border(top=side_style, left=thick_side_style,
-                    right=thick_side_style, bottom=side_style)
-    for i in range(2, len(headers)):
-        ws.cell(row=row_index, column=i).border = border_style
+for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key), 1+START_ROW):
 
-    # ---- Sample info ----
-    ws.cell(row=row_index, column=1).value = input.samples[0].project.name
-    ws.cell(row=row_index, column=2).value = input.name
-    ws.cell(row=row_index, column=3).value = output.location[1].replace(":", "")
+    top_style = thick_side_style if row_index == 1+START_ROW else side_style
+    bottom_style = thick_side_style if row_index == START_ROW+len(inputs_outputs) else side_style
+
+    ws.cell(row=row_index, column=START_COL).border =\
+            Border(top=top_style, left=thick_side_style, right=side_style, bottom=bottom_style)
+    ws.cell(row=row_index, column=START_COL+len(formatting)-1).border =\
+            Border(top=top_style, left=side_style, right=thick_side_style, bottom=bottom_style)
+    for i in range(START_COL+1, START_COL+len(formatting)-1):
+        ws.cell(row=row_index, column=i).border = \
+            Border(top=top_style, left=side_style, right=side_style, bottom=bottom_style)
+
+    for i in range(len(formatting)):
+        ws.cell(row=row_index,column=i+START_COL).alignment = Alignment(horizontal='center')
+        if formatting[i][2]:
+            ws.cell(row=row_index,column=i+START_COL).number_format = formatting[i][2]
+
+
+    # ---- Artifact info ----
+    ws.cell(row=row_index, column=START_COL).value = input.name
+    molarity = input.udf['Molarity']
+    ws.cell(row=row_index, column=START_COL+1).value = molarity
 
     # ---- Parameters (use specific for sample, or default) ----
-    input_ng = get_or_default('Input (ng)')
-    total_volume = get_or_default('Volume (uL)')
+    conc_input = get_or_default('Conc. Input (nM)')
+    final_volume = get_or_default('Volume final (uL)')
 
-    ws.cell(row=row_index, column=4).value = input_ng
-    ws.cell(row=row_index, column=5).value = total_volume
+    ws.cell(row=row_index, column=START_COL+2).value = conc_input
+    ws.cell(row=row_index, column=START_COL+3).value = final_volume
 
     # ---- Calculated quantities ----
-    try:
-        if use_sample_conc:
-            conc = input.samples[0].udf['Sample conc. (ng/ul)']
-        elif use_output_conc:
-            conc = output.udf['Concentration']
-        else:
-            conc = input.udf['Concentration']
-    except KeyError:
-        ws.cell(row=row_index, column=6).value = "MISSING_CONC"
-        continue
+    
+    # Input mirolitres
+    conc_input_coord = ws.cell(row=row_index, column=START_COL+2).coordinate
+    final_volume_coord = ws.cell(row=row_index, column=START_COL+3).coordinate
+    molarity_coord = ws.cell(row=row_index, column=START_COL+1).coordinate
+    ws.cell(row=row_index, column=START_COL+4).value = '=(({0}*{1})/{2})'.format(
+        conc_input_coord, final_volume_coord, molarity_coord)
 
-    if conc == 0.0:
-        sample_volume = total_volume + 1
-    else:
-        sample_volume = input_ng * 1.0 / conc
-    buffer_volume = total_volume - sample_volume
+    # RSB microlitres
+    input_ul_coord = ws.cell(row=row_index, column=START_COL+4).coordinate
+    ws.cell(row=row_index, column=START_COL+5).value = "={0}-{1}".format(
+            final_volume_coord, input_ul_coord)
 
-    if buffer_volume < 0:
-        buffer_volume = 0.0
-        sample_volume = total_volume
-        warning.append(output.name)
-
-    ws.cell(row=row_index, column=6).value = sample_volume
-    ws.cell(row=row_index, column=6).number_format = "0.0"
-    ws.cell(row=row_index, column=7).value = buffer_volume
-    ws.cell(row=row_index, column=7).number_format = "0.0"
-
-    # ---- Index ----
-    ws.cell(row=row_index, column=8).value = re.sub(r" \([ACGT-]+\)$", "", next(iter(output.reagent_labels)))
+    # Well strip
+    ws.cell(row=row_index, column=START_COL+6).value = int(output.location[1].partition(':')[0])
 
 
 lims.put_batch(o for i,o in inputs_outputs)
