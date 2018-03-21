@@ -100,17 +100,22 @@ def main(process_id, filegen, file_id, params):
 
         sample_no = re.match(r"([0-9]+)-", sample_name)
         if filegen == "HamiltonDilution1":
-            # (20 ng/uL * 25 uL) / conc = (500 ng) / conc
-            if input_conc == 0.0:
-                sample_volume = vol
+            if input.name.lower().startswith("blankprove-"):
+                # Request from Silje: always use these parameters for BlankProve
+                # Care: This even ignores the sepecified total volume
+                sample_volume = 12
+                buffer_volume = 13
             else:
-                sample_volume = (norm_conc * vol * 1.0 / input_conc)
-            buffer_volume = vol - sample_volume
+                if input_conc > 0:
+                    sample_volume = (norm_conc * vol * 1.0 / input_conc)
+                else:
+                    sample_volume = vol + 1
+                buffer_volume = vol - sample_volume
+                if buffer_volume < 0:
+                    buffer_volume = 0.0
+                    sample_volume = vol
+                    warning.append(output.name)
 
-            if buffer_volume < 0:
-                buffer_volume = 0.0
-                sample_volume = vol
-                warning.append(output.name)
             columns = [
                     ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
                     ("Labware", "Rack%d" % ((index // 32) + 1)),
@@ -133,7 +138,8 @@ def main(process_id, filegen, file_id, params):
             if buffer_volume < 0:
                 buffer_volume = 0.0
                 sample_volume = vol
-                warning.append(output.name)
+                if not input.name.lower().startswith("blankprove-"):
+                    warning.append(output.name)
             columns = [
                     ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
                     ("Well_ID", well),
