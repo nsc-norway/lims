@@ -54,9 +54,23 @@ def main(process_id, def_sample_dna_quantity, output_file_id):
         print "Missing QC result for", e
         sys.exit(1)
     lims.get_batch(qc_results)
-    qc_result_map = dict((input, qc_result) for input, qc_result in zip(inputs, qc_results))
+    try:
+        qc_result_map = dict((input, qc_result.udf['Concentration']) for input, qc_result in zip(inputs, qc_results))
+    except KeyError as e:
+        print "The concentration is not known for sample :" + str(e) + "."
+        sys.exit(1)
+
+    for input in inputs:
+        if input.name.lower().startswith("blankprove-"):
+            min_conc_nonblank = min(c for i, c in qc_result_map.items()
+                    if not i.name.lower().startswith("blankprove-"))
+            qc_result_map[input] = min_conc_nonblank
 
     error = False # "Soft" error, still will upload the file
+
+    if any(conc <= 0 for conc in qc_result_map.values()):
+        print "Sample with non-positive concentration. Please check the results."
+        error = True
 
     rows = []
     for pool in step.pools.pooled_inputs:
@@ -66,17 +80,7 @@ def main(process_id, def_sample_dna_quantity, output_file_id):
 
         sample_concs = []
         unknown_qc = []
-        for input in pool.inputs:
-            try:
-                concentration = qc_result_map[input].udf['Concentration']
-                sample_concs.append(concentration)
-            except KeyError:
-                unknown_qc.append(input.name)
-
-        if unknown_qc:
-            print "In pool", pool.name, ", the concentration is not known for pool constituents",
-            print ", ".join(unknown_qc), "."
-            sys.exit(1)
+        sample_concs = [qc_result_map[input] for input in pool.inputs]
 
         dest_container = output.location[0].name
         dest_well = output.location[1]

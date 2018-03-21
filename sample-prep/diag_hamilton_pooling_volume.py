@@ -28,10 +28,16 @@ def main(process_id, file_id):
     ios_sorted = list(sorted(ios, key=row_order))
     concentrations = get_qc_concs(lims, [i for i, o in ios_sorted])
 
-    for i, ((input, output), conc) in enumerate(zip(ios_sorted, concentrations), 1):
+    io_conc = list(zip(ios_sorted, concentrations))
+    min_conc_nonblank = min(c for (i,o), c in io_conc if not i.name.lower().startswith("blankprove-"))
+
+    for i, ((input, output), conc) in enumerate(io_conc, 1):
         row = sheet1.row(i)
         row.write(0, input.location[1].replace(":", ""))
-        row.write(1, conc)
+        if input.name.lower().startswith("blankprove-"):
+            row.write(1, min_conc_nonblank)
+        else:
+            row.write(1, conc)
         row.write(2, output.location[1].replace(":", ""))
         i7, i5 = get_index_names(input)
         row.write(3, i7)
@@ -54,7 +60,7 @@ def get_index_names(output):
 
 def row_order(item):
     input, output = item
-    return [input.location[0]] + list(reversed(input.location[1].split(":")))
+    return [input.location[0].id] + list(reversed(input.location[1].split(":")))
 
 def get_qc_concs(lims, inputs):
     """Get concentration from any Quant-iT step
