@@ -428,6 +428,7 @@ def parse(docx_data):
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
+    program_status = Step(lims, id=process_id).program_status
     docx_data = None
     try:
         docx_file_output = next(
@@ -439,12 +440,17 @@ def main(process_id):
             docx_file = docx_file_output.files[0]
             if docx_file.original_location.endswith(".docx"):
                 docx_data = docx_file.download()
+            else:
+                program_status.message = "Submission form has incorrect file extension, should be docx."
+                program_status.status = "WARNING"
+                program_status.put()
     except StopIteration:
         pass
     if not docx_data:
         # Don't do anything if no submission form...
-        #process.udf[ERROR_UDF] = "Sample submission form not found"
-        #process.put()
+        program_status.message = "Sample submission form not found, continuing."
+        program_status.status = "WARNING"
+        program_status.put()
         return
 
     fields = parse(docx_data)
@@ -454,11 +460,10 @@ def main(process_id):
     try:
         process.udf['Sample submission form imported'] = True
         process.put()
-        print "Put successful"
-    except requests.exceptions.HTTPError, e:
-        # Don't crash on errors
-        print "LIMS wouldn't let us fill in the form: " + str(e)
-        # Unfortunately, there's no way to report this...
+        print "Submission form imported successfully."
+    except requests.exceptions.HTTPError as e:
+        program_status.message = "Error while updating fields: {0}.".format(e)
+        program_status.status = "WARNING"
 
 def test(filename):
     fields = parse(open(filename).read())

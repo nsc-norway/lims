@@ -93,10 +93,9 @@ def main(process_id):
         print "No outputs at all found"
         pass
     if not docx_data:
-        # Don't do anything if no submission form...
-        #process.udf[ERROR_UDF] = "Sample submission form not found"
-        #process.put()
-        print "No document found"
+        program_status.message = "Project evaluation form not found."
+        program_status.status = "WARNING"
+        program_status.put()
         return
 
     try:
@@ -114,17 +113,17 @@ def main(process_id):
         fields = process_dog(tree)
         for uname, uvalue in fields.items():
             process.udf[uname] = uvalue
-    except:
-        print "Something went wrong in the main parsing code"
-        #sys.exit(0)
+    except Exception as e:
+        program_status.message = "Something went wrong in the main parsing code"
+        program_status.status = "WARNING"
+        program_status.put()
 
     try:
         process.udf['Project evaluation form imported'] = True
         process.put()
-    except requests.exceptions.HTTPError, e:
-        # Don't crash on errors
-        print "LIMS wouldn't let us fill in the form: " + str(e)
-        # Unfortunately, there's no way to report this...
+    except requests.exceptions.HTTPError as e:
+        program_status.message = "Error while updating fields: {0}.".format(e)
+        program_status.status = "WARNING"
 
 main(sys.argv[1])
 
