@@ -87,8 +87,11 @@ def place_standards_384(container, controls):
             row = alpha[(2*std_index)+1]
             col = 2 + repl*2
             placements.append((control.stateless, (container, "{0}:{1}".format(row, col))))
-        #elif control.name == "No Template Control":
-        #   placements.append((control, (container, "B:7")))
+        elif control.name.startswith("No Template Control "):
+            repl = control_replicate.get(control.name, 0)
+            control_replicate[control.name] = repl + 1
+            ntc_placements = ['B:8', 'D:8', 'F:8']
+            placements.append((control.stateless, (container, ntc_placements[repl])))
     return placements
 
 
