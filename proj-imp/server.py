@@ -78,12 +78,12 @@ def submit_project(project_type):
     project_title = request.form.get('project_title', '')
     username = request.form.get('username', '')
     password = request.form.get('password', '')
+    parameters = dict(request.form)
 
     if '' in [username, password, project_title]:
         return render_template("index.html", username=username, password=password,
                 project_title=project_title,
-                error_message=
-                        "Please specify username, password and project title",
+                error_message= "Please specify username, password and project title",
                 **project_data)
 
     try:
@@ -106,7 +106,7 @@ def submit_project(project_type):
         if not project_type_worker.active:
             try:
                 project_type_worker.start_job(username, password, project_title,
-                        file_name, file_data.getvalue())
+                        file_name, file_data.getvalue(), parameters)
             except LimsCredentialsError:
                 # Why abort() here, not render_template?: We can't put the
                 # file back into the response, so better encourage the user
@@ -236,8 +236,62 @@ class Task(object):
         self.job.queue.put("status")
 
 
+class Job(object):
+    def __init__(self, worker, username, project_title, sample_filename,
+            sample_file_data, parameters):
+        self.worker = worker
+        self.project_type = worker.project_type
+        self.username = username
+        self.project_title = project_title
+        self.sample_filename = sample_filename
+        self.sample_file_data = sample_file_data
+        self.parameters = parameters
+        self.samples = []
+        self.lims_project = None
+        self.lims_samples = []
+        self.queue = Mod_Queue.Queue()
+        self.tasks = [
+                CheckFields(self),
+                ReadSampleFile(self),
+                CheckExistingProjects(self),
+                CreateProject(self),
+                UploadFile(self),
+                CreateSamples(self),
+                SetIndexes(self),
+                AssignWorkflow(self),
+                RunPoolingStep(self)
+            ]
+
+
+    def run(self):
+        for task in self.tasks:
+            if not task():
+                break
+        self.queue.put("shutdown")
+
+    @property
+    def running(self):
+        return any(task.running for task in self.tasks)
+
+    @property
+    def error(self):
+        return any(task.error for task in self.tasks)
+
+    @property
+    def completed(self):
+        return all(task.completed for task in self.tasks)
+
+
+class CheckFields(Task):
+    """Check the data entered into the input boxes"""
+
+    NAME = "Check specified parameters"
+
+    def run(self):
+        pass
+    
 class ReadSampleFile(Task):
-    """Refuse to create project if one with the same name exists."""
+    """Read the sample file input."""
 
     NAME = "Read sample file"
 
@@ -380,50 +434,6 @@ class RunPoolingStep(Task):
             self.status = "Completing step (" + str(step.current_state) + ")"
 
 
-class Job(object):
-    def __init__(self, worker, username, project_title, sample_filename,
-            sample_file_data):
-        self.worker = worker
-        self.project_type = worker.project_type
-        self.username = username
-        self.project_title = project_title
-        self.sample_filename = sample_filename
-        self.sample_file_data = sample_file_data
-        self.samples = []
-        self.lims_project = None
-        self.lims_samples = []
-        self.queue = Mod_Queue.Queue()
-        self.tasks = [
-                ReadSampleFile(self),
-                CheckExistingProjects(self),
-                CreateProject(self),
-                UploadFile(self),
-                CreateSamples(self),
-                SetIndexes(self),
-                AssignWorkflow(self),
-                RunPoolingStep(self)
-            ]
-
-
-    def run(self):
-        for task in self.tasks:
-            if not task():
-                break
-        self.queue.put("shutdown")
-
-    @property
-    def running(self):
-        return any(task.running for task in self.tasks)
-
-    @property
-    def error(self):
-        return any(task.error for task in self.tasks)
-
-    @property
-    def completed(self):
-        return all(task.completed for task in self.tasks)
-
-
 class ProjectTypeWorker(object):
 
     all_reagent_types = None
@@ -435,7 +445,7 @@ class ProjectTypeWorker(object):
         self.active = False
 
     def start_job(self, username, password, project_title, sample_filename,
-            sample_file_data):
+            sample_file_data, parameters):
         """Start an import task with the specified parameters.
         
         This function is not thread safe! Syncrhonization must be handled
@@ -446,7 +456,7 @@ class ProjectTypeWorker(object):
         self.check_lims_credentials(username, password)
 
         self.job = Job(self, username, project_title, sample_filename,
-                sample_file_data)
+                sample_file_data, parameters)
 
         thread = threading.Thread(target=self.run_job)
         self.active = True
