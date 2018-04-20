@@ -39,22 +39,15 @@ def sort_key(elem):
     input, output = elem
     container, well = output.location
     row, col = well.split(":")
-    return (container, int(col), row)
-
-def get_or_default(udfname):
-    try:
-        return output.udf[udfname]
-    except KeyError:
-        val = process.udf[udfname]
-        output.udf[udfname] = val
-        return val
+    return (container.id, int(col), row)
 
 formatting = [
     ("Sample name",         16, None),
     ("Sample conc. [nM]",   10, '0.00'),
-    ("Conc. Input 2.2/3.2nM",10,'0.0'),
+    ("Conc. Input 2.0/3.0nM",10,'0.0'),
     ("Volum final [uL]",    10, '0'),
     ("Input [uL]",          10, '0.00'),
+    ("PhiX [uL]",           10, '0.00'),
     ("RSB [uL]",            10, '0.00'),
     ("Well strip",          9,  '0')
     ]
@@ -99,11 +92,17 @@ for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)
     ws.cell(row=row_index, column=START_COL+1).value = molarity
 
     # ---- Parameters (use specific for sample, or default) ----
-    conc_input = get_or_default('Conc. Input (nM)')
-    final_volume = get_or_default('Volume final (uL)')
+    try:
+        conc_input = output.udf['Conc. Input (nM) TruSeq DNA']
+        phix_input = output.udf['Volume PhiX (uL) TruSeq DNA']
+        final_volume = output.udf['Volume final (uL) TruSeq DNA']
+    except KeyError as e:
+        print ("Error: missing value for", e, "for sample", output.name)
+        sys.exit(1)
 
     ws.cell(row=row_index, column=START_COL+2).value = conc_input
     ws.cell(row=row_index, column=START_COL+3).value = final_volume
+    ws.cell(row=row_index, column=START_COL+5).value = phix_input
 
     # ---- Calculated quantities ----
     
@@ -115,12 +114,13 @@ for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)
         conc_input_coord, final_volume_coord, molarity_coord)
 
     # RSB microlitres
+    phix_volume_coord = ws.cell(row=row_index, column=START_COL+5).coordinate
     input_ul_coord = ws.cell(row=row_index, column=START_COL+4).coordinate
-    ws.cell(row=row_index, column=START_COL+5).value = "={0}-{1}".format(
-            final_volume_coord, input_ul_coord)
+    ws.cell(row=row_index, column=START_COL+6).value = "={0}-{1}-{2}".format(
+            final_volume_coord, input_ul_coord, phix_volume_coord)
 
     # Well strip
-    ws.cell(row=row_index, column=START_COL+6).value = int(output.location[1].partition(':')[0])
+    ws.cell(row=row_index, column=START_COL+7).value = int(output.location[1].partition(':')[0])
 
 
 lims.put_batch(o for i,o in inputs_outputs)
