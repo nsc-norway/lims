@@ -39,13 +39,21 @@ function receiveStatusEvent(event) {
     if (data.completed) {
         var completion_box = document.getElementById("completion_box");
         var project_title = document.getElementById("completion_project_title");
+        var lims_link = document.getElementById("completion_link");
         project_title.innerHTML = data.project_title;
+        lims_link.href = data.step_url;
         completion_box.style.display = "block"; // Un-hide
     }
     else if (data.error) {
         var error_box = document.getElementById("error_box");
         var project_title = document.getElementById("error_project_title");
         project_title.innerHTML = data.project_title;
+        if (data.step_url) {
+            var error_link = document.getElementById("error_link");
+            error_link.display = "block";
+            error_link.href = data.step_url;
+            error_link.innerHTML = data.step_url;
+        }
         error_box.style.display = "block";
     }
 }

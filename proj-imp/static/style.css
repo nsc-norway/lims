@@ -16,6 +16,10 @@ div#error_box {
     font-weight: bold;
 }
 
+a#error_link {
+    display: none;
+}
+
 div#completion_box {
 	width: 800px;
     display: none;

@@ -37,24 +37,56 @@
 
   <tr>
     <td>Box 1 LOT:</td>
-    <td><input type="text" name="box1lot" value="{{ box1lot }}"></td>
+    <td><input type="text" name="param_box1lot" value="{{ param_box1lot }}"></td>
   </tr>
 
   <tr>
     <td>Box 1 REF:</td>
-    <td><input type="text" name="box1ref" value="{{ box1 }}"></td>
+    <td><input type="text" name="param_box1ref" value="{{ param_box1ref }}" placeholder="RGTxxxxxxxx"></td>
   </tr>
 
   <tr>
-    <td>Box 1 Expiry date:</td>
-    <td><input type="text" name="box1exp" value="{{ box1exp }}"></td>
+    <td>Box 2 LOT:</td>
+    <td><input type="text" name="param_box2lot" value="{{ param_box2lot }}"></td>
+  </tr>
+
+  <tr>
+    <td>Box 2 REF:</td>
+    <td><input type="text" name="param_box2ref" value="{{ param_box2ref }}" placeholder="RGTxxxxxxxx"></td>
+  </tr>
+
+  <tr>
+    <td>Reagent cartridge ID:</td>
+    <td><input type="text" name="param_cart_id" value="{{ param_cart_id }}" placeholder="MSXXXXXXX-XXXVX"></td>
+  </tr>
+
+  <tr>
+    <td>MiSeq Instrument:</td>
+    <td><select name="param_miseq">
+            <option value="NULL">Select one...</option>
+            {% for miseq in ['Milo', 'Mina', 'Mike'] %}
+            <option value="{{ miseq }}"{{ ' selected="selected"' if param_miseq == miseq }}>{{ miseq }}</option>
+            {% endfor %}
+        </select>
+    </td>
+  </tr>
+
+  <tr>
+    <td>Loading Conc.:</td>
+    <td><input type="text" name="param_loading" value="{{ param_loading }}" size="6"> pM</td>
+  </tr>
+
+  <tr>
+    <td>PhiX:</td>
+    <td><input type="text" name="param_phix" value="{{ param_phix }}" size="6"> %</td>
   </tr>
 
 </table>
 <p>
-<input type="submit" value="Create project">
+<input type="submit" value="Create project &amp; register run">
 </p>
 </form>
 
 </body>
 </html>
+

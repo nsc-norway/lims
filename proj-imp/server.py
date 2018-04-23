@@ -78,7 +78,7 @@ def submit_project(project_type):
     project_title = request.form.get('project_title', '')
     username = request.form.get('username', '')
     password = request.form.get('password', '')
-    parameters = dict(request.form)
+    parameters = dict((k, v) for k, v in request.form.items() if k.startswith("param_"))
 
     if '' in [username, password, project_title]:
         return render_template("index.html", username=username, password=password,
@@ -96,7 +96,7 @@ def submit_project(project_type):
     except (KeyError, ValueError):
         return render_template("index.html", username=username, password=password, 
                 project_title=project_title,
-                error_message="Sample file upload failure.",
+                error_message="Sample file upload failed. Make sure sample file is specified.",
                 **project_data)
 
     with project_types_lock:
@@ -157,6 +157,7 @@ def status_repr(job):
         ]
     return json.dumps({
             "project_title": job.project_title,
+            "step_url": job.step_url,
             "task_statuses": task_statuses,
             "running": job.running,
             "error": job.error,
@@ -168,6 +169,7 @@ def status_stream(job):
     if job.completed:
         brief_status = json.dumps({
             "project_title": job.project_title,
+            "step_url": job.step_url,
             "task_statuses": [],
             "running": False,
             "error": job.error,
@@ -241,7 +243,8 @@ class Job(object):
             sample_file_data, parameters):
         self.worker = worker
         self.project_type = worker.project_type
-        self.username = username
+        self.project_title = project_title
+        self.user = lims.get_researchers(username=username)[0]
         self.project_title = project_title
         self.sample_filename = sample_filename
         self.sample_file_data = sample_file_data
@@ -249,6 +252,10 @@ class Job(object):
         self.samples = []
         self.lims_project = None
         self.lims_samples = []
+        self.pool = None
+        self.lots = None
+        self.sequencing_pool = None
+        self.step_url = None
         self.queue = Mod_Queue.Queue()
         self.tasks = [
                 CheckFields(self),
@@ -259,7 +266,10 @@ class Job(object):
                 CreateSamples(self),
                 SetIndexes(self),
                 AssignWorkflow(self),
-                RunPoolingStep(self)
+                RunPoolingStep(self),
+                FindOrCreateLots(self),
+                RunDenatureStep(self),
+                StartSequencingStep(self)
             ]
 
 
@@ -288,8 +298,40 @@ class CheckFields(Task):
     NAME = "Check specified parameters"
 
     def run(self):
-        pass
+        errors = []
+        for box in [1,2]:
+            if not self.job.parameters.get('param_box{0}lot'.format(box)):
+                errors.append('Box {0} LOT not specified.'.format(box))
+            v = self.job.parameters.get('param_box{0}ref'.format(box))
+            if not v:
+                errors.append('Box {0} REF not specified.'.format(box))
+            elif not v.startswith("RGT"):
+                errors.append('Box {0} REF should start with "RGT".'.format(box))
+        cart = self.job.parameters.get('param_cart_id')
+        if not cart:
+            errors.append("Reagent cartridge ID not specified.")
+        else:
+            self.job.parameters['param_cart_id'] = self.job.parameters['param_cart_id'].replace("+", "-")
+            if not re.match(r"MS\d+-\d\d\dV\d", self.job.parameters['param_cart_id']):
+                errors.append("Invalid reagent cartridge ID specified, format check failed.")
+        if not self.job.parameters.get('param_miseq', '').startswith("M"):
+            errors.append("MiSeq Instrument not specified.")
+        try:
+            self.job.parameters['param_loading'] = float(self.job.parameters.get('param_loading', '').replace(",", "."))
+        except ValueError as e:
+            errors.append("Loading concentration not specified or invalid: {0}.".format(e))
+        try:
+            phix = float(self.job.parameters.get('param_phix', '').replace(",", "."))
+            if phix < 0: errors.append("PhiX should be non-negative.")
+            if phix > 100: errors.append("PhiX should be less or equal to 100 %.")
+            self.job.parameters['param_phix'] = phix
+        except ValueError as e:
+            errors.append("PhiX concentration not specified or invalid: {0}.".format(e))
+
+        if errors:
+            raise ValueError(" ".join(errors))
     
+
 class ReadSampleFile(Task):
     """Read the sample file input."""
 
@@ -297,6 +339,26 @@ class ReadSampleFile(Task):
 
     def run(self):
         sample_table = self.job.sample_file_data.decode('utf-8').splitlines()
+
+        if any(l.startswith('[Data]') for l in sample_table) and\
+                any(l.startswith('[Header]') for l in sample_table):
+            self.parse_sample_sheet_file(sample_table)
+        else:
+            self.parse_2col_file(sample_table)
+
+        assert len(set(name for name, index in self.job.samples)) == len(self.job.samples), "Non-unique sample name"
+        assert len(set(index for name, index in self.job.samples)) == len(self.job.samples), "Non-unique indexes detected"
+        assert all(c.isalnum() or c == "-"
+                for name, index in self.job.samples
+                for c in name), "Invalid characters in name, A-Z, 0-9 and - allowed."
+        assert all(c in "ACGT-"
+                for name, index in self.job.samples
+                for c in index), "Invalid characters in index."
+
+
+    def parse_2col_file(self, sample_table):
+        """Parse a text file with sample name and index"""
+
         if len(sample_table[0].split(",")) > 1:
             sep = ","
         elif len(sample_table[0].split(";")) > 1:
@@ -319,14 +381,67 @@ class ReadSampleFile(Task):
                     for name, index1, index2 in usable_cells
                     ]
 
-        assert len(set(name for name, index in self.job.samples)) == len(self.job.samples), "Non-unique sample name"
-        assert len(set(index for name, index in self.job.samples)) == len(self.job.samples), "Non-unique indexes detected"
-        assert all(c.isalnum() or c == "-"
-                for name, index in self.job.samples
-                for c in name), "Invalid characters in name, A-Z, 0-9 and - allowed."
-        assert all(c in "ACGT-"
-                for name, index in self.job.samples
-                for c in index), "Invalid characters in index."
+
+    def parse_sample_sheet_file(self, sample_table):
+        """Parse an Illumina MiSeq sample sheet generated with IEM"""
+
+        sample_name_index = None
+        sample_index1_index = None
+        sample_index2_index = None
+        has_index2 = None
+        data_section = False
+        header_line = True
+        sep = None
+        self.job.samples = []
+        for i, line in enumerate(sample_table):
+            if data_section:
+                if header_line:
+                    if line.count(",") > 0:
+                        sep = ","
+                    elif line.count(";") > 0:
+                        sep = ";"
+                    else:
+                        raise ValueError("Sample sheet column header in [Data] section not parsable.")
+                    header = [h.lower() for h in line.split(sep)]
+                    try:
+                        sample_name_index = header.index("sample_name")
+                        sample_index1_index = header.index("index")
+                    except ValueError as e:
+                        raise ValueError("Missing required column " + str(e) + " in [Data] section.")
+                    try:
+                       sample_index2_index = header.index("index2")
+                    except ValueError:
+                        has_index2 = False
+                    header_line = False
+                else: # Not header line
+                    c = line.split(sep)
+                    if not any(c): # Blank line
+                        break
+                    try:
+                        if has_index2 is None:
+                            has_index2 = bool(c[sample_index2_index])
+                        if not c[sample_name_index]:
+                            raise ValueError("Empty sample name on line {0}.".format(i+1))
+                        if has_index2:
+                            self.job.samples.append((
+                                    c[sample_name_index],
+                                    c[sample_index1_index] + "-" + c[sample_index2_index]
+                                    ))
+                        else:
+                            self.job.samples.append((
+                                    c[sample_name_index],
+                                    c[sample_index1_index]
+                                    ))
+                    except IndexError:
+                        raise ValueError("Not enough columns on line {0}.".format(i+1))
+            else: # Not data section
+                if line.startswith('[Data]'):
+                    data_section = True
+
+        if not data_section:
+            raise ValueError("Sample sheet is missing the [Data] section.")
+        if not self.job.samples:
+            raise ValueError("No samples found in sample sheet.")
 
 
 class CheckExistingProjects(Task):
@@ -344,10 +459,9 @@ class CreateProject(Task):
     NAME = "Create project"
 
     def run(self):
-        user = lims.get_researchers(username=self.job.username)[0]
         self.job.lims_project = lims.create_project(
                 name=self.job.project_title,
-                researcher=user,
+                researcher=self.job.user,
                 open_date=datetime.date.today(),
                 udf=self.job.project_type['project_fields']
                 )
@@ -360,7 +474,6 @@ class UploadFile(Task):
         gls = lims.glsstorage(self.job.lims_project, self.job.sample_filename)
         f_obj = gls.post()
         f_obj.upload(self.job.sample_file_data)
-
 
 class CreateSamples(Task):
     NAME = "Create samples"
@@ -394,7 +507,6 @@ class SetIndexes(Task):
             artifact.reagent_labels.add(rgt)
         lims.put_batch(artifacts)
 
-
 class AssignWorkflow(Task):
     NAME = "Assign to workflow"
 
@@ -406,7 +518,6 @@ class AssignWorkflow(Task):
                 self.job.project_type['workflow']))
         self.job.lims_workflow = workflows[0]
         lims.route_artifacts(artifacts, workflow_uri=self.job.lims_workflow.uri)
-
 
 class RunPoolingStep(Task):
     NAME = "Run pooling step"
@@ -423,16 +534,130 @@ class RunPoolingStep(Task):
                 queue.get(force=True)
         self.status = "Starting step..."
         step = lims.create_step(stepconf, my_artifacts, container_type="Tube")
-        self.status = "Running step"
+        self.job.step_url = config.BASEURI.rstrip("/") +\
+                "/clarity/work-details/" +\
+                step.id.partition('-')[2]
+        self.status = "Running step..."
         poolable = step.pools.available_inputs
-        step.pools.create_pool( self.job.project_type['pool_name'], poolable)
+        step.pools.create_pool(self.job.project_type['pool_name'], poolable)
+        process = Process(lims, id=step.id)
+        process.technician = self.job.user
+        process.put()
         while step.current_state.upper() != "COMPLETED":
             if step.current_state == "Assign Next Steps":
                 lims.set_default_next_step(step)
             step.advance()
             step.get(force=True)
             self.status = "Completing step (" + str(step.current_state) + ")"
+        self.job.pool = next(o['uri'] for i, o in process.input_output_maps if o['output-type'] == 'Analyte')
 
+class FindOrCreateLots(Task):
+    NAME = "Find or create reagent lots"
+    
+    def run(self):
+        self.job.lots = []
+        expiry_date = (datetime.date.today() + datetime.timedelta(days=7)).isoformat()
+        for i, box in enumerate([1,2]):
+            self.status = "Searching for reagent lot {0}...".format(box)
+            kitname = self.job.project_type['box{0}_kit_name'.format(box)]
+            lotnumber = self.job.parameters['param_box{0}lot'.format(box)]
+            ref = self.job.parameters['param_box{0}ref'.format(box)]
+            lots = lims.get_reagent_lots(kitname=kitname, number=lotnumber)
+            for lot in lots:
+                if lot.name.startswith(ref):
+                    break
+            else: # No lot found
+                self.status = "Creating lot {0}...".format(box)
+                try:
+                    kit = next(iter(lims.get_reagent_kits(name=kitname)))
+                except StopIteration:
+                    raise RuntimeError("The specified kit type {0} does not exits.".format(kitname))
+                lot = lims.create_lot(kit, ref, lotnumber, expiry_date, status='ACTIVE')
+            self.job.lots.append(lot)
+
+class RunDenatureStep(Task):
+    NAME = "Run denature step"
+
+    def run(self):
+        # First, get the pooling step ID and the queue
+        stepconf = self.job.lims_workflow.protocols[1].steps[0]
+        self.status = "Waiting for pool to appear in queue..."
+        queue = stepconf.queue()
+        for attempt in range(10):
+            if any(a.id == self.job.pool.id for a in queue.artifacts):
+                break
+            time.sleep(3)
+            queue.get(force=True)
+        self.status = "Running step and setting parameters..."
+        step = lims.create_step(stepconf, [self.job.pool], container_type="MiSeq Reagent Cartridge")
+        self.job.step_url = config.BASEURI.rstrip("/") +\
+                "/clarity/work-details/" +\
+                step.id.partition('-')[2]
+        step.reagentlots.set_reagent_lots(self.job.lots)
+        container = next(iter(step.placements.selected_containers))
+        container.name = self.job.parameters['param_cart_id']
+        container.put()
+        placement_list = step.placements.get_placement_list()
+        placement_list[0][1] = (container, 'A:1')
+        step.placements.set_placement_list(placement_list)
+        step.placements.post()
+        self.job.sequencing_pool = placement_list[0][0]
+        self.job.sequencing_pool.udf['Loading Conc. (pM)'] = self.job.parameters['param_loading']
+        self.job.sequencing_pool.udf['PhiX %'] = self.job.parameters['param_phix']
+        self.job.sequencing_pool.put()
+        process = Process(lims, id=step.id)
+        process.udf['MiSeq instrument'] = self.job.parameters['param_miseq']
+        process.udf['Experiment Name'] = self.job.project_title
+        process.technician = self.job.user
+        process.put()
+        have_run_program = False
+        timeout = 60
+        while step.current_state.upper() != "COMPLETED":
+            if timeout == 0:
+                raise RuntimeError("Timeout while advancing step.")
+            if step.program_status:
+                step.program_status.get(force=True)
+                if step.program_status.status in ["RUNNING", "QUEUED"]:
+                    time.sleep(2)
+                    timeout -= 1
+                    continue
+                elif step.program_status.status != "OK":
+                    raise RuntimeError("Script failed: {0}".format(step.program_status.message))
+            if step.current_state.upper() == "RECORD DETAILS" and not have_run_program:
+                self.status = "Generating sample sheet..."
+                prog = next(prog for prog in step.available_programs if prog.name == "Generate SampleSheet CSV")
+                prog.trigger()
+                have_run_program = True
+                self.status = "Generating sample sheet..."
+                continue
+            if step.current_state == "Assign Next Steps":
+                lims.set_default_next_step(step)
+            step.advance()
+            time.sleep(1)
+            step.get(force=True)
+            self.status = "Completing step (" + str(step.current_state) + ")"
+
+class StartSequencingStep(Task):
+    NAME = "Start sequencing step"
+
+    def run(self):
+        # First, get the pooling step ID and the queue
+        stepconf = self.job.lims_workflow.protocols[1].steps[1]
+        self.status = "Waiting for samples to appear in queue..."
+        for attempt in range(10):
+            queue = stepconf.queue()
+            if any(a.id == self.job.sequencing_pool.id for a in queue.artifacts):
+                break
+            time.sleep(3)
+            queue.get(force=True)
+        self.status = "Starting step..."
+        step = lims.create_step(stepconf, [self.job.sequencing_pool])
+        process = Process(lims, id=step.id)
+        process.technician = self.job.user
+        process.put()
+        self.job.step_url = config.BASEURI.rstrip("/") +\
+                "/clarity/work-details/" +\
+                process.id.partition('-')[2]
 
 class ProjectTypeWorker(object):
 

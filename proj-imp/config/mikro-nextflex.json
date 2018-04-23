@@ -16,6 +16,8 @@
   "sample_fields": {
   },
   "reagent_category": ["BioO NextFlex 96 Indexes", "BioO NEXTflex"],
+  "box1_kit_name": "MIK_MiSeq Reagent Kit 1/2",
+  "box2_kit_name": "MIK_MiSeq Reagent Kit 2/2",
   "workflow": "MIK MiSeq 1.0",
   "pool_name": "MIK_Pool"
 }
