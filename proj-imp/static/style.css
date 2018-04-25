@@ -58,4 +58,8 @@ div.completed {
 	background-repeat: no-repeat;
 }
 
+p.small {
+	font-size: 0.8em;
+	color: #222;
+}
 

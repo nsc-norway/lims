@@ -293,7 +293,7 @@ class Job(object):
 
 
 class CheckFields(Task):
-    """Check the data entered into the input boxes"""
+    """Check the data entered into the input boxes, and correct/convert some fields in place."""
 
     NAME = "Check specified parameters"
 
