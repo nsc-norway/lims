@@ -20,18 +20,17 @@ def main(process_id):
         sys.exit(1)
 
     for fc in flowcells:
-        if re.match(r"MS.*-\d+v\d$", fc.name):
-            print 'Reagent cartridge ID corrected: changed to capital "V".'
-            fc.name = fc.name[:-2] + "V" + fc.name[-1:]
-            fc.put()
-        if fc.name.startswith("MS") and fc.name.endswith("-50V2"):
-            fc.name = fc.name[:-len("-50V2")] + "-050V2"
-            print 'Reagent cartridge ID corrected: Should be 050V2 for 50 bp kit".'
-            fc.put()
-        if fc.name.startswith("RGT"):
+        fixed_fcid = fc.name.upper().replace("+", "-")
+        if fixed_fcid.startswith("MS") and fixed_fcid.endswith("-50V2"):
+            fixed_fcid = fixed_fcid[:-len("-50V2")] + "-050V2"
+        if fixed_fcid.startswith("RGT"):
             print 'RGT number "' + fc.name + '" shoud not be used as container ID. For MiSeq it should \
                     be MSxxxxx-nnnVn, for HiSeq it is printed on the flow cell package.'
             sys.exit(1)
+        if fixed_fcid != fc.name:
+            print "Flow cell ID updated to fix user error."
+            fc.name = fixed_fcid
+            fc.put()
 
     all_known = lims.get_containers(name=(container.name for container in flowcells))
     if len(all_known) > len(flowcells):
