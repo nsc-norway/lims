@@ -24,11 +24,15 @@ def main(process_id):
             fixed_fcid = fixed_fcid[:-len("-50V2")] + "-050V2"
         if fixed_fcid.startswith("MS"):
             if not re.match(r"MS\d{7}-\d\d\dV\d", fixed_fcid):
-                print 'MiSeq reagent cartridge ID has the wrong format.'
+                print 'MiSeq reagent cartridge ID {0} has the wrong format. Length {1}, expected {2}'.format(
+                        fixed_fcid, len(fixed_fcid), 15
+                        )
                 sys.exit(1)
         elif fixed_fcid.startswith("NS"):
             if not re.match(r"NS\d{7}-REAGT", fixed_fcid):
-                print ""
+                print 'NextSeq reagent cartridge ID {0} has the wrong format. Length {1}, expected {2}'.format(
+                        fixed_fcid, len(fixed_fcid), 15
+                        )
                 sys.exit(1)
         elif fixed_fcid.startswith("H"):
             if len(fixed_fcid) != 9:
