@@ -15,7 +15,7 @@
   },
   "sample_fields": {
   },
-  "reagent_category": ["BioO NextFlex 96 Indexes", "BioO NEXTflex"],
+  "reagent_category": ["BioO NextFlex 96 Indexes", "BioO NEXTflex", "Nextera XT Adapters (N7-S5)"],
   "box1_kit_name": "MIK_MiSeq Reagent Kit 1/2",
   "box2_kit_name": "MIK_MiSeq Reagent Kit 2/2",
   "workflow": "MIK MiSeq 1.0",
