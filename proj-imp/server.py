@@ -299,6 +299,10 @@ class CheckFields(Task):
 
     def run(self):
         errors = []
+        if not re.match(r"[A-Za-z]+-[A-Za-z0-9]+-\d\d\d\d-\d\d-\d\d$", self.job.project_title):
+            errors.append("Project name format error -- See exmaple name -- Only A-Z " +
+                            "and numbers supported in middle part.")
+
         for box in [1,2]:
             if not self.job.parameters.get('param_box{0}lot'.format(box)):
                 errors.append('Box {0} LOT not specified.'.format(box))
