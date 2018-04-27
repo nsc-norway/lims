@@ -19,6 +19,8 @@
   "reagent_category": ["Custom indexes 3 (16S)"],
   "box1_kit_name": "TI_MiSeq Reagent Kit 1/2",
   "box2_kit_name": "TI_MiSeq Reagent Kit 2/2",
+  "read1_cycles": 151,
+  "read2_cycles": 151,
   "workflow": "TI MiSeq 1.0",
   "pool_name": "TI_pool"
 }

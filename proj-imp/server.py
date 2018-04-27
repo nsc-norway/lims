@@ -544,15 +544,15 @@ class RunPoolingStep(Task):
         self.status = "Running step..."
         poolable = step.pools.available_inputs
         step.pools.create_pool(self.job.project_type['pool_name'], poolable)
-        process = Process(lims, id=step.id)
-        process.technician = self.job.user
-        process.put()
         while step.current_state.upper() != "COMPLETED":
             if step.current_state == "Assign Next Steps":
                 lims.set_default_next_step(step)
             step.advance()
             step.get(force=True)
             self.status = "Completing step (" + str(step.current_state) + ")"
+        process = Process(lims, id=step.id)
+        process.technician = self.job.user
+        process.put()
         self.job.pool = next(o['uri'] for i, o in process.input_output_maps if o['output-type'] == 'Analyte')
 
 class FindOrCreateLots(Task):
@@ -609,11 +609,6 @@ class RunDenatureStep(Task):
         self.job.sequencing_pool.udf['Loading Conc. (pM)'] = self.job.parameters['param_loading']
         self.job.sequencing_pool.udf['PhiX %'] = self.job.parameters['param_phix']
         self.job.sequencing_pool.put()
-        process = Process(lims, id=step.id)
-        process.udf['MiSeq instrument'] = self.job.parameters['param_miseq']
-        process.udf['Experiment Name'] = self.job.project_title
-        process.technician = self.job.user
-        process.put()
         have_run_program = False
         timeout = 60
         while step.current_state.upper() != "COMPLETED":
@@ -629,6 +624,13 @@ class RunDenatureStep(Task):
                     raise RuntimeError("Script failed: {0}".format(step.program_status.message))
             if step.current_state.upper() == "RECORD DETAILS" and not have_run_program:
                 self.status = "Generating sample sheet..."
+                process = Process(lims, id=step.id)
+                process.udf['MiSeq instrument'] = self.job.parameters['param_miseq']
+                process.udf['Experiment Name'] = self.job.project_title
+                process.udf['Read 1 Cycles'] = self.job.project_type['read1_cycles']
+                process.udf['Read 2 Cycles'] = self.job.project_type.get('read2_cycles', '')
+                process.technician = self.job.user
+                process.put()
                 prog = next(prog for prog in step.available_programs if prog.name == "Generate SampleSheet CSV")
                 prog.trigger()
                 have_run_program = True
@@ -636,7 +638,11 @@ class RunDenatureStep(Task):
                 continue
             if step.current_state == "Assign Next Steps":
                 lims.set_default_next_step(step)
-            step.advance()
+            try:
+                step.advance()
+            except requests.exceptions.HTTPError: # When running scripts, data could be outdated
+                step.get(force=True)
+                step.advance()
             time.sleep(1)
             step.get(force=True)
             self.status = "Completing step (" + str(step.current_state) + ")"
