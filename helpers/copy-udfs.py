@@ -16,7 +16,7 @@ from genologics import config
 # python copy-udfs.py PROCESS-ID {COPY-UDFs}
 # 
 # PROCESS-ID: LIMS process ID
-# COPY-UDFS:  Any number of UDFs to copy from input to output analytes. Will skip if
+# COPY-UDFS:  Any number of UDFs to copy from inputs to corresponding outputs. Will skip if
 #             doesn't exist on source.
 
 def main(process_id, copy_udfs):
@@ -26,7 +26,7 @@ def main(process_id, copy_udfs):
     inputs = []
     outputs = []
     for i,o in process.input_output_maps:
-        if o and o['output-type'] == 'Analyte' and o['output-generation-type'] == 'PerInput':
+        if o and o['output-generation-type'] == 'PerInput':
             output = o['uri']
             input = i['uri']
             inputs.append(input)
