@@ -1,10 +1,18 @@
+- {hasUniqueId: true, lotcode: V1, name: 'Box 1: Nextera Rapid Capture/TruSight One/Cardio',
+  ref: '15065075', setActive: false}
 - {hasUniqueId: true, lotcode: TruSight One, name: 'Box 1: Nextera Rapid Capture/TruSight
     One/Cardio', ref: '15046892', setActive: false}
+- {hasUniqueId: true, lotcode: V1-96R, name: 'Box 1: Nextera Rapid Capture/TruSight
+    One/Cardio', ref: '15034784', setActive: true}
+- {hasUniqueId: true, lotcode: V1, name: 'Box 2: Nextera Rapid Capture/TruSightOne/Cardio',
+  ref: '15065076', setActive: false}
 - {hasUniqueId: true, lotcode: TruSight One, name: 'Box 2: Nextera Rapid Capture/TruSightOne/Cardio',
   ref: '15046897', setActive: false}
-- {hasUniqueId: true, lotcode: V4, name: HiSeq 2500 Cluster Kit 1/2, ref: '15049946',
-  setActive: true}
+- {hasUniqueId: true, lotcode: V1-96R, name: 'Box 2: Nextera Rapid Capture/TruSightOne/Cardio',
+  ref: '15034789', setActive: true}
 - {hasUniqueId: true, lotcode: SR-V4, name: HiSeq 2500 Cluster Kit 1/2, ref: '15054276',
+  setActive: true}
+- {hasUniqueId: true, lotcode: V4, name: HiSeq 2500 Cluster Kit 1/2, ref: '15049946',
   setActive: true}
 - {hasUniqueId: true, lotcode: RAPID-SR-V2, name: HiSeq 2500 Cluster Kit 1/2, ref: '15056111',
   setActive: true}
@@ -28,7 +36,7 @@
   setActive: true}
 - {hasUniqueId: true, lotcode: RAPID-50-V2, name: HiSeq 2500 SBS Reagents 2/2, ref: '15059901',
   setActive: true}
-- {hasUniqueId: true, lotcode: V1, name: HiSeq 2500 cBot 2 Manifold, ref: '15067566',
+- {hasUniqueId: true, lotcode: V1, name: HiSeq cBot 2 Manifold, ref: '15067566',
   setActive: true}
 - {hasUniqueId: true, lotcode: PE-V1, name: HiSeq 3000/4000 Cluster Kit 1/2, ref: '15067099',
   setActive: true}
@@ -63,24 +71,30 @@
   setActive: true}
 - {hasUniqueId: true, lotcode: 300-V2, name: HiSeq X SBS Reagents 2/2, ref: '15057936',
   setActive: true}
+- {hasUniqueId: true, lotcode: V1, name: 'Indices: Nextera Rapid Capture/TruSight
+    One/Cardio', ref: '15065077', setActive: false}
+- {hasUniqueId: true, lotcode: V1-288R, name: 'Indices: Nextera Rapid Capture/TruSight
+    One/Cardio', ref: '15055366', setActive: true}
 - {hasUniqueId: true, lotcode: TruSight One, name: 'Indices: Nextera Rapid Capture/TruSight
     One/Cardio', ref: '15046902', setActive: false}
+- {hasUniqueId: true, lotcode: '', name: KAPA Library Quantification DNA Standard
+    0, ref: 07960417001, setActive: false}
 - {hasUniqueId: true, lotcode: '', name: KAPA Library Quantification DNA Standards,
   ref: 07960387001, setActive: false}
-- {hasUniqueId: true, lotcode: '', name: KAPA Library Quantification DNA Standard 0,
-  ref: 07960417001, setActive: false}
-- {hasUniqueId: true, lotcode: '', name: KAPA Library Quantification Kit with Universal Master Mix og primer premix,
-  ref: 07960441001, setActive: false}
+- {hasUniqueId: true, lotcode: '', name: KAPA Library Quantification Kit with Universal
+    Master Mix og primer premix, ref: 07960441001, setActive: false}
 - {hasUniqueId: true, lotcode: 300-V2, name: MiSeq Reagent Kit 1/2, ref: '15033624',
   setActive: true}
 - {hasUniqueId: true, lotcode: 500-V2, name: MiSeq Reagent Kit 1/2, ref: '15033625',
   setActive: true}
 - {hasUniqueId: true, lotcode: 600-V3, name: MiSeq Reagent Kit 1/2, ref: '15043895',
   setActive: true}
+- {hasUniqueId: true, lotcode: MICRO-V2, name: MiSeq Reagent Kit 2/2, ref: '15036715',
+  setActive: true}
 - {hasUniqueId: true, lotcode: V2, name: MiSeq Reagent Kit 2/2, ref: '15033626', setActive: true}
+- {hasUniqueId: true, lotcode: V3, name: MiSeq Reagent Kit 2/2, ref: '15043894', setActive: true}
 - {hasUniqueId: true, lotcode: NANO-V2, name: MiSeq Reagent Kit 2/2, ref: '15036714',
   setActive: true}
-- {hasUniqueId: true, lotcode: V3, name: MiSeq Reagent Kit 2/2, ref: '15043894', setActive: true}
 - {hasUniqueId: false, lotcode: BC-V2, name: NextSeq 500 BC, ref: '15057941', setActive: true}
 - {hasUniqueId: true, lotcode: MO-V2, name: NextSeq 500 FC, ref: '15065974', setActive: true}
 - {hasUniqueId: true, lotcode: HO-V2, name: NextSeq 500 FC, ref: '15065973', setActive: true}
@@ -88,12 +102,16 @@
   setActive: true}
 - {hasUniqueId: false, lotcode: RC-MO-300-V2, name: NextSeq 500 RC, ref: '15057939',
   setActive: true}
-- {hasUniqueId: false, lotcode: RC-HO-300-V2, name: NextSeq 500 RC, ref: '15057929',
-  setActive: true}
 - {hasUniqueId: false, lotcode: RC-HO-150-V2, name: NextSeq 500 RC, ref: '15057931',
+  setActive: true}
+- {hasUniqueId: false, lotcode: RC-HO-300-V2, name: NextSeq 500 RC, ref: '15057929',
   setActive: true}
 - {hasUniqueId: false, lotcode: RC-MO-150-V2, name: NextSeq 500 RC, ref: '15057940',
   setActive: true}
 - {hasUniqueId: true, lotcode: V2, name: NextSeq Accessory Box, ref: '15058251', setActive: true}
 - {hasUniqueId: true, lotcode: TruSight One, name: 'Oligos: Nextera Rapid Capture/TruSight
     One/Cardio', ref: '15047151', setActive: false}
+- {hasUniqueId: true, lotcode: V1-864R, name: 'Oligos: Nextera Rapid Capture/TruSight
+    One/TruSight One Expanded/Cardio', ref: '15042393', setActive: true}
+- {hasUniqueId: true, lotcode: V1, name: 'Oligos: Nextera Rapid Capture/TruSight One/TruSight
+    One Expanded/Cardio', ref: '15065078', setActive: false}
