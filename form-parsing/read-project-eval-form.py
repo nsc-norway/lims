@@ -79,6 +79,10 @@ def process_dog(tree):
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
+    if not process.udf.get('Sample submission form imported'):
+        # If submission form can't be imported, there will be a lot of required fields 
+        # with missing values, so we skip this one too
+        return
     docx_data = None
     try:
         docx_file_output = next(
@@ -114,7 +118,7 @@ def main(process_id):
         for uname, uvalue in fields.items():
             process.udf[uname] = uvalue
     except Exception as e:
-        program_status.message = "Something went wrong in the main parsing code"
+        program_status.message = "Something went wrong in the main parsing code: {0}".format(e)
         program_status.status = "WARNING"
         program_status.put()
 

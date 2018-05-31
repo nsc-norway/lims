@@ -409,10 +409,7 @@ def parse(docx_data):
         tree = XML(xml_content)
         document.close()
     except:
-        print "Could not read sample submission form."
-        print ""
-        print "Please convert it to docx format."
-        sys.exit(1)
+        raise RuntimeError("Could not read sample submission form. Please convert it to docx format.")
 
     try:
         fields = get_values_from_doc(tree)
@@ -420,9 +417,7 @@ def parse(docx_data):
         add_defaults(fields)
         return fields
     except Exception, e:
-        print "Something went wrong in the main parsing code"
-        print e
-        sys.exit(0)
+        raise RuntimeError("Something went wrong in the main parsing code", e)
 
 
 def main(process_id):
@@ -441,9 +436,8 @@ def main(process_id):
             if docx_file.original_location.endswith(".docx"):
                 docx_data = docx_file.download()
             else:
-                program_status.message = "Submission form has incorrect file extension, should be docx."
-                program_status.status = "WARNING"
-                program_status.put()
+                print "Error: Submission form has incorrect file extension, should be docx."
+                return 1
     except StopIteration:
         pass
     if not docx_data:
@@ -451,9 +445,13 @@ def main(process_id):
         program_status.message = "Sample submission form not found, continuing."
         program_status.status = "WARNING"
         program_status.put()
-        return
+        return 0
 
-    fields = parse(docx_data)
+    try:
+        fields = parse(docx_data)
+    except RuntimeError as e:
+        print e
+        return 1
     for uname, uvalue in fields:
         process.udf[uname] = uvalue
 
@@ -462,8 +460,9 @@ def main(process_id):
         process.put()
         print "Submission form imported successfully."
     except requests.exceptions.HTTPError as e:
-        program_status.message = "Error while updating fields: {0}.".format(e)
-        program_status.status = "WARNING"
+        print "Error while updating fields: {0}.".format(e)
+        return 1
+    return 0
 
 def test(filename):
     fields = parse(open(filename).read())
@@ -474,5 +473,5 @@ def test(filename):
 if sys.argv[1] == "test":
     test(sys.argv[2])
 else:
-    main(sys.argv[1])
+    sys.exit(main(sys.argv[1]))
 
