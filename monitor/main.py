@@ -297,7 +297,7 @@ def read_sequencing(server, process, machines):
                         int(cycles_re.group(1)), int(cycles_re.group(2))
                         )
             elif instrument == "MiSeq" and cycles_re.group(1) == "0":
-                status = "Cycle <15 of %s" % (cycles_re.group(2))
+                status = "Cycle <26 of %s" % (cycles_re.group(2))
 
             if instrument == "HiSeq 2500" and other_flowcell_sequencing_info: # Update for dual
                 other_flowcell_sequencing_info.eta = eta
