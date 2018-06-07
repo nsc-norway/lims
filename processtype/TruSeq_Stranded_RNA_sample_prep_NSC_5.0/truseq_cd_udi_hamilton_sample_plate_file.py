@@ -1,1 +1,1 @@
-../../sample-prep/nsc_hamilton_sample_plate_file.py
+../../sample-prep/truseq_cd_udi_hamilton_sample_plate_file.py
