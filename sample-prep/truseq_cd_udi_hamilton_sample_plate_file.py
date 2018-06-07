@@ -44,7 +44,7 @@ def main(process_id, file_id):
                         except:
                             print("Invalid index information for", output.name, " (unable to parse '" + index_name + "').")
                             sys.exit(1)
-                    sample_id = output.samples[0].project.name + "_" + output.name
+                    sample_id = output.samples[0].project.name + "." + output.name
                     f.write("{0}{1:02}\t{2}\t{3}\t{4}\r\n".format(
                         row, col, sample_id, i7, i5
                         ))
