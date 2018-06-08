@@ -8,8 +8,7 @@ date_str = str(datetime.date.today() - datetime.timedelta(days=-1))
 timestamp_str = date_str + "T00:00:00Z"
 nels_projects = []
 
-for pe in lims.get_processes(type="Project Evaluation Step", last_modified=timestamp_str):
-    project = pe.all_inputs()[0].samples[0].project
+for project in lims.get_projects(last_modified=timestamp_str):
     if project.udf.get('Delivery method') == "NeLS project":
         nels_projects.append((project.name, project.udf.get('NeLS project identifier', '--not provided--')))
 
