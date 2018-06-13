@@ -293,6 +293,7 @@ def main():
             if process.udf.get('Finish Date'):
                 completed_runs.add(run_id)
                 del lims_runs_id_cycle[run_id]
+                set_final_fields(process, r, run_id)
             else:
                 miseq_or_nextseq = re.match(r"\d\d\d\d\d\d_(N|M)[A-Z0-9\-_]+", run_id)
                 if miseq_or_nextseq:
@@ -394,9 +395,14 @@ def set_initial_fields(process, run_dir, run_id):
             process.udf['Run Mode'] = "High Output"
         elif rp_run_mode == "RapidRun":
             process.udf['Run Mode'] = "Rapid"
+    process.udf['Run started'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     process.put()
 
 
+def set_final_fields(process, run_dir, run_id):
+    if process.udf.get('Run finished') is None:
+        process.udf['Run finished'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        process.put()
 
 if __name__ == "__main__":
     main()
