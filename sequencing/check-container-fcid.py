@@ -22,24 +22,24 @@ def main(process_id):
         fixed_fcid = fc.name.upper().replace("+", "-")
         if fixed_fcid.startswith("MS") and fixed_fcid.endswith("-50V2"):
             fixed_fcid = fixed_fcid[:-len("-50V2")] + "-050V2"
-        if fixed_fcid.startswith("MS"):
+        if "MiSeq" in process.type_name:
             if not re.match(r"MS\d{7}-\d\d\dV\d", fixed_fcid):
                 print 'MiSeq reagent cartridge ID {0} has the wrong format. Length {1}, expected {2}'.format(
                         fixed_fcid, len(fixed_fcid), 15
                         )
                 sys.exit(1)
-        elif fixed_fcid.startswith("NS"):
+        elif "NextSeq" in process.type_name:
             if not re.match(r"NS\d{7}-REAGT", fixed_fcid):
                 print 'NextSeq reagent cartridge ID {0} has the wrong format. Length {1}, expected {2}'.format(
                         fixed_fcid, len(fixed_fcid), 15
                         )
                 sys.exit(1)
-        elif fixed_fcid.startswith("H"):
+        elif "HiSeq" in process.type_name or "Illumina SBS" in process.type_name:
             if len(fixed_fcid) != 9:
                 print "HiSeq flow cell ID should be 9 characters long."
                 sys.exit(1)
         else:
-            print "The specified value {0} doesn't look like a valid reagent/flow cell ID.".format(fixed_fcid)
+            print "Unable to detect the sequencing instrument, can't check the flowcell ID. (Configuration error)"
             sys.exit(1)
 
         if fixed_fcid.startswith("RGT"):
