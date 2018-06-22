@@ -243,6 +243,8 @@ class Job(object):
             sample_file_data, parameters):
         self.worker = worker
         self.project_type = worker.project_type
+        self.read1_cycles = self.project_type['read1_cycles']
+        self.read2_cycles = self.project_type.get('read2_cycles')
         self.project_title = project_title
         self.user = lims.get_researchers(username=username)[0]
         self.project_title = project_title
@@ -394,9 +396,11 @@ class ReadSampleFile(Task):
         sample_index2_index = None
         has_index2 = None
         data_section = False
+        reads_section = False
         header_line = True
         sep = None
         self.job.samples = []
+        reads = []
         for i, line in enumerate(sample_table):
             if data_section:
                 if header_line:
@@ -409,9 +413,12 @@ class ReadSampleFile(Task):
                     header = [h.lower() for h in line.split(sep)]
                     try:
                         sample_name_index = header.index("sample_name")
+                    except ValueError as e:
+                        raise ValueError("Missing required column Sample_Name in [Data] section.")
+                    try:
                         sample_index1_index = header.index("index")
                     except ValueError as e:
-                        raise ValueError("Missing required column " + str(e) + " in [Data] section.")
+                        raise ValueError("Missing required column Index in [Data] section.")
                     try:
                        sample_index2_index = header.index("index2")
                     except ValueError:
@@ -438,15 +445,28 @@ class ReadSampleFile(Task):
                                     ))
                     except IndexError:
                         raise ValueError("Not enough columns on line {0}.".format(i+1))
-            else: # Not data section
+            elif reads_section:
+                if line and line[0] in "0123456789":
+                    reads.append(int(line.strip(",;")))
+                else:
+                    reads_section = False
+            if not data_section:
                 if line.startswith('[Data]'):
                     data_section = True
+                elif line.startswith('[Reads]'):
+                    reads_section = True
 
         if not data_section:
             raise ValueError("Sample sheet is missing the [Data] section.")
         if not self.job.samples:
             raise ValueError("No samples found in sample sheet.")
 
+        if reads:
+            self.job.read1_cycles = reads[0]
+            if len(reads) > 1:
+                self.job.read2_cycles = reads[1]
+            else:
+                self.job.read2_cycles = None
 
 class CheckExistingProjects(Task):
     """Refuse to create project if one with the same name exists."""
@@ -627,8 +647,8 @@ class RunDenatureStep(Task):
                 process = Process(lims, id=step.id)
                 process.udf['MiSeq instrument'] = self.job.parameters['param_miseq']
                 process.udf['Experiment Name'] = self.job.project_title
-                process.udf['Read 1 Cycles'] = self.job.project_type['read1_cycles']
-                process.udf['Read 2 Cycles'] = self.job.project_type.get('read2_cycles', '')
+                process.udf['Read 1 Cycles'] = self.job.read1_cycles
+                process.udf['Read 2 Cycles'] = self.job.read2_cycles
                 process.technician = self.job.user
                 process.put()
                 prog = next(prog for prog in step.available_programs if prog.name == "Generate SampleSheet CSV")
