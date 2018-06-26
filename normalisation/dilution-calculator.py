@@ -22,7 +22,7 @@ def get_row_key(row):
 def main(process_id, output_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
-    show_source = process.udf['Show source location']
+    show_source = process.udf.get('Show source location', False)
 
     out_buf = StringIO.StringIO()   
 
