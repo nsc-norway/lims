@@ -214,7 +214,10 @@ def estimated_time_completion(process, instrument, rapid, dual, done_cycles, tot
             else:
                 time_per_cycle = 1158
         elif instrument == "MiSeq":
-            time_per_cycle = 336
+            if rapid:
+                time_per_cycle = 275
+            else:
+                time_per_cycle = 336
         elif instrument == "NextSeq":
             time_per_cycle = 348
         else:
@@ -292,7 +295,7 @@ def read_sequencing(server, process, machines):
                 eta = estimated_time_completion(
                         process, 
                         instrument,
-                        "Rapid" in flowcell.type_name,
+                        "Rapid" in flowcell.type_name or process.get('Chemistry Version') == "2",
                         other_flowcell_sequencing_info, #dual flowcell
                         int(cycles_re.group(1)), int(cycles_re.group(2))
                         )
