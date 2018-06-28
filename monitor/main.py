@@ -295,7 +295,7 @@ def read_sequencing(server, process, machines):
                 eta = estimated_time_completion(
                         process, 
                         instrument,
-                        "Rapid" in flowcell.type_name or process.get('Chemistry Version') == "2",
+                        "Rapid" in flowcell.type_name or process.udf.get('Chemistry Version') == "2",
                         other_flowcell_sequencing_info, #dual flowcell
                         int(cycles_re.group(1)), int(cycles_re.group(2))
                         )
