@@ -79,11 +79,11 @@ def place_standards_384(container, controls):
     placements = []
     control_replicate = {}
     for control in sorted(controls, key=lambda control: control.id):
-        m = re.match(r"QSTD ([A-F])1", control.name)
+        m = re.match(r"Standard (\d)", control.name)
         if m:
             repl = control_replicate.get(control.name, 0)
             control_replicate[control.name] = repl + 1
-            std_index = alpha.index(m.group(1))
+            std_index = int(m.group(1))-1
             row = alpha[(2*std_index)+1]
             col = 2 + repl*2
             placements.append((control.stateless, (container, "{0}:{1}".format(row, col))))
@@ -99,11 +99,11 @@ def place_standards_96(container, controls):
     placements = []
     control_replicate = {}
     for control in sorted(controls, key=lambda control: control.id):
-        m = re.match(r"QSTD ([A-F])1", control.name)
+        m = re.match(r"Standard (\d)", control.name)
         repl = control_replicate.get(control.name, 0)
         control_replicate[control.name] = repl + 1
         if m:
-            placements.append((control.stateless, (container, "{0}:{1}".format(m.group(1), repl+10))))
+            placements.append((control.stateless, (container, "{0}:{1}".format(alpha[int(m.group(1))-1], repl+10))))
         elif control.name.startswith("No Template Control"):
             c_row = alpha[repl // 3 + 6]
             c_col = repl % 3 + 10
