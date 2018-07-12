@@ -45,13 +45,13 @@
 	<ul class="info fa-ul">
 		<li><i class="fa-li fa fa-group"></i>
 			<a href="{{ proc.projects[0].url }}">
-			{{ proc.projects[0].name }}</a> 
-			<a href="{{ proc.projects[0].eval_url }}">[E]</a>
+            {{ proc.projects[0].name }}</a>
+			<a href="{{ proc.projects[0].eval_url }}">[{{ proc.projects[0].info_tags }}]</a>
 		</li>
 		{% for proj in proc.projects[1:] %}
 		<li>
 			<a href="{{ proj.url }}">{{ proj.name }}</a> 
-			<a href="{{ proj.eval_url }}">[E]</a>
+            <a href="{{ proj.eval_url }}">[{{ proj.info_tags }}]</a>
 		</li>
 		{% endfor %}
 		{% if proc.runtype %}
@@ -103,12 +103,12 @@
 	<li><i class="fa-li fa fa-group"></i>
 			<a href="{{ item.projects[0].url }}">
 			{{ item.projects[0].name }}</a> 
-			<a href="{{ item.projects[0].eval_url }}">[E]</a>
+			<a href="{{ item.projects[0].eval_url }}">[{{ item.projects[0].info_tags }}]</a>
 	</li>
 	{% for proj in item.projects[1:] %}
 	<li>
 			<a href="{{ proj.url }}">{{ proj.name }}</a> 
-			<a href="{{ proj.eval_url }}">[E]</a>
+			<a href="{{ proj.eval_url }}">[{{ proj.info_tags }}]</a>
 	</li>
 	{% endfor %}
 	{% if item.current_job %}
@@ -156,12 +156,12 @@
 		<li><i class="fa-li fa fa-group"></i>
 			<a href="{{ item.projects[0].url }}">
 			{{ item.projects[0].name }}</a> 
-			<a href="{{ item.projects[0].eval_url }}">[E]</a>
+			<a href="{{ item.projects[0].eval_url }}">[{{ item.projects[0].info_tags }}]</a>
 		</li>
 		{% for proj in item.projects[1:] %}
 		<li>
 			<a href="{{ proj.url }}">{{ proj.name }}</a> 
-			<a href="{{ proj.eval_url }}">[E]</a>
+			<a href="{{ proj.eval_url }}">[{{ proj.info_tags }}]</a>
 		</li>
 		{% endfor %}
 		<li><i class="fa-li fa fa-folder-o"></i>

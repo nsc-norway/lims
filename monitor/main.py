@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from flask import Flask, render_template, url_for, request, Response, redirect, current_app
 from genologics.lims import *
 from genologics import config
@@ -108,10 +110,11 @@ def get_sequencing_process(server, process):
         return None
 
 class Project(object):
-    def __init__(self, url, name, eval_url):
+    def __init__(self, url, name, eval_url, info_tags):
         self.url = url
         self.eval_url = eval_url
         self.name = name
+        self.info_tags = info_tags
 
 
 class SequencingInfo(object):
@@ -186,7 +189,24 @@ def read_project(server, lims_project):
     ui_server = lims_project.lims.baseuri
     url = "{0}clarity/search?scope=Project&query={1}".format(ui_server, lims_project.id)
     eval_url = eval_url_base + "?project_name=" + lims_project.name + "&server=" + str(server.index)
-    return Project(url, lims_project.name, eval_url)
+    project_type_tag = {
+            'Sensitive': 'S',
+            'Non-Sensitive': 'N',
+            'Diagnostics': 'E',
+            'Immunology': 'E',
+            'Microbiology': 'E'
+            }
+    tag = project_type_tag.get(lims_project.udf.get('Project type'), '?!')
+    delivery_method_tag = {
+            'User HDD': 'S',
+            'New HDD': 'S',
+            'NeLS project': 'N',
+            'Norstore': 'N',
+            'Transfer to diagnostics': ''
+            }
+    if tag != "E":
+        tag += delivery_method_tag.get(lims_project.udf.get('Delivery method'), '?!')
+    return Project(url, lims_project.name, eval_url, tag)
 
 
 def get_projects(server, process):
