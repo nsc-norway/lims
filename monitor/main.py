@@ -200,6 +200,7 @@ def read_project(server, lims_project):
     delivery_method_tag = {
             'User HDD': 'S',
             'New HDD': 'S',
+            'TSD project': 'S',
             'NeLS project': 'N',
             'Norstore': 'N',
             'Transfer to diagnostics': ''
