@@ -648,7 +648,8 @@ class RunDenatureStep(Task):
                 process.udf['MiSeq instrument'] = self.job.parameters['param_miseq']
                 process.udf['Experiment Name'] = self.job.project_title
                 process.udf['Read 1 Cycles'] = self.job.read1_cycles
-                process.udf['Read 2 Cycles'] = self.job.read2_cycles
+                if self.job.read2_cycles is not None:
+                    process.udf['Read 2 Cycles'] = self.job.read2_cycles
                 process.technician = self.job.user
                 process.put()
                 prog = next(prog for prog in step.available_programs if prog.name == "Generate SampleSheet CSV")

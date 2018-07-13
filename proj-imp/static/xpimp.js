@@ -39,9 +39,9 @@ function receiveStatusEvent(event) {
     if (data.completed) {
         var completion_box = document.getElementById("completion_box");
         var project_title = document.getElementById("completion_project_title");
-        var lims_link = document.getElementById("completion_link");
+        //var lims_link = document.getElementById("completion_link");
         project_title.innerHTML = data.project_title;
-        lims_link.href = data.step_url;
+        //lims_link.href = data.step_url;
         completion_box.style.display = "block"; // Un-hide
     }
     else if (data.error) {
