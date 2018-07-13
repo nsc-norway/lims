@@ -29,11 +29,8 @@ h1.title {
 	margin-top: -5px;
 }
 
-
-div.section {
+div.content {
 	display: table;
-	margin-bottom: 1em;
-	margin-top: 1em;
 }
 
 h2.section-header {
