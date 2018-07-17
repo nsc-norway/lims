@@ -3,7 +3,7 @@
   "project_title_prefix": "MIK-xxxx",
   "project_fields": {
     "Project type": "Microbiology",
-    "Sample type": "Amplicon",
+    "Sample type": "gDNA",
     "Evaluation type": "None",
     "Library prep used": "Kapa HyperPlus Kit",
     "Sample prep requested": "None",
