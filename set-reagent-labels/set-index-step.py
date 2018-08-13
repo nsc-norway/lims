@@ -47,10 +47,12 @@ def main(process_id):
     if process.udf.get('Swap index1 and index2'):
         split_indexes = [reversed(i) for i in split_indexes]
 
+    allow_multi_match = process.udf.get('Allow multiple matching index categories', False)
+
     index_analyte = zip(["-".join(i) for i in split_indexes], analyte_names)
     try:
         if category == "Auto-detect":
-            category, result = indexes.get_reagents_auto_category(reagents, index_analyte)
+            category, result = indexes.get_reagents_auto_category(reagents, index_analyte, allow_multi_match=True)
         else:
             result = indexes.get_reagents_for_category(reagents, index_analyte, category)
     except indexes.ReagentError as e:

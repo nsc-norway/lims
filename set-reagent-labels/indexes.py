@@ -51,7 +51,7 @@ def get_all_reagent_types():
     return reagent_types
 
 
-def get_reagents_auto_category(reagents, index_analyte, sequence_match=False):
+def get_reagents_auto_category(reagents, index_analyte, sequence_match=False, allow_multi_match=False):
     category_indexes = {}
     candidate_categories = set()
     ana_no_match = [] # list of analytes with no indexes at all
@@ -86,7 +86,7 @@ def get_reagents_auto_category(reagents, index_analyte, sequence_match=False):
 
     if ana_no_match:
         raise ReagentError("Samples with no match at all: " + ", ".join(ana_no_match))
-    elif len(candidate_categories) == 1:
+    elif len(candidate_categories) == 1 or (allow_multi_match and candidate_categories):
         cat = next(iter(candidate_categories))
         return cat, category_indexes[cat]
     elif not candidate_categories:
