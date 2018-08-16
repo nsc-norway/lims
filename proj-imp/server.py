@@ -652,7 +652,7 @@ class RunDenatureStep(Task):
                     process.udf['Read 2 Cycles'] = self.job.read2_cycles
                 process.technician = self.job.user
                 process.put()
-                prog = next(prog for prog in step.available_programs if prog.name == "Generate SampleSheet CSV")
+                prog = next(prog for prog in step.available_programs if re.match(r"Generate.*SampleSheet", prog.name, re.IGNORECASE))
                 prog.trigger()
                 have_run_program = True
                 self.status = "Generating sample sheet..."
