@@ -15,42 +15,28 @@ def get_buffer_vol(normalised_concentration, input_volume, input_concentration):
 def get_row_key(row):
     container = row[2]
     well = row[3]
-    row, col = well.split(":")
+    row, col = well[0], well[1:]
     return (container, int(col), row)
     
 
 def main(process_id, output_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
-    show_source = process.udf.get('Show source location', False)
 
     out_buf = StringIO.StringIO()   
 
-    if show_source:
-        header = [
-                "Project",
-                "Sample",
-                "Source cont.",
-                "Well",
-                "Dest. cont.",
-                "Well",
-                "Input molarity",
-                "Input volume",
-                "Normalised molarity",
-                "Buffer volume"
-                ]
-    else:
-        header = [
-                "Project",
-                "Sample",
-                "Dest. cont.",
-                "Well",
-                "Input molarity",
-                "Input volume",
-                "Normalised molarity",
-                "Buffer volume"
-                ]
-
+    header = [
+            "Project",
+            "Sample",
+            "Source cont.",
+            "Source well",
+            "Dest. cont.",
+            "Dest. well",
+            "Input molarity",
+            "Input volume",
+            "Normalised molarity",
+            "Buffer volume"
+            ]
 
     inputs = []
     outputs = []
@@ -91,32 +77,20 @@ def main(process_id, output_file_id):
         input_mol_conc = input.udf['Molarity']
         input_mol_conc_str = "%4.2f" % (input.udf['Molarity'])
         buffer_vol = "%4.2f" % (get_buffer_vol(norm_conc, input_vol, input_mol_conc))
-        if show_source:
-            source_container = input.location[0].name
-            source_well = input.location[1]
-            rows.append([
-                project_name,
-                sample_name,
-                source_container,
-                source_well,
-                dest_container,
-                dest_well,
-                input_mol_conc_str,
-                input_vol,
-                norm_conc,
-                buffer_vol
-                ])
-        else:
-            rows.append([
-                project_name,
-                sample_name,
-                dest_container,
-                dest_well,
-                input_mol_conc_str,
-                input_vol,
-                norm_conc,
-                buffer_vol
-                ])
+        source_container = input.location[0].name
+        source_well = input.location[1]
+        rows.append([
+            project_name,
+            sample_name,
+            source_container,
+            source_well.replace(":", ""),
+            dest_container,
+            dest_well.replace(":", ""),
+            input_mol_conc_str,
+            input_vol,
+            norm_conc,
+            buffer_vol
+            ])
 
     lims.put_batch(update_outputs)
 
