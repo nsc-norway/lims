@@ -13,11 +13,17 @@ def get_buffer_vol(normalised_concentration, input_volume, input_concentration):
 
 
 def get_row_key(row):
-    container = row[2]
-    well = row[3]
-    row, col = well[0], well[1:]
+    container, well = row[0]
+    row, _, col = well.partition(':')
     return (container, int(col), row)
     
+def get_input_parent_location(artifact):
+    pp = artifact.parent_process
+    if pp:
+        ii = next(i['uri'] for i, o in pp.input_output_maps if o['limsid'] == artifact.id)
+    else:
+        ii = artifact
+    return ii.location
 
 def main(process_id, output_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
@@ -28,8 +34,7 @@ def main(process_id, output_file_id):
     header = [
             "Project",
             "Sample",
-            "Source cont.",
-            "Source well",
+            "Prep well",
             "Dest. cont.",
             "Dest. well",
             "Input molarity",
@@ -51,7 +56,7 @@ def main(process_id, output_file_id):
     lims.get_batch(input.samples[0] for input in inputs)
     update_outputs = []
     
-    rows = []
+    data = []
     for input, output in zip(inputs, outputs):
         project_name = input.samples[0].project.name.encode('utf-8')
         sample_name = input.name.encode('utf-8')
@@ -77,30 +82,30 @@ def main(process_id, output_file_id):
         input_mol_conc = input.udf['Molarity']
         input_mol_conc_str = "%4.2f" % (input.udf['Molarity'])
         buffer_vol = "%4.2f" % (get_buffer_vol(norm_conc, input_vol, input_mol_conc))
-        source_container = input.location[0].name
-        source_well = input.location[1]
-        rows.append([
+        prep_location = get_input_parent_location(input)
+        data.append((prep_location,
+                [
             project_name,
             sample_name,
-            source_container,
-            source_well.replace(":", ""),
+            prep_location[1].replace(":", ""),
             dest_container,
             dest_well.replace(":", ""),
             input_mol_conc_str,
             input_vol,
             norm_conc,
             buffer_vol
-            ])
+            ]))
 
-    lims.put_batch(update_outputs)
+    if update_outputs:
+        lims.put_batch(update_outputs)
 
-    rows_sorted = sorted(rows, key=get_row_key)
+    rows_sorted = sorted(data, key=get_row_key)
 
     output_file_name = output_file_id + "_normalisation.csv"
     with open(output_file_name, 'wb') as out_file:
         out = csv.writer(out_file)
         out.writerow(header)
-        out.writerows(rows_sorted)
+        out.writerows((out_ro for location, out_ro in rows_sorted))
 
 
 if __name__ == "__main__":
