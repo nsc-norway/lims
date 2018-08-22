@@ -23,7 +23,7 @@ def main(process_id):
         match_workflows = [] # Contains version, then workflow object
         for w in workflows:
             # This will do a GET for each workflow in the system. Performance is bad.
-            m = re.match(r"Tolkning av HTS-data diag (\d)\.(\d)", w.name, re.IGNORECASE)
+            m = re.match(r"processing of hts-data diag (\d)\.(\d)", w.name, re.IGNORECASE)
             if w.status == "ACTIVE" and m:
                 match_workflows.append((int(m.group(1)), int(m.group(2)), w))
         workflow = sorted(match_workflows)[-1]
