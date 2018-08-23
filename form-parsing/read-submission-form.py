@@ -25,9 +25,9 @@ PLACEHOLDER_STRING = "Click here to enter text."
 
 
 DNA_PREPS = {
+        "Nextera.*Flex": "Nextera Flex",
         ".*TruSeq.*adapter ligation": "TruSeq Nano",
         "TruSeq.*PCR-free prep": "TruSeq PCR-free",
-        "Tagmentation.*Nextera": "Nextera XT",
         "ThruPLEX": "ThruPLEX",
         ".* unsure, please advise": "User unsure"
         }
