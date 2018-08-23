@@ -101,11 +101,16 @@ def main(process_id, output_file_id):
 
     rows_sorted = sorted(data, key=get_row_key)
 
-    output_file_name = output_file_id + "_normalisation.csv"
-    with open(output_file_name, 'wb') as out_file:
-        out = csv.writer(out_file)
-        out.writerow(header)
-        out.writerows((out_ro for location, out_ro in rows_sorted))
+    outputstream = StringIO.StringIO() 
+    out = csv.writer(outputstream)
+    out.writerow(header)
+    out.writerows((out_ro for location, out_ro in rows_sorted))
+
+    output_file_name = "NormalizationSheet.csv"
+    outfile = Artifact(lims, id=output_file_id)
+    gs = lims.glsstorage(outfile, output_file_name)
+    file_obj = gs.post()
+    file_obj.upload(outputstream.getvalue())
 
 
 if __name__ == "__main__":
