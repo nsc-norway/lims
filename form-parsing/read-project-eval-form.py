@@ -79,6 +79,7 @@ def process_dog(tree):
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
+    program_status = Step(lims, id=process_id).program_status
     if not process.udf.get('Sample submission form imported'):
         # If submission form can't be imported, there will be a lot of required fields 
         # with missing values, so we skip this one too
