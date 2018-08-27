@@ -67,8 +67,8 @@ for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)
     well_row, well_col = output.location[1].split(":")
     well_index = (int(well_col) - 1) * 8 + "ABCDEFGH".index(well_row)
     ws.cell(row=row_index, column=next(col)).value = row_index-1-START_SKIP_ROWS
-    ws.cell(row=row_index, column=next(col)).value = 1 + (well_index + 8) % 32
-    ws.cell(row=row_index, column=next(col)).value = "Rack{0}".format(1 + (well_index + 8) // 32)
+    ws.cell(row=row_index, column=next(col)).value = 1 + well_index % 32
+    ws.cell(row=row_index, column=next(col)).value = "Rack{0}".format(1 + well_index // 32)
     ws.cell(row=row_index, column=next(col)).value = input.name
     ws.cell(row=row_index, column=next(col)).value = input.samples[0].udf.get('Archive position Diag', 'UKJENT')
     try:

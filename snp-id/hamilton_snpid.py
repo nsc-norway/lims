@@ -41,8 +41,8 @@ for row_index in range(96):
     if value:
         input, output = value
         ws.write(row_index+1, 0, input.name)
-        ws.write(row_index+1, 1, "Rack{}".format(1 + (row_index + 8) // 32))
-        ws.write(row_index+1, 2, 1 + (row_index + 8) % 32 )
+        ws.write(row_index+1, 1, "Rack{}".format(1 + row_index // 32))
+        ws.write(row_index+1, 2, 1 + row_index % 32 )
         try:
             conc = input.samples[0].udf['Sample conc. (ng/ul)']
         except KeyError:
