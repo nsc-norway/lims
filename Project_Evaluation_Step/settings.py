@@ -26,6 +26,7 @@ project_fields = [
         "Sequencing method",
         "Sample type",
 	"Sample buffer",
+        "Species",
 	"Method used to determine concentration",
 	"Method used to purify DNA/RNA",
         "Sequencing instrument requested",
