@@ -257,9 +257,9 @@ def get_portable_hard_drive(cell):
 def get_delivery_method(cell):
     # First checkbox is User HDD, second is New HDD
     selected = [is_checked(node) for node in cell.getiterator(CHECKBOX)]
-    if len(selected) == 4 and sum(1 for s in selected if s) == 1:
+    if (len(selected) in [4,5]) and sum(1 for s in selected if s) == 1: 
         try:
-            return ["Norstore", "NeLS project", "User HDD", "New HDD"][selected.index(True)]
+            return ["Norstore", "NeLS project", "User HDD", "New HDD", "TSD project"][selected.index(True)]
         except IndexError:
             return None
 
@@ -274,7 +274,7 @@ LABEL_UDF_PARSER = [
         ("For DNA samples", 'Sample prep requested', partial(single_choice_checkbox, DNA_PREPS)),
         ("For RNA samples", 'Sample prep requested', partial(single_choice_checkbox, RNA_PREPS)),
         ("Species:", 'Species', get_text_single),
-        ("Reference genome.*release version:", 'Reference genome', get_text_single),
+        ("Reference genome", 'Reference genome', get_text_single),
         ("Sequencing type", 'Sequencing method', partial(single_choice_checkbox, SEQUENCING_TYPES)),
         ("Desired insert size", 'Desired insert size', get_text_single),
         ("Sequencing Instrument requested", 'Sequencing instrument requested', 
