@@ -83,7 +83,11 @@ def main(process_id, output_file_id):
         input_mol_conc_str = "%4.2f" % (input.udf['Molarity'])
         buffer_vol = "%4.2f" % (get_buffer_vol(norm_conc, input_vol, input_mol_conc))
         prep_location = get_input_parent_location(input)
-        data.append((prep_location,
+        if prep_location[0].type.name == 'Tube':
+            sort_location = output.location
+        else:
+            sort_location = prep_location
+        data.append((sort_location,
                 [
             project_name,
             sample_name,
