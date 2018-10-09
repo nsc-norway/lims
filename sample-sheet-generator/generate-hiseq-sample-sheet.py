@@ -134,7 +134,7 @@ def generate_sample_sheet(process, i_os):
             [["[Reads]"]] + reads_section(reads_cycles) +\
             [["[Data]"]]
 
-    col_headers = [
+    data.append([
             "Lane",
             "Sample_ID",
             "Sample_Name",
@@ -142,7 +142,7 @@ def generate_sample_sheet(process, i_os):
             "Index2",
             "Sample_Project",
             "Description"
-        ]
+        ])
 
     # Use reverse complement only for PE runs
     reverse_complement_index2 = process.udf['Cluster Generation Workflow'].startswith("Paired")
