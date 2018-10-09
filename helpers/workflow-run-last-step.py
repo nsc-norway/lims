@@ -42,7 +42,6 @@ def main(workflow_pattern):
                     step.get(force=True)
                     if step.program_status:
                         step.program_status.get(force=True)
-            break
 
 if __name__ == "__main__":
     main(workflow_pattern=sys.argv[1])

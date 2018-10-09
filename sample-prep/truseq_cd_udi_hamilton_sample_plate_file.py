@@ -35,8 +35,8 @@ def main(process_id, file_id):
                     except:
                         try:
                             # Convert UDI plate to TruSeq HT plate
-                            match = re.match(r"UDI(\d{4}) .*", index_name)
-                            udi_nr = int(match.group(1))
+                            match = re.match(r"(24)?UDI(\d{4}) .*", index_name)
+                            udi_nr = int(match.group(2))
                             colnr = (udi_nr - 1) // 8
                             rownr = (udi_nr - 1) % 8
                             i7 = "D7{0:02}".format(colnr + 1)
