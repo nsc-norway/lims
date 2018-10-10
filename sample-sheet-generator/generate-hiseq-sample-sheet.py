@@ -153,6 +153,7 @@ def generate_sample_sheet(process, i_os):
                     process.udf['Cluster Generation Workflow'],
                     reads_cycles
                     ))
+        sys.exit(1)
 
     # Each i/o pair is a lane. Loop over lanes and add all samples in each
     for (i, o), sample_index_list in zip(sorted_i_os, sample_index_lists):
