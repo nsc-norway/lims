@@ -146,6 +146,13 @@ def generate_sample_sheet(process, i_os):
 
     # Use reverse complement only for PE runs
     reverse_complement_index2 = process.udf['Cluster Generation Workflow'].startswith("Paired")
+    if (len(reads_cycles) == 1 and reverse_complement_index2) or \
+       (len(reads_cycles) == 2 and not reverse_complement_index2):
+        print("Error: inconsistent values for Cluster Generation Workflow ({}), and "
+                "number of cycles in [Read1, Read2]: {}.".format(
+                    process.udf['Cluster Generation Workflow'],
+                    reads_cycles
+                    ))
 
     # Each i/o pair is a lane. Loop over lanes and add all samples in each
     for (i, o), sample_index_list in zip(sorted_i_os, sample_index_lists):
