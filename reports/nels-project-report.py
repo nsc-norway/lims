@@ -4,13 +4,16 @@ import datetime
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-date_str = str(datetime.date.today() - datetime.timedelta(days=-1))
+date_str = str(datetime.date.today() - datetime.timedelta(days=1))
 timestamp_str = date_str + "T00:00:00Z"
 nels_tsd_projects = []
 
 for project in lims.get_projects(last_modified=timestamp_str):
     if project.udf.get('Delivery method') == "NeLS project":
-        nels_tsd_projects.append((project.name, project.udf.get('NeLS project identifier', '--not provided--')))
+        project_id = project.udf.get('NeLS project identifier', '(none)')
+        if project_id.startswith('Click here'):
+            project_id = "(none)"
+        nels_tsd_projects.append((project.name, project_id))
     elif project.udf.get('Delivery method') == "TSD project":
         nels_tsd_projects.append((project.name, "TSD"))
 
