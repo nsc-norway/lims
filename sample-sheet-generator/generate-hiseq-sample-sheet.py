@@ -208,7 +208,7 @@ def get_samples_and_indexes(artifact):
 
 def reverse_complement(sequence):
     complement = {'A':'T', 'C':'G', 'G':'C', 'T':'A'}
-    return reversed(complement.get(x, x) for x in sequence)
+    return "".join(reversed([complement.get(x, x) for x in sequence]))
 
 
 if __name__ == "__main__":
