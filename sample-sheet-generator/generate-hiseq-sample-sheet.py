@@ -150,24 +150,25 @@ def generate_sample_sheet(process, i_os, use_sampleid=False):
         ])
 
     # Use reverse complement only for PE runs
-    reverse_complement_index2 = process.udf['Cluster Generation Workflow'].startswith("Paired")
-    if (len(reads_cycles) == 1 and reverse_complement_index2) or \
-       (len(reads_cycles) == 2 and not reverse_complement_index2):
-        print("Error: inconsistent values for Cluster Generation Workflow ({}), and "
-                "number of cycles in [Read1, Read2]: {}.".format(
-                    process.udf['Cluster Generation Workflow'],
-                    reads_cycles
-                    ))
-        sys.exit(1)
+    reverse_complement_index2 = len(reads_cycles) == 2
+    cgwf = process.udf.get('Cluster Generation Workflow')
+    if cgwf:
+        if cgwf.startswith("Paired") != reverse_complement_index2:
+            print("Error: inconsistent values for Cluster Generation Workflow ({}), and "
+                    "number of cycles in [Read1, Read2]: {}.".format(
+                        process.udf['Cluster Generation Workflow'],
+                        reads_cycles
+                        ))
+            sys.exit(1)
 
     if process.get('Truncate index sequence'):
-        max_length = process.get('Index 1 Read Cycles', 0)
+        max_length = 8 # process.get('Index 1 Read Cycles', 0)
     else:
         max_length = None
 
-    validate = process.get('Validate indexes')
-    dropi1 = process.get('No Index1 in sample sheet')
-    dropi2 = process.get('No Index2 in sample sheet')
+    validate = process.udf.get('Validate indexes')
+    dropi1 = process.udf.get('Drop index1 in sample sheet')
+    dropi2 = process.udf.get('Drop index2 in sample sheet')
 
     # Each i/o pair is a lane. Loop over lanes and add all samples in each
     for (i, o), sample_index_list in zip(sorted_i_os, sample_index_lists):
@@ -205,7 +206,7 @@ def generate_sample_sheet(process, i_os, use_sampleid=False):
                 for index in set(used_indexes):
                     non_unique.remove(index)
                 print("Indexes not unique in lane {}: {}. To ignore this, turn off Validate indexes.".format(
-                    well, ", ".join(non_unique))
+                    well, ", ".join("-".join(i for i in (i1, i2) if i) for i1,i2 in non_unique))
                     )
                 sys.exit(1)
 
