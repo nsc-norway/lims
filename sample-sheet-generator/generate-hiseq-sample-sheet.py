@@ -39,7 +39,7 @@ def get_all_reagent_types():
     return reagent_types
 
 
-def main(process_id, output_file_id):
+def main(use_sampleid, process_id, output_file_id):
     global reagent_type_uri
 
     process = Process(lims, id=process_id)
@@ -55,7 +55,7 @@ def main(process_id, output_file_id):
 
     reagent_type_uri = get_all_reagent_types()
 
-    data = generate_sample_sheet(process, i_os)
+    data = generate_sample_sheet(process, i_os, use_sampleid == "-i")
 
     # Upload sample sheet with name of flow cell ID
     csv_data = "\r\n".join(",".join(cel for cel in row) for row in data)
@@ -100,7 +100,7 @@ def reads_section(reads_cycles):
     return [[str(cycles)] for cycles in reads_cycles]
 
 
-def get_sample_index(index, reverse_complement_index2):
+def get_sample_index(index, reverse_complement_index2, max_length, dropi1, dropi2):
     if index is None:
         return "", ""
     else:
@@ -113,10 +113,15 @@ def get_sample_index(index, reverse_complement_index2):
                 index2 = parts[1]
         else:
             index2 = ""
+        if max_length:
+            index1 = index1[:max_length]
+            index2 = index2[:max_length]
+        if dropi1: index1 = ""
+        if dropi2: index2 = ""
         return index1, index2
 
 
-def generate_sample_sheet(process, i_os):
+def generate_sample_sheet(process, i_os, use_sampleid=False):
 
     # Sort by output well (lane)
     sorted_i_os = sorted(i_os, key=lambda i_o: (i_o[1].location[1], i_o[0].name))
@@ -155,20 +160,54 @@ def generate_sample_sheet(process, i_os):
                     ))
         sys.exit(1)
 
+    if process.get('Truncate index sequence'):
+        max_length = process.get('Index 1 Read Cycles', 0)
+    else:
+        max_length = None
+
+    validate = process.get('Validate indexes')
+    dropi1 = process.get('No Index1 in sample sheet')
+    dropi2 = process.get('No Index2 in sample sheet')
+
     # Each i/o pair is a lane. Loop over lanes and add all samples in each
     for (i, o), sample_index_list in zip(sorted_i_os, sample_index_lists):
+        used_indexes = []
+        well, well_, well_ = o.location[1].partition(':')
         for sample, index in sample_index_list:
-            index1, index2 = get_sample_index(index, reverse_complement_index2)
-            well, well_, well_ = o.location[1].partition(':')
-            data.append([
-                        well,
-                        sample.name,
-                        sample.name,
-                        index1,
-                        index2,
-                        sample.project.name,
-                        sample.id
-                    ])
+            index1, index2 = get_sample_index(index, reverse_complement_index2, max_length, dropi1, dropi2)
+            used_indexes.append((index1, index2))
+            if use_sampleid:
+                data.append([
+                            well,
+                            sample.id,
+                            sample.name,
+                            index1,
+                            index2,
+                            sample.project.name,
+                            ""
+                        ])
+            else:
+                data.append([
+                            well,
+                            sample.name,
+                            sample.name,
+                            index1,
+                            index2,
+                            sample.project.name,
+                            sample.id
+                        ])
+        if validate:
+            if len(set(len(index1)+len(index2) for index1,index2 in used_indexes)) > 1:
+                print("Validation error in lane {}: different index lengths".format(well))
+                sys.exit(1)
+            if len(set(used_indexes)) < len(used_indexes):
+                non_unique = list(used_indexes)
+                for index in set(used_indexes):
+                    non_unique.remove(index)
+                print("Indexes not unique in lane {}: {}. To ignore this, turn off Validate indexes.".format(
+                    well, ", ".join(non_unique))
+                    )
+                sys.exit(1)
 
     data.append([])
     return data
@@ -205,14 +244,19 @@ def get_samples_and_indexes(artifact):
         return sum((get_samples_and_indexes(i) for i in inputs), [])
 
 
-
 def reverse_complement(sequence):
     complement = {'A':'T', 'C':'G', 'G':'C', 'T':'A'}
     return "".join(reversed([complement.get(x, x) for x in sequence]))
 
 
+def hamming_distance(s1, s2):
+    return sum(c1 != c2 for c1, c2 in zip(s1,s2))
+
+
 if __name__ == "__main__":
-    # Arguments: PROCESSID OUTPUT_LIMSID
-    main(*sys.argv[1:3])
+    # Arguments: {-i|-n} PROCESSID OUTPUT_LIMSID
+    # Option -i: Use LIMSID as SampleID
+    #        -n: Use sample name as SampleID
+    main(*sys.argv[1:])
 
 
