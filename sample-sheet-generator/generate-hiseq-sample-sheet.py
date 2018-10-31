@@ -129,7 +129,7 @@ def generate_sample_sheet(process, i_os, use_sampleid=False):
     sample_index_lists = [get_samples_and_indexes(i) for i, o in sorted_i_os]
     lims.get_batch(sample
                 for sample_index_list in sample_index_lists
-                for sample, index in sample_index_list
+                for sample, artifact, index in sample_index_list
                 )
 
     reads_cycles = get_reads_cycles(process)
@@ -174,13 +174,13 @@ def generate_sample_sheet(process, i_os, use_sampleid=False):
     for (i, o), sample_index_list in zip(sorted_i_os, sample_index_lists):
         used_indexes = []
         well, well_, well_ = o.location[1].partition(':')
-        for sample, index in sample_index_list:
+        for sample, artifact, index in sample_index_list:
             index1, index2 = get_sample_index(index, reverse_complement_index2, max_length, dropi1, dropi2)
             used_indexes.append((index1, index2))
             if use_sampleid:
                 data.append([
                             well,
-                            sample.id,
+                            artifact.id,
                             sample.name,
                             index1,
                             index2,
@@ -195,7 +195,7 @@ def generate_sample_sheet(process, i_os, use_sampleid=False):
                             index1,
                             index2,
                             sample.project.name,
-                            sample.id
+                            artifact.id
                         ])
         if validate:
             if len(set(len(index1)+len(index2) for index1,index2 in used_indexes)) > 1:
@@ -222,7 +222,7 @@ def get_samples_and_indexes(artifact):
     At this point we rely on the LIMS to enforce that if there are multiple
     pooled samples, they must have unique (non-null) indexes."""
     if not artifact.reagent_labels:
-        return [(artifact.samples[0], None)]
+        return [(artifact.samples[0], artifact, None)]
     if len(artifact.reagent_labels) == 1:
         index_name = next(iter(artifact.reagent_labels))
         try:
@@ -235,7 +235,7 @@ def get_samples_and_indexes(artifact):
             except KeyError as e:
                 print("Index reagent name {0} is not available in the system.".format(e))
                 sys.exit(1)
-        return [(artifact.samples[0], index_seq)]
+        return [(artifact.samples[0], artifact, index_seq)]
     else:
         parent = artifact.parent_process
         lims.get_batch(parent.all_inputs(unique=True))
