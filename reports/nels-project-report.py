@@ -9,6 +9,8 @@ timestamp_str = date_str + "T00:00:00Z"
 nels_tsd_projects = []
 
 for project in lims.get_projects(last_modified=timestamp_str):
+    if project.close_date:
+        continue
     if project.udf.get('Delivery method') == "NeLS project":
         project_id = project.udf.get('NeLS project identifier', '(none)')
         if project_id.startswith('Click here'):
