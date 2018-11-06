@@ -161,7 +161,7 @@ def generate_sample_sheet(process, i_os, use_sampleid=False):
                         ))
             sys.exit(1)
 
-    if process.get('Truncate index sequence'):
+    if process.udf.get('Truncate index sequence'):
         max_length = 8 # process.get('Index 1 Read Cycles', 0)
     else:
         max_length = None
@@ -205,7 +205,7 @@ def generate_sample_sheet(process, i_os, use_sampleid=False):
                 non_unique = list(used_indexes)
                 for index in set(used_indexes):
                     non_unique.remove(index)
-                print("Indexes not unique in lane {}: {}. To ignore this, turn off Validate indexes.".format(
+                print("Indexes not unique in lane {}: {}. To ignore this, turn off Validate indexes.".format(
                     well, ", ".join("-".join(i for i in (i1, i2) if i) for i1,i2 in non_unique))
                     )
                 sys.exit(1)
