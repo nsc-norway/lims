@@ -13,7 +13,7 @@ def main(process_id):
             file_artifacts.add(o['uri'])
     lims.get_batch(file_artifacts)
     if not any(
-            f.name.endswith("Sample Sheet") and f.files
+            ("Sample Sheet" in f.name or "SampleSheet" in f.name) and f.files
             for f in file_artifacts
             ):
         print("Please generate a sample sheet before you continue.")
