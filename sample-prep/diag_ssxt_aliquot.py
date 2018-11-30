@@ -13,7 +13,7 @@ def sort_key(elem):
     output = elem[1]
     container, well = output.location
     row, col = well.split(":")
-    return (container, int(col), row)
+    return (container.id, int(col), row)
 
 
 def main(process_id, output_file_id):

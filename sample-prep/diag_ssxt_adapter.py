@@ -8,7 +8,7 @@ from genologics import config
 
 def well_sort_key(analyte):
     row, _, scol = analyte.location[1].partition(":")
-    return (analyte.location[0], int(scol), row)
+    return (analyte.location[0].id, int(scol), row)
 
 def main(process_id, file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
