@@ -6,7 +6,7 @@ from genologics import config
 
 # Script to excel file for Hamilton robot
 
-def well_sort_key(analyte):
+def get_container_well(analyte):
     row, _, scol = analyte.location[1].partition(":")
     return (analyte.location[0].id, int(scol), row)
 
@@ -26,18 +26,48 @@ def main(process_id, file_id):
     sheet1.write(0, 6, 'Forward Primer')
     sheet1.write(0, 7, 'Reverse Primer')
 
-    outputs = lims.get_batch(o['uri'] for i,o in process.input_output_maps
-                    if o['output-type'] == "Analyte")
+    i_os = [(i['uri'], o['uri']) for i,o in process.input_output_maps
+                    if o['output-type'] == "Analyte"]
+    lims.get_batch([a[0] for a in i_os] + [a[1] for a in i_os])
     
-    #TODO: complete this file
-    for i, output in enumerate(sorted(outputs, key=well_sort_key), 1):
-        output_well = output.location[1][:1]+output.location[1][2:]
-        reagent = next(iter(output.reagent_labels))
-        scol, row = re.match(r"SureSelect XT2 Index (\d{2})-([A-H]).*", reagent).groups((1,2))
-        adapter_well = "%s%d" % (row, int(scol))
-        sheet1.write(i, 0, output_well)
-        sheet1.write(i, 1, adapter_well)
+    plates = set()
 
+    # Get container ID and well for outputs
+    coordinates = map(get_container_well, (a[1] for a in i_os))
+
+    # List of: [ ((container_ID, col, row), (input, output), ...]
+    data = sorted(list(zip(coordinates, i_os)))
+
+    for i, ((container, col, row), (input, output)) in enumerate(data, 1):
+        sheet1.write(i, 0, output.name)
+        plates.add(container)
+        sheet1.write(i, 1, len(plates))
+        sheet1.write(i, 2, "{}:{}".format(row, col))
+        if output.control_type:
+            sheet1.write(i, 3, int(output.control_type.concentration))
+            sheet1.write(i, 4, 0)
+            sheet1.write(i, 5, 0)
+        else:
+            input_conc = input.udf['Concentration']
+            if input_conc == 0.0: input_conc = 0.00001
+            try:
+                input_ng = output.udf['Input (ng)']
+            except KeyError:
+                input_ng = process.udf['Input (ng)']
+                output.udf['Input (ng)'] = input_ng
+            sheet1.write(i, 3, input_conc)
+            sheet1.write(i, 4, input_ng)
+            target_conc = process.udf['Target conc. (ng/uL)']
+            buffer_vol = (input_ng / input_conc) * (input_conc / target_conc - 1.0)
+            sheet1.write(i, 5, max(0, buffer_vol))
+
+        # Indexing
+        reagent = next(iter(output.reagent_labels))
+        reverse, forward = re.match(r"16S_... \(R(\d{2})-F(\d{2})\)", reagent).groups((1,2))
+        sheet1.write(i, 6, int(forward))
+        sheet1.write(i, 7, int(reverse))
+
+    lims.put_batch(a[1] for a in i_os)
     book.save(file_id + "-InputSheet.xls")
 
 
