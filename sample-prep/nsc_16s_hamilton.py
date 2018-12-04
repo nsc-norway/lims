@@ -47,18 +47,19 @@ def main(process_id, file_id):
             sheet1.write(i, 3, int(output.control_type.concentration))
             sheet1.write(i, 4, 0)
             sheet1.write(i, 5, 0)
+            output.udf['Input (uL)'] = 0
         else:
             input_conc = input.udf['Concentration']
             if input_conc == 0.0: input_conc = 0.00001
             try:
-                input_ng = output.udf['Input (ng)']
+                input_vol = output.udf['Input (uL)']
             except KeyError:
-                input_ng = process.udf['Input (ng)']
-                output.udf['Input (ng)'] = input_ng
+                input_vol = process.udf['Input (uL)']
+                output.udf['Input (uL)'] = input_vol
             sheet1.write(i, 3, input_conc)
-            sheet1.write(i, 4, input_ng)
+            sheet1.write(i, 4, input_vol)
             target_conc = process.udf['Target conc. (ng/uL)']
-            buffer_vol = (input_ng / input_conc) * (input_conc / target_conc - 1.0)
+            buffer_vol = input_vol * (input_conc / target_conc - 1.0)
             sheet1.write(i, 5, max(0, buffer_vol))
 
         # Indexing
