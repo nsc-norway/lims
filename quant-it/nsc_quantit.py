@@ -12,7 +12,6 @@ from xlrd import open_workbook
 
 ROWS = ["A","B","C","D","E","F","G","H"]
 ROW_SPACING = 3
-DEFAULT_SAMPLE_VOLUME = 1.0
 STANDARD_VOLUME = 10.0
 
 def parse_spectramax_result_file(text):
