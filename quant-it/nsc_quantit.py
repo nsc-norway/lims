@@ -152,13 +152,10 @@ def main(file_format, process_id, graph_file_id, sample_volume, input_file_ids):
 
     if standard_fail:
         print "Standard curve R^2 failed, all samples marked as QC fail."
-        sys.exit(0)
     elif qcfail_count:
         print "Marked", qcfail_count, "samples as failed due to low concentrations."
-        sys.exit(0)
     else:
         print "Successfully imported data from", len(container_data), "file(s)."
-        sys.exit(0)
 
 
 if __name__ == "__main__":
