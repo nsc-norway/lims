@@ -1,5 +1,7 @@
 import sys
 
+# Based on Quant-iT multi input, but with thresholds
+
 from genologics import config
 from genologics.lims import *
 
@@ -128,9 +130,17 @@ def main(file_format, process_id, graph_file_id, sample_volume, input_file_ids):
     residualsum2s = ((shifted_standards_values - slope*scaled_concs)**2).sum()
 
     process.udf['R^2'] = 1 - residualsum2s / totalsum2s
+    standard_fail = process.udf['R^2'] < process.udf.get('QC threshold R^2', 0)
+
+    qcfail_count = 0
 
     for o in result_files:
         conc = (container_data[o.location[0]][o.location[1]] - std0_value) / slope
+        if conc < process.udf.get('QC threshold Concentration', 0) or standard_fail:
+            qcfail_count += 1
+            o.qc_flag = "FAILED"
+        else:
+            o.qc_flag = "PASSED"
         o.udf['Concentration'] = conc
 
     # Plot the data and the curve
@@ -139,7 +149,16 @@ def main(file_format, process_id, graph_file_id, sample_volume, input_file_ids):
     lims.put_batch(result_files)
 
     process.put()
-    print "Successfully imported data from", len(container_data), "file(s)."
+
+    if standard_fail:
+        print "Standard curve R^2 failed, all samples marked as QC fail."
+        sys.exit(0)
+    elif qcfail_count:
+        print "Marked", qcfail_count, "samples as failed due to low concentrations."
+        sys.exit(0)
+    else:
+        print "Successfully imported data from", len(container_data), "file(s)."
+        sys.exit(0)
 
 
 if __name__ == "__main__":
