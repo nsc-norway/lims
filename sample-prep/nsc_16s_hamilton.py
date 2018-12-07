@@ -5,6 +5,7 @@ from genologics.lims import *
 from genologics import config
 
 # Script to excel file for Hamilton robot
+MAX_BUFFER_ALERT = 300
 
 def get_container_well(analyte):
     row, _, scol = analyte.location[1].partition(":")
@@ -30,19 +31,17 @@ def main(process_id, file_id):
                     if o['output-type'] == "Analyte"]
     lims.get_batch([a[0] for a in i_os] + [a[1] for a in i_os])
     
+    buffer_alert_samples = []
     plates = set()
-
     # Get container ID and well for outputs
     coordinates = map(get_container_well, (a[1] for a in i_os))
-
     # List of: [ ((container_ID, col, row), (input, output), ...]
     data = sorted(list(zip(coordinates, i_os)))
-
     for i, ((container, col, row), (input, output)) in enumerate(data, 1):
         sheet1.write(i, 0, output.name)
         plates.add(container)
         sheet1.write(i, 1, len(plates))
-        sheet1.write(i, 2, "{}:{}".format(row, col))
+        sheet1.write(i, 2, "{}{}".format(row, col))
         if output.control_type:
             sheet1.write(i, 3, int(output.control_type.concentration))
             sheet1.write(i, 4, 0)
@@ -61,6 +60,8 @@ def main(process_id, file_id):
             target_conc = process.udf['Target conc. (ng/uL)']
             buffer_vol = input_vol * (input_conc / target_conc - 1.0)
             sheet1.write(i, 5, max(0, buffer_vol))
+            if buffer_vol > MAX_BUFFER_ALERT:
+                buffer_alert_samples.append(output.name)
 
         # Indexing
         reagent = next(iter(output.reagent_labels))
@@ -70,6 +71,10 @@ def main(process_id, file_id):
 
     lims.put_batch(a[1] for a in i_os)
     book.save(file_id + "-InputSheet.xls")
+    if buffer_alert_samples:
+        print "Warning: buffer volume exceeds", MAX_BUFFER_VOL, "for samples: ",\
+                ", ".join(buffer_alert_samples), "."
+        sys.exit(1)
 
 
 # Use:  main PROCESS_ID FILE_ID
