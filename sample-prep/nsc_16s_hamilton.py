@@ -72,8 +72,8 @@ def main(process_id, file_id):
     lims.put_batch(a[1] for a in i_os)
     book.save(file_id + "-InputSheet.xls")
     if buffer_alert_samples:
-        print "Warning: buffer volume exceeds", MAX_BUFFER_VOL, "for samples: ",\
-                ", ".join(buffer_alert_samples), "."
+        print ("Warning: buffer volume exceeds", MAX_BUFFER_VOL, "for samples: ",\
+                ", ".join(buffer_alert_samples), ".")
         sys.exit(1)
 
 
