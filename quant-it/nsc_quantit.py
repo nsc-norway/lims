@@ -92,11 +92,6 @@ def main(file_format, process_id, graph_file_id, sample_volume, input_file_ids):
         try:
             if file_format == "SpectraMax":
                 plate_id, container_data[container] = parse_spectramax_result_file(file_obj.download().decode("utf-16"))
-                expected_plate_no = index+1
-                if plate_id.lower() != "plate{0}".format(expected_plate_no):
-                    print "SpectraMax file with plate ID {0} uploaded to file position {1}, " \
-                            "but expected plate ID Plate{2}.".format(plate_id, index, expected_plate_no)
-                    sys.exit(1)
             elif file_format == "Synergy":
                 container_data[container] = parse_synergy_result_file(file_obj.download())
             else:
