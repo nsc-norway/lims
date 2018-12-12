@@ -67,9 +67,9 @@ def main(process_id, output_file_id):
             source_well = display_well(input.location[1])
             row.write(0, source_well)
             row.write(1, dest_well)
-            row.write(2, sample_volume)
+            row.write(2, round(sample_volume, 1))
             if first_in_pool:
-                row.write(3, pool_pool_volume)
+                row.write(3, round(pool_pool_volume, 1))
                 first_in_pool = False
 
     book.save(output_file_id)
