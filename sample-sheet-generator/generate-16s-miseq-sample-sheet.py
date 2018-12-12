@@ -55,6 +55,7 @@ def header_section(process):
                 ['Experiment Name', process.udf['Experiment Name']],
                 ['Date', str(datetime.date.today())],
                 ['Workflow', 'GenerateFASTQ'],
+                ['Chemistry', ''],
                 ]
     except KeyError as e:
         print("Missing information:", e)
