@@ -44,7 +44,7 @@ def main(process_id, output_file_id):
             volume = MAX_VOL
         else: 
             volume = min(quantity * 1.0 / input_conc, MAX_VOL)
-        sheet1.write(i, 0, output.location[1][:1] + output.location[1][2:])
+        sheet1.write(i, 0, input.location[1][:1] + input.location[1][2:])
         sheet1.write(i, 1, round(volume, 1))
 
     book.save(output_file_id + "-AliquotFile_Hamilton.xls")
