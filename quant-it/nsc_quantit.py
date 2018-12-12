@@ -106,8 +106,7 @@ def main(file_format, process_id, graph_file_id, sample_volume, input_file_ids):
     scaled_concs = numpy.array([sv * STANDARD_VOLUME / sample_volume for sv in standards_concs])
 
     # Counts (y)
-    first_container = output_containers[0]
-    standards_values = [container_data[first_container]["{0}:{1}".format(row, standards_col)] for row in ROWS]
+    standards_values = [container_data["STD"]["{0}:{1}".format(row, standards_col)] for row in ROWS]
     std0_value = standards_values[0]
     process.udf['Std0 value'] = std0_value
     shifted_standards_values = numpy.array([c - std0_value for c in standards_values])
