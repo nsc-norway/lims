@@ -25,11 +25,31 @@ header = lines[0].split(",")
 try:
     wellid_col = header.index("WellId")
     average_size_col = header.index("Average Size [bp]")
-    conc_col = header.index("Conc. [pg/µl]")
-    region_molarity_col = header.index("Region Molarity [pmol/l]")
 except ValueError as e:
     print("Missing column(s) in CSV file: ", e)
     sys.exit(3)
+
+if "Conc. [ng/µl]" in header:
+    try:
+        conc_col = header.index("Conc. [ng/µl]")
+        region_molarity_col = header.index("Region Molarity [nmol/l]")
+        conc_unit_factor = 1
+        molarity_unit_factor = 1
+    except ValueError as e:
+        print("Missing column in CSV file: ", e)
+        sys.exit(3)
+elif "Conc. [pg/µl]" in header:
+    try:
+        conc_col = header.index("Conc. [pg/µl]")
+        region_molarity_col = header.index("Region Molarity [pmol/l]")
+        conc_unit_factor = 1e-3
+        molarity_unit_factor = 1e-3
+    except ValueError as e:
+        print("Missing column in CSV file: ", e)
+        sys.exit(3)
+else:
+    print("Missing column Conc. [ng/µl] or Conc. [pg/µl] in CSV file.")
+    sys.exit(1)
 
 outputs = lims.get_batch(o['uri'] for i,o in process.input_output_maps if o['output-generation-type'] == "PerInput")
 container_ids = set(output.location[0].id for output in outputs)
@@ -59,8 +79,8 @@ for i, line in enumerate(lines, 1):
         
         try:
             output = well_artifact_map[wellid]
-            output.udf['Molarity'] = molarity / 1000.0
-            output.udf['Concentration'] = conc / 1000.0
+            output.udf['Molarity'] = molarity * molarity_unit_factor
+            output.udf['Concentration'] = conc * conc_unit_factor
             output.udf['Average Fragment Size'] = average_size
             unprocessed_artifacts.remove(output.id)
         except KeyError:
