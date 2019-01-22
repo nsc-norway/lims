@@ -43,6 +43,7 @@ def sort_key(elem):
 
 formatting = [
     ("Sample name",         16, None),
+    ("Well",                8, None),
     ("Sample conc. [nM]",   10, '0.00'),
     ("Conc. Input 2.0/3.0nM",10,'0.0'),
     ("Volum final [uL]",    10, '0'),
@@ -88,8 +89,9 @@ for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)
 
     # ---- Artifact info ----
     ws.cell(row=row_index, column=START_COL).value = input.name
+    ws.cell(row=row_index, column=START_COL+1).value = input.location[1].replace(":", "")
     molarity = input.udf['Molarity']
-    ws.cell(row=row_index, column=START_COL+1).value = molarity
+    ws.cell(row=row_index, column=START_COL+2).value = molarity
 
     # ---- Parameters (use specific for sample, or default) ----
     try:
@@ -100,27 +102,27 @@ for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)
         print ("Error: missing value for", e, "for sample", output.name)
         sys.exit(1)
 
-    ws.cell(row=row_index, column=START_COL+2).value = conc_input
-    ws.cell(row=row_index, column=START_COL+3).value = final_volume
-    ws.cell(row=row_index, column=START_COL+5).value = phix_input
+    ws.cell(row=row_index, column=START_COL+3).value = conc_input
+    ws.cell(row=row_index, column=START_COL+4).value = final_volume
+    ws.cell(row=row_index, column=START_COL+6).value = phix_input
 
     # ---- Calculated quantities ----
     
     # Input mirolitres
-    conc_input_coord = ws.cell(row=row_index, column=START_COL+2).coordinate
-    final_volume_coord = ws.cell(row=row_index, column=START_COL+3).coordinate
-    molarity_coord = ws.cell(row=row_index, column=START_COL+1).coordinate
-    ws.cell(row=row_index, column=START_COL+4).value = '=(({0}*{1})/{2})'.format(
+    conc_input_coord = ws.cell(row=row_index, column=START_COL+3).coordinate
+    final_volume_coord = ws.cell(row=row_index, column=START_COL+4).coordinate
+    molarity_coord = ws.cell(row=row_index, column=START_COL+2).coordinate
+    ws.cell(row=row_index, column=START_COL+5).value = '=(({0}*{1})/{2})'.format(
         conc_input_coord, final_volume_coord, molarity_coord)
 
     # RSB microlitres
-    phix_volume_coord = ws.cell(row=row_index, column=START_COL+5).coordinate
-    input_ul_coord = ws.cell(row=row_index, column=START_COL+4).coordinate
-    ws.cell(row=row_index, column=START_COL+6).value = "={0}-{1}-{2}".format(
+    phix_volume_coord = ws.cell(row=row_index, column=START_COL+6).coordinate
+    input_ul_coord = ws.cell(row=row_index, column=START_COL+5).coordinate
+    ws.cell(row=row_index, column=START_COL+7).value = "={0}-{1}-{2}".format(
             final_volume_coord, input_ul_coord, phix_volume_coord)
 
     # Well strip
-    ws.cell(row=row_index, column=START_COL+7).value = int(output.location[1].partition(':')[0])
+    ws.cell(row=row_index, column=START_COL+8).value = int(output.location[1].partition(':')[0])
 
 
 lims.put_batch(o for i,o in inputs_outputs)
