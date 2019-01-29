@@ -142,8 +142,9 @@ def main(process_id, filegen, file_id, params):
                     warning.append(output.name)
             columns = [
                     ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
-                    ("Well_ID", well),
-                    ("Volume_DNA", sample_volume),
+                    ("Source_Well_ID", input.location[1].replace(":", "")),
+                    ("Volume_DNA", round(sample_volume, 1)),
+                    ("Destination_Well_ID", well),
                 ]
 
             output.udf['Normalized conc. (ng/uL)'] = norm_conc
