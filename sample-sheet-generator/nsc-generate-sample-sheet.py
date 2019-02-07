@@ -13,6 +13,7 @@ import re
 import datetime
 from genologics.lims import *
 from genologics import config
+from argparse import ArgumentParser
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
@@ -39,7 +40,7 @@ def get_all_reagent_types():
     return reagent_types
 
 
-def main(use_sampleid, process_id, output_file_id):
+def main(process_id, output_file_id, include_lane, use_sampleid):
     global reagent_type_uri
 
     process = Process(lims, id=process_id)
@@ -55,7 +56,7 @@ def main(use_sampleid, process_id, output_file_id):
 
     reagent_type_uri = get_all_reagent_types()
 
-    data = generate_sample_sheet(process, i_os, use_sampleid == "-i")
+    data = generate_sample_sheet(process, i_os, include_lane, use_sampleid)
 
     # Upload sample sheet with name of flow cell ID
     csv_data = "\r\n".join(",".join(cel for cel in row) for row in data)
@@ -121,7 +122,7 @@ def get_sample_index(index, reverse_complement_index2, max_length, dropi1, dropi
         return index1, index2
 
 
-def generate_sample_sheet(process, i_os, use_sampleid=False):
+def generate_sample_sheet(process, i_os, include_lane, use_sampleid=False):
 
     # Sort by output well (lane)
     sorted_i_os = sorted(i_os, key=lambda i_o: (i_o[1].location[1], i_o[0].name))
@@ -139,15 +140,18 @@ def generate_sample_sheet(process, i_os, use_sampleid=False):
             [["[Reads]"]] + reads_section(reads_cycles) +\
             [["[Data]"]]
 
-    data.append([
-            "Lane",
+    headers = []
+    if include_lane:
+        headers += ["Lane"]
+    headers += [
             "Sample_ID",
             "Sample_Name",
             "Index",
             "Index2",
             "Sample_Project",
             "Description"
-        ])
+            ]
+    data.append(headers)
 
     # Use reverse complement only for PE runs
     reverse_complement_index2 = len(reads_cycles) == 2
@@ -177,9 +181,9 @@ def generate_sample_sheet(process, i_os, use_sampleid=False):
         for sample, artifact, index in sample_index_list:
             index1, index2 = get_sample_index(index, reverse_complement_index2, max_length, dropi1, dropi2)
             used_indexes.append((index1, index2))
+            lane_data = [well] if include_lane else []
             if use_sampleid:
-                data.append([
-                            well,
+                data.append(lane_data + [
                             artifact.id,
                             sample.name,
                             index1,
@@ -188,8 +192,7 @@ def generate_sample_sheet(process, i_os, use_sampleid=False):
                             ""
                         ])
             else:
-                data.append([
-                            well,
+                data.append(data + [
                             sample.name,
                             sample.name,
                             index1,
@@ -255,10 +258,20 @@ def hamming_distance(s1, s2):
 
 
 if __name__ == "__main__":
-    #argparse.ArgumentParser(description="")
     # Arguments: {-i|-n} PROCESSID OUTPUT_LIMSID
     # Option -i: Use LIMSID as SampleID
     #        -n: Use sample name as SampleID
-    main(*sys.argv[1:])
+    ap = ArgumentParser(description="Sample sheet generator script for LIMS")
+    ap.add_argument('-i', action='store_true', help="Use LIMSID as SampleID")
+    ap.add_argument('-n', action='store_true', help="Use sample name as SampleID (default)")
+    ap.add_argument('--no-include-lane', '-l', action='store_true',
+            help="Disable output of Lane column")
+    ap.add_argument('process_id', help="ID of a LIMS process for sample sheet generation")
+    ap.add_argument('output_limsid', help="LIMS-ID of output artifact to hold the sample sheet file")
+    args = ap.parse_args()
+    if args.i and args.n:
+        print("Only one of -i or -n may be specified at a time")
+        sys.exit(1)
 
+    main(args.process_id, args.output_limsid, not args.no_include_lane, args.i)
 
