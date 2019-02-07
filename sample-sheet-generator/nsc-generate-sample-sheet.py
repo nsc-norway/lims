@@ -184,7 +184,7 @@ def generate_sample_sheet(process, i_os, use_sampleid=False):
                             sample.name,
                             index1,
                             index2,
-                            sample.project.name,
+                            sample.project.name if sample.project else 'Controls',
                             ""
                         ])
             else:
@@ -255,6 +255,7 @@ def hamming_distance(s1, s2):
 
 
 if __name__ == "__main__":
+    #argparse.ArgumentParser(description="")
     # Arguments: {-i|-n} PROCESSID OUTPUT_LIMSID
     # Option -i: Use LIMSID as SampleID
     #        -n: Use sample name as SampleID
