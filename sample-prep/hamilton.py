@@ -183,8 +183,8 @@ def main(process_id, filegen, file_id, params):
                     ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
                     ("Labware", "Rack%d" % ((index // 32) + 1)),
                     ("Position_ID", str((index % 32) + 1)),
-                    ("Volume_DNA", sample_volume),
-                    ("Volume_EB", buffer_volume),
+                    ("Volume_DNA", round(sample_volume), 1),
+                    ("Volume_EB", round(buffer_volume, 1)),
                     ("Destination_Well_ID", well),
                 ]
         elif filegen == "Inputfil_Hamilton_Normalisering_NSC":
