@@ -34,6 +34,7 @@ headers = [
     "Rack",
     "Prøvenummer",
     "Arkivposisjon",
+    "Alternative Sample ID",
     "Konsentrasjon ng/µL",
     "Posisjon",
     "µL EB",
@@ -71,6 +72,7 @@ for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)
     ws.cell(row=row_index, column=next(col)).value = "Rack{0}".format(1 + well_index // 32)
     ws.cell(row=row_index, column=next(col)).value = input.name
     ws.cell(row=row_index, column=next(col)).value = input.samples[0].udf.get('Archive position Diag', 'UKJENT')
+    ws.cell(row=row_index, column=next(col)).value = input.samples[0].udf.get('Alternative Sample ID', 'UKJENT')
     try:
         conc = input.samples[0].udf['Sample conc. (ng/ul)']
     except KeyError:
