@@ -80,7 +80,10 @@ def main(process_id, output_id, concentration_source):
             output.udf['Volume (uL)'] = output_vol
             updated_outputs.add(output)
 
-        sample_volume = (norm_conc * 1.0 / input_conc) * output_vol
+        if input_conc >= 0.0:
+            sample_volume = (norm_conc * 1.0 / input_conc) * output_vol
+        else:
+            sample_volume = output_vol + 1
         buffer_volume = output_vol - sample_volume
 
         if buffer_volume < 0:
