@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask import Flask, render_template, url_for, request, Response, redirect, current_app
+from flask import Flask, redirect, request, jsonify
 from genologics.lims import *
 from genologics import config
 import re
@@ -17,23 +17,27 @@ param_options_default_on = [
         ("runParameters.xml", ["runParameters.xml", "RunParameters.xml"], True),
     ]
 
+CURRENT_RUN_GLOB = "/data/runScratch.boston/[0-9]*_*_*/"
+ARCHIVE_RUN_GLOB = "/data/runScratch.boston/processed/[0-9]*_*_*/"
 
 @app.route('/')
 def get_main():
-    return redirect(request.url + '/static/main.html')
+    return redirect(request.url.rstrip("/") + '/static/main.html')
 
-    run_paths = glob.glob("/data/runScratch.boston/[0-9]*_*_*/")
-    run_ids = [os.path.basename(r) for r in run_paths]
-    if not request.url.endswith("/"):
-    return render_template("main.xhtml", param_options=param_options, run_ids=run_ids)
-
-@app.route('/runs')
-def get_runs(old_runs=False):
-    pass
+@app.route('/runs/<collection>')
+def get_runs(collection):
+    if collection == "current":
+        run_paths = glob.glob(CURRENT_RUN_GLOB)
+    elif collection == "archive":
+        run_paths = glob.glob(ARCHIVE_RUN_GLOB)
+    else:
+        return "invalid collection", 400
+    run_ids = [os.path.basename(r.rstrip("/")) for r in run_paths]
+    return jsonify(run_ids=sorted(run_ids))
 
 @app.route('/zip')
 def get_zip_file():
-    pass
+    return "YO"
 
 
 if __name__ == '__main__':

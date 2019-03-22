@@ -7,13 +7,44 @@
 <head>
 <title>SAV data preparation tool</title>
 <script>
-    function load_runs() {
+
+    current_run_checkboxes = []
+    archived_run_checkboxes = []
+
+    function showRuns() {
+        fetch("../runs/current").then(data => data.json()).then(
+            jsonData => {
+            var element = document.getElementById("current-runs");
+            element.removeChild(element.firstChild);
+            for (const s of jsonData.run_ids) {
+                var cb = document.createElement("input");
+                cb.setAttribute("type", "checkbox");
+                cb.setAttribute("name", "cb-current-run");
+                cb.setAttribute("value", s);
+                var label = document.createElement("label");
+                label.setAttribute("class", "run-checbox-label");
+                label.appenChild(cb);
+                label.appendChild()
+                element.appendChild(div);
+            }
+        });
+    }
+
+    function showArchivedRuns() {
+    }
+
+    function writeDownloadLinks() {
 
     }
 </script>
+<style>
+.run-checbox-label {
+    display: block;
+}
+</style>
 </head>
 
-<body>
+<body onload="showRuns()">
 <div class="header">
     <h1 class="title">SAV data preparation tool</h1>
 </div>
@@ -23,12 +54,18 @@
     <tr>
         <td>Select Run IDs</td>
         <td>
-            
+            <div id="current-runs">Loading...</div>
+            <div id="archived-runs">
+                <a href="#" onclick="showArchivedRuns()">Show archived runs...</a>
+            </div>
         </td>
     </tr>
     <tr>
         <td>Items to export:</td>
         <td>
+                <div>
+                    <label for=""></label><input type="checkbox" name="">
+                </div>
         </td>
     </tr>
 </table>
