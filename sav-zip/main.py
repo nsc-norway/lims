@@ -35,7 +35,7 @@ def get_runs(collection):
     run_ids = [os.path.basename(r.rstrip("/")) for r in run_paths]
     return jsonify(run_ids=sorted(run_ids))
 
-@app.route('/zip')
+@app.route('/dl/<collection>/<run_id>.zip')
 def get_zip_file():
     return "YO"
 
