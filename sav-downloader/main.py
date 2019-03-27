@@ -33,7 +33,7 @@ def get_runs(collection):
     else:
         return "invalid collection", 400
     run_ids = [os.path.basename(r.rstrip("/")) for r in run_paths]
-    return jsonify(run_ids=sorted(run_ids))
+    return jsonify(run_ids=sorted(run_ids, reverse=True))
 
 @app.route('/dl/<collection>/<run_id>.zip')
 def get_zip_file():

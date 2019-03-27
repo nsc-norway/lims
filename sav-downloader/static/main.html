@@ -1,46 +1,68 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 <head>
 <title>SAV data preparation tool</title>
 <script>
-
     current_run_checkboxes = []
     archived_run_checkboxes = []
 
-    function showRuns() {
-        fetch("../runs/current").then(data => data.json()).then(
-            jsonData => {
-            var element = document.getElementById("current-runs");
-            element.removeChild(element.firstChild);
+    function getAddCheckboxesFunction(element, collection) {
+        return jsonData => {
             for (const s of jsonData.run_ids) {
                 var cb = document.createElement("input");
                 cb.setAttribute("type", "checkbox");
-                cb.setAttribute("name", "cb-current-run");
-                cb.setAttribute("value", s);
+                cb.setAttribute("value", collection + "/" + s);
+                cb.setAttribute("onchange", "writeDownloadLinks()");
+                cb.className = "runs-checkbox";
                 var label = document.createElement("label");
-                label.setAttribute("class", "run-checbox-label");
-                label.appenChild(cb);
-                label.appendChild()
-                element.appendChild(div);
+                label.setAttribute("class", "checkbox-label");
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(s));
+                element.appendChild(label);
             }
-        });
+        }
+    }
+
+    function showRuns() {
+        var element = document.getElementById("current-runs");
+        fetch("../runs/current").then(data => data.json()).then(
+            getAddCheckboxesFunction(element, "current"));
     }
 
     function showArchivedRuns() {
+        var element = document.getElementById("archived-runs");
+        document.getElementById("archived-runs-link").className += "hidden";
+        document.getElementById("archived-runs-text").className -= "hidden";
+        fetch("../runs/archive").then(data => data.json()).then(
+            getAddCheckboxesFunction(element, "archive"));
     }
 
     function writeDownloadLinks() {
-
+        var container = document.getElementById("download-links");
+        var wrapper = document.querySelector(".links-wrapper");
+        if (wrapper) {
+            wrapper.remove();
+        }
+        wrapper = document.createElement("div");
+        wrapper.classNames = ".links-wrapper";
+        for (const run_cb of document.querySelectorAll('.runs-checkbox:checked')) {
+            var run = run_cb.value;
+            console.log(run);
+        }
     }
 </script>
 <style>
-.run-checbox-label {
+td {
+    vertical-align: top;
+}
+
+.checkbox-label {
     display: block;
 }
+
+.hidden {
+    display: none;
+}
+
 </style>
 </head>
 
@@ -54,27 +76,47 @@
     <tr>
         <td>Select Run IDs</td>
         <td>
-            <div id="current-runs">Loading...</div>
+            <div id="current-runs"></div>
             <div id="archived-runs">
-                <a href="#" onclick="showArchivedRuns()">Show archived runs...</a>
+                <a href="#" onclick="showArchivedRuns()" id="archived-runs-link">
+                    Show archived runs...</a>
+                <div id="archived-runs-text" class="hidden">--- Archived: ---</a>
             </div>
         </td>
     </tr>
     <tr>
-        <td>Items to export:</td>
+        <td>Items to include:</td>
         <td>
                 <div>
-                    <label for=""></label><input type="checkbox" name="">
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="runParameters.xml" checked
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        runParameters.xml
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="RunInfo.xml" checked
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        RunInfo.xml
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="InterOp" checked
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        InterOp
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="SampleSheet.csv"
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        SampleSheet.csv
+                    </label>
                 </div>
         </td>
     </tr>
 </table>
 
 <h2>2. Download data</h2>
-<p>Please right-click the link(s) and select Save As... to download them onto your portable storage device.</p>
+<p>Please right-click the link(s) below and select Save As... to download them onto your portable storage device.</p>
 
 <div id="download-links">
-
 </div>
 
 </body>
