@@ -2,9 +2,6 @@
 <head>
 <title>SAV data preparation tool</title>
 <script>
-    current_run_checkboxes = []
-    archived_run_checkboxes = []
-
     function getCheckboxAdder(element, collection) {
         return jsonData => {
             for (const s of jsonData.run_ids) {
@@ -55,7 +52,6 @@
             var link = document.createElement("a");
             var fileName = run.split("/")[1] + ".zip";
             link.setAttribute("href", "../dl/" + run + ".zip?" + optionsString);
-            //link.setAttribute("download", fileName);
             link.className = "download-link";
             link.appendChild(document.createTextNode(fileName));
             container.appendChild(link);
