@@ -47,11 +47,23 @@ def get_zip_file(collection, run_id):
     zfile = io.BytesIO()
     outputfile = zipfile.ZipFile(zfile, 'w')
     for file in request.args.get('files', '').split(','):
-        if file in ("runParameters.xml", "RunInfo.xml", "SampleSheet.csv"):
-            outputfile.write(os.path.join(base_dir, run_id, file), os.path.join(run_id, file))
-        if file == "InterOp":
-            for source in glob.glob(os.path.join(base_dir, run_id, "InterOp", "*.*")):
-                outputfile.write(source, os.path.join(run_id, "InterOp", os.path.basename(source)))
+        try:
+            if file in ("RunInfo.xml", "SampleSheet.csv"):
+                outputfile.write(os.path.join(base_dir, run_id, file), os.path.join(run_id, file))
+            elif file == "runParameters.xml":
+                for file_test in ["runParameters.xml", "RunParameters.xml"]:
+                    path = os.path.join(base_dir, run_id, file_test)
+                    if os.path.isfile(path):
+                        outputfile.write(path, os.path.join(run_id, file_test))
+            elif file == "InterOp":
+                for source in glob.glob(os.path.join(base_dir, run_id, "InterOp", "*.*")):
+                    outputfile.write(source,
+                            os.path.join(run_id, "InterOp", os.path.basename(source)))
+        except OSError as e:
+            if e.errno == 2:
+                pass # Missing file!
+            else:
+                raise
     outputfile.close()
     return Response(zfile.getvalue(), mimetype="application/zip")
 
