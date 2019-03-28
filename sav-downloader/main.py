@@ -73,6 +73,4 @@ if __name__ == '__main__':
         SITE = sys.argv[1]
     app.debug=True
     app.run(host="0.0.0.0", port=5001)
-else:
-    run_init(SITE)
 
