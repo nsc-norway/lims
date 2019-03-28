@@ -5,7 +5,7 @@
     current_run_checkboxes = []
     archived_run_checkboxes = []
 
-    function getAddCheckboxesFunction(element, collection) {
+    function getCheckboxAdder(element, collection) {
         return jsonData => {
             for (const s of jsonData.run_ids) {
                 var cb = document.createElement("input");
@@ -25,7 +25,7 @@
     function showRuns() {
         var element = document.getElementById("current-runs");
         fetch("../runs/current").then(data => data.json()).then(
-            getAddCheckboxesFunction(element, "current"));
+            getCheckboxAdder(element, "current"));
     }
 
     function showArchivedRuns() {
@@ -33,21 +33,34 @@
         document.getElementById("archived-runs-link").className += "hidden";
         document.getElementById("archived-runs-text").className -= "hidden";
         fetch("../runs/archive").then(data => data.json()).then(
-            getAddCheckboxesFunction(element, "archive"));
+            getCheckboxAdder(element, "archive"));
     }
 
     function writeDownloadLinks() {
-        var container = document.getElementById("download-links");
-        var wrapper = document.querySelector(".links-wrapper");
-        if (wrapper) {
-            wrapper.remove();
+        var wrapper = document.getElementById("download-links");
+        var files_qs = document.querySelectorAll(".files-checkbox:checked");
+        var files = new Array();
+        for (const cb of files_qs) {
+            files.push(cb.value);
         }
-        wrapper = document.createElement("div");
-        wrapper.classNames = ".links-wrapper";
-        for (const run_cb of document.querySelectorAll('.runs-checkbox:checked')) {
+        var optionsString = "files=" + files.join();
+        var containers = document.getElementsByClassName("links-container");
+        for (var container of containers) {
+            container.remove();
+        }
+        container = document.createElement("div");
+        container.className = "links-container";
+        for (const run_cb of document.querySelectorAll(".runs-checkbox:checked")) {
             var run = run_cb.value;
-            console.log(run);
+            var link = document.createElement("a");
+            var fileName = run.split("/")[1] + ".zip";
+            link.setAttribute("href", "../dl/" + run + ".zip?" + optionsString);
+            //link.setAttribute("download", fileName);
+            link.className = "download-link";
+            link.appendChild(document.createTextNode(fileName));
+            container.appendChild(link);
         }
+        wrapper.appendChild(container);
     }
 </script>
 <style>
@@ -61,6 +74,10 @@ td {
 
 .hidden {
     display: none;
+}
+
+a.download-link {
+    display: block;
 }
 
 </style>
