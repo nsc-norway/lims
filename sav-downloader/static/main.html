@@ -26,11 +26,20 @@
     }
 
     function showArchivedRuns() {
-        var element = document.getElementById("archived-runs");
-        document.getElementById("archived-runs-link").className += "hidden";
-        document.getElementById("archived-runs-text").className -= "hidden";
+        var element = document.getElementById("archived-runs-container");
+        document.getElementById("archived-runs-show-link").classList.add("hidden");
+        document.getElementById("archived-runs-hide-link").classList.remove("hidden");
         fetch("../runs/archive").then(data => data.json()).then(
             getCheckboxAdder(element, "archive"));
+    }
+
+    function hideArchivedRuns() {
+        document.getElementById("archived-runs-show-link").classList.remove("hidden");
+        document.getElementById("archived-runs-hide-link").classList.add("hidden");
+        document.getElementById("archived-runs-container").remove();
+        var element = document.createElement("div");
+        element.id = "archived-runs-container";
+        document.getElementById("archived-runs").appendChild(element);
     }
 
     function writeDownloadLinks() {
@@ -93,10 +102,15 @@
         <td>Select Run IDs</td>
         <td>
             <div id="current-runs"></div>
+            <div>
+            <a href="#" onclick="showArchivedRuns()" id="archived-runs-show-link">
+                Show archived runs...</a>
+            <a href="#" onclick="hideArchivedRuns()" id="archived-runs-hide-link" class="hidden">
+                Hide archived runs...</a>
+            </div>
             <div id="archived-runs">
-                <a href="#" onclick="showArchivedRuns()" id="archived-runs-link">
-                    Show archived runs...</a>
-                <div id="archived-runs-text" class="hidden">--- Archived: ---</a>
+                <div id="archived-runs-container">
+                </div>
             </div>
         </td>
     </tr>
@@ -104,6 +118,11 @@
         <td>Items to include:</td>
         <td>
                 <div>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Config"
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        Config
+                    </label>
                     <label class="checkbox-label">
                         <input type="checkbox" value="runParameters.xml" checked
                                 class="files-checkbox" onchange="writeDownloadLinks()">
@@ -120,9 +139,24 @@
                         InterOp
                     </label>
                     <label class="checkbox-label">
-                        <input type="checkbox" value="SampleSheet.csv"
+                        <input type="checkbox" value="RTALogs"
                                 class="files-checkbox" onchange="writeDownloadLinks()">
-                        SampleSheet.csv
+                        RTALogs
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="RTAConfiguration.xml"
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        RTAConfiguration.xml
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Logs"
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        Logs
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Recipe"
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        Recipe
                     </label>
                 </div>
         </td>

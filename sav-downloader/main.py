@@ -35,6 +35,16 @@ def get_runs(collection):
     return jsonify(run_ids=sorted(run_ids, reverse=True))
 
 
+def add_directory(zfile, source_base, dest_base):
+    for f in os.listdir(source_base):
+        source_path = os.path.join(source_base, f)
+        dest_path = os.path.join(dest_base, f)
+        if os.path.isdir(f):
+            add_directory(zfile, source_path, dest_path)
+        else:
+            zfile.write(source_path, dest_path)
+
+
 @app.route('/dl/<collection>/<run_id>.zip')
 def get_zip_file(collection, run_id):
     try:
@@ -44,28 +54,30 @@ def get_zip_file(collection, run_id):
     if not re.match(r"[0-9]+_[0-9a-zA-Z-_]+$", run_id):
         return "Error: Invalid run-id specified", 400
     run_path = os.path.join(base_dir, run_id)
-    zfile = io.BytesIO()
-    outputfile = zipfile.ZipFile(zfile, 'w')
+    outputbuffer = io.BytesIO()
+    zfile = zipfile.ZipFile(outputbuffer, 'w')
     for file in request.args.get('files', '').split(','):
         try:
-            if file in ("RunInfo.xml", "SampleSheet.csv"):
-                outputfile.write(os.path.join(base_dir, run_id, file), os.path.join(run_id, file))
+            if file in ("RunInfo.xml", "RTAConfiguration.xml"):
+                zfile.write(os.path.join(base_dir, run_id, file), os.path.join(run_id, file))
             elif file == "runParameters.xml":
                 for file_test in ["runParameters.xml", "RunParameters.xml"]:
                     path = os.path.join(base_dir, run_id, file_test)
                     if os.path.isfile(path):
-                        outputfile.write(path, os.path.join(run_id, file_test))
-            elif file == "InterOp":
-                for source in glob.glob(os.path.join(base_dir, run_id, "InterOp", "*.*")):
-                    outputfile.write(source,
-                            os.path.join(run_id, "InterOp", os.path.basename(source)))
+                        zfile.write(path, os.path.join(run_id, file_test))
+            elif file in ["InterOp", "RTALogs", "Logs", "Recipe", "Config"]:
+                add_directory(
+                        zfile,
+                        os.path.join(run_path, file),
+                        os.path.join(run_id, file)
+                        )
         except OSError as e:
             if e.errno == 2:
                 pass # Missing file!
             else:
                 raise
-    outputfile.close()
-    return Response(zfile.getvalue(), mimetype="application/zip")
+    zfile.close()
+    return Response(outputbuffer.getvalue(), mimetype="application/zip")
 
 
 if __name__ == '__main__':
