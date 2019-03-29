@@ -50,6 +50,10 @@
             files.push(cb.value);
         }
         var optionsString = "files=" + files.join();
+        if (document.getElementById("thumbnail-cb").checked) {
+            optionsString += "&cycles=" + document.getElementById("cycles").value;
+            optionsString += "&lanes=" + document.getElementById("lanes").value;
+        }
         var containers = document.getElementsByClassName("links-container");
         for (var container of containers) {
             container.remove();
@@ -67,6 +71,14 @@
         }
         wrapper.appendChild(container);
     }
+
+    function enableThumbnailParams() {
+        var disable = !document.getElementById("thumbnail-cb").checked;
+        for (var input of document.getElementsByClassName("thumbnail-param")) {
+            input.disabled = disable;
+        }
+    }
+    
 </script>
 <style>
             td {
@@ -88,10 +100,14 @@
             body {
                 padding-bottom: 40px;
             }
+
+            div.subparameters {
+                padding-left: 20pt;
+            }
 </style>
 </head>
 
-<body onload="showRuns()">
+<body onload="showRuns(); enableThumbnailParams()">
 <div class="header">
     <h1 class="title">SAV data preparation tool</h1>
 </div>
@@ -124,29 +140,9 @@
                         Config
                     </label>
                     <label class="checkbox-label">
-                        <input type="checkbox" value="runParameters.xml" checked
-                                class="files-checkbox" onchange="writeDownloadLinks()">
-                        runParameters.xml
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" value="RunInfo.xml" checked
-                                class="files-checkbox" onchange="writeDownloadLinks()">
-                        RunInfo.xml
-                    </label>
-                    <label class="checkbox-label">
                         <input type="checkbox" value="InterOp" checked
                                 class="files-checkbox" onchange="writeDownloadLinks()">
                         InterOp
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" value="RTALogs"
-                                class="files-checkbox" onchange="writeDownloadLinks()">
-                        RTALogs
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" value="RTAConfiguration.xml"
-                                class="files-checkbox" onchange="writeDownloadLinks()">
-                        RTAConfiguration.xml
                     </label>
                     <label class="checkbox-label">
                         <input type="checkbox" value="Logs"
@@ -158,6 +154,36 @@
                                 class="files-checkbox" onchange="writeDownloadLinks()">
                         Recipe
                     </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="RTAConfiguration.xml"
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        RTAConfiguration.xml
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="RTALogs"
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        RTALogs
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="RunInfo.xml" checked
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        RunInfo.xml
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="runParameters.xml" checked
+                                class="files-checkbox" onchange="writeDownloadLinks()">
+                        runParameters.xml
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Thumbnail_Images"
+                                class="files-checkbox" id="thumbnail-cb"
+                                onchange="writeDownloadLinks(); enableThumbnailParams();">
+                        Thumbnail_Images
+                    </label>
+                    <div class="subparameters">
+                        Cycles: <input type="text" id="cycles" value="1-5" size="8" class="thumbnail-param">,
+                        lanes: <input type="text" id="lanes" value="1-8" size="8" class="thumbnail-param">.
+                    </div>
                 </div>
         </td>
     </tr>
