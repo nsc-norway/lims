@@ -39,16 +39,31 @@ def add_directory(zfile, source_base, dest_base):
     for f in os.listdir(source_base):
         source_path = os.path.join(source_base, f)
         dest_path = os.path.join(dest_base, f)
-        if os.path.isdir(f):
+        if os.path.isdir(source_path):
             add_directory(zfile, source_path, dest_path)
         else:
             zfile.write(source_path, dest_path)
 
 
+def rangeexpand(txt):
+    # https://www.rosettacode.org/wiki/Range_expansion#Python
+    lst = []
+    for r in txt.split(','):
+        if '-' in r[1:]:
+            r0, r1 = r[1:].split('-', 1)
+            lst += range(int(r[0] + r0), int(r1) + 1)
+        else:
+            lst.append(int(r))
+    return lst
+
+
 @app.route('/dl/<collection>/<run_id>.zip')
 def get_zip_file(collection, run_id):
     try:
-        base_dir = {"current": CURRENT_RUN_DIR, "archive": ARCHIVE_RUN_DIR}[collection]
+        base_dir = {
+                "current": CURRENT_RUN_DIR,
+                "archive": ARCHIVE_RUN_DIR
+                }[collection]
     except KeyError:
         return "Error: Invalid collection specified", 400
     if not re.match(r"[0-9]+_[0-9a-zA-Z-_]+$", run_id):
@@ -59,18 +74,40 @@ def get_zip_file(collection, run_id):
     for file in request.args.get('files', '').split(','):
         try:
             if file in ("RunInfo.xml", "RTAConfiguration.xml"):
-                zfile.write(os.path.join(base_dir, run_id, file), os.path.join(run_id, file))
+                zfile.write(
+                        os.path.join(base_dir, run_id, file),
+                        os.path.join(run_id, file)
+                        )
             elif file == "runParameters.xml":
                 for file_test in ["runParameters.xml", "RunParameters.xml"]:
                     path = os.path.join(base_dir, run_id, file_test)
                     if os.path.isfile(path):
                         zfile.write(path, os.path.join(run_id, file_test))
-            elif file in ["InterOp", "RTALogs", "Logs", "Recipe", "Config"]:
+            elif file in [
+                    "InterOp", "Images", "RTALogs", "Logs", "Recipe", "Config"
+                    ]:
                 add_directory(
                         zfile,
                         os.path.join(run_path, file),
                         os.path.join(run_id, file)
                         )
+            elif file == "Thumbnail_Images":
+                cycles = rangeexpand(request.args.get("cycles", "1"))
+                lanes = rangeexpand(request.args.get("lanes", "1"))
+                for lane in lanes:
+                    for cycle in cycles:
+                        rel_path = os.path.join(
+                                "Thumbnail_Images",
+                                "L00{0}".format(lane),
+                                "C{0}.1".format(cycle)
+                                )
+                        source = os.path.join(run_path, rel_path)
+                        if os.path.isdir(source):
+                            add_directory(
+                                    zfile,
+                                    source,
+                                    os.path.join(run_id, rel_path)
+                                    )
         except OSError as e:
             if e.errno == 2:
                 pass # Missing file!
