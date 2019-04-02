@@ -71,13 +71,18 @@ def main(file_format, process_id, graph_file_id, sample_volume, input_file_ids):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
     lims.get_batch(process.all_inputs() + process.all_outputs())
-    
+
     standards_concs = [float(v) for v in process.udf['Concentrations of standards (ng/uL)'].split(",")]
     assert len(standards_concs) == 8, "Invalid number of standards"
 
     result_files = set([o['uri'] for i,o in process.input_output_maps if o['output-generation-type'] == "PerInput"])
     assert len(result_files) > 0, "No output artifacts found"
     output_containers = sorted(set(rf.container for rf in result_files), key=lambda cont: cont.id)
+    
+    fragment_size = process.udf['Fragment size (bp)']
+    for o in result_files:
+        o.udf['Average Fragment Size'] = process.udf['Fragment size (bp)']
+    lims.put_batch(result_files)
 
     assert len(input_file_ids) >= len(output_containers),\
             "This step is only configured for {0} plates".format(len(input_file_ids))
@@ -105,8 +110,6 @@ def main(file_format, process_id, graph_file_id, sample_volume, input_file_ids):
     # Concentrations (x)
     scaled_concs = numpy.array([sv * STANDARD_VOLUME / sample_volume for sv in standards_concs])
 
-    fragment_size = process.udf['Fragment size (bp)']
-
     # Counts (y)
     standards_values = [container_data["STD"]["{0}:{1}".format(row, standards_col)] for row in ROWS]
     std0_value = standards_values[0]
@@ -133,8 +136,7 @@ def main(file_format, process_id, graph_file_id, sample_volume, input_file_ids):
     for o in result_files:
         conc = (container_data[o.location[0]][o.location[1]] - std0_value) / slope
         o.udf['Concentration'] = conc
-        o.udf['Molarity'] = (conc / (660.0*fragment_size)) * 1e6
-        o.udf['Average Fragment Size'] = fragment_size
+        o.udf['Molarity'] = (conc / (660.0*o.udf['Average Fragment Size'])) * 1e6
         if conc < process.udf.get('QC threshold Molarity', 0) or standard_fail:
             qcfail_count += 1
             o.qc_flag = "FAILED"
