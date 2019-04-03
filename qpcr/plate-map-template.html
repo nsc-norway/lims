@@ -1,0 +1,46 @@
+<html>
+<head>
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<link href="{{ server }}/clarity/css/g/queue-print.css" rel="stylesheet" type="text/css" media="screen,print" />
+<title>qPCR LightCycler NSC 4.0 > qPCR Plate Setup NSC 1.0</title>
+</head>
+<body>
+<div id="header">
+    <h1 class="title">qPCR Plate Setup</h1>
+    <div class="user">Printed by: <span id="username">{{ user_name }}</span></div>
+</div>
+<div class="container-view-header">
+    <span class="group-field-label">96 well plate: </span>
+    <span class="group-field-value">{{ container_name }}</span>
+    <span class="group-field-label">Date: </span>
+    <span class="group-field-value">{{ date }}</span>
+</div>
+<br>
+<table class="print-container-view ">
+<thead>
+    <tr>
+        <th>&nbsp;</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th>
+    </tr>
+</thead>
+<tbody>
+    {% for row in "ABCDEFGH" %}
+    <tr style="height: 12%;"><td class="bold-column row-name">{{ row }}</td>
+        {% for col in range(1, 13) %}
+            {% set placement = placements.get("{0}:{1}".format(row, col)) %}
+            {% if placement %}
+            <td class="well" style="width: 8%;background-color: #CCC;">
+                {{ placement.samples[0].project.name[0:-11] }}<br>
+                {{ placement.name }}
+                {% if placement.location[1] != "1:1" %}<br>
+                From: {{ placement.location[1] }}
+                {% endif %}</td>
+            {% else %}
+            <td class="well" style="width: 8%;">&nbsp;</td>
+            {% endif %}
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</tbody>
+</table>
+</body>
+</html>
