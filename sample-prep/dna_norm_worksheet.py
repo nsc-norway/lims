@@ -120,9 +120,9 @@ for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)
         warning.append(output.name)
 
     ws.cell(row=row_index, column=6).value = sample_volume
-    ws.cell(row=row_index, column=6).number_format = "0.0"
+    ws.cell(row=row_index, column=6).number_format = "0.00"
     ws.cell(row=row_index, column=7).value = buffer_volume
-    ws.cell(row=row_index, column=7).number_format = "0.0"
+    ws.cell(row=row_index, column=7).number_format = "0.00"
 
     # ---- Index ----
     ws.cell(row=row_index, column=8).value = re.sub(r" \([ACGT-]+\)$", "", next(iter(output.reagent_labels)))
