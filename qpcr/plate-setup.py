@@ -62,7 +62,11 @@ def main(process_id):
         if oo['output-generation-type'] == "PerInput" and ii['limsid'] in sample_input_ids:
             outputs_per_input[ii['limsid']].append(oo['uri'])
 
-    placement_output_input = dict((oo['limsid'], ii['limsid']) for ii, oo in place_process.input_output_maps)
+    placement_output_input = dict(
+            (oo['limsid'], ii['limsid'])
+            for ii, oo in place_process.input_output_maps
+            if oo['output-generation-type'] == "PerInput"
+            )
     input_pos = dict((placement_output_input[output.id], w) for output, (c, w) in placement_list)
     for i in sample_inputs:
         row, col = input_pos[i.id].split(":")
