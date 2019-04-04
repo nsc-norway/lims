@@ -29,7 +29,11 @@
             {% set placement = placements.get("{0}:{1}".format(row, col)) %}
             {% if placement %}
             <td class="well" style="width: 8%;background-color: #CCC;">
-                {{ placement.samples[0].project.name[0:-11] }}<br>
+                {% if placement.samples[0].project %}
+                    {{ placement.samples[0].project.name[0:-11] }}
+                {% else %}
+                    Control
+                {% endif %}<br>
                 {{ placement.name }}
                 {% if placement.location[1] != "1:1" %}<br>
                 From: {{ placement.location[1] }}
