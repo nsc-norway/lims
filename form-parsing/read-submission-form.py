@@ -4,11 +4,12 @@ import re
 import zipfile
 import datetime
 from functools import partial
-import StringIO
+import io
 import requests
 from xml.etree.ElementTree import XML
-from genologics import config
-from genologics.lims import *
+if not (len(sys.argv) > 2 and sys.argv[1] == "test"):
+    from genologics import config
+    from genologics.lims import *
 
 WORD_NAMESPACE = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
 TABLE_ROW = WORD_NAMESPACE + 'tr'
@@ -21,37 +22,44 @@ CHECKED = WORD_NAMESPACE + 'checked'
 DEFAULT = WORD_NAMESPACE + 'default'
 VAL = WORD_NAMESPACE + 'val'
 
-PLACEHOLDER_STRING = "Click here to enter text."
+PLACEHOLDER_STRING = "Click here"
 
 
-DNA_PREPS = {
-        "Nextera.*Flex": "Nextera Flex",
-        ".*TruSeq.*adapter ligation": "TruSeq Nano",
-        "TruSeq.*PCR-free prep": "TruSeq PCR-free",
-        "ThruPLEX": "ThruPLEX",
-        ".* unsure, please advise": "User unsure"
-        }
-RNA_PREPS = {
-        "Regular TruSeqTM RNA-seq library prep": "TruSeq Stranded RNA",
-        "Strand-specific TruSeqTM RNA-seq library prep": "TruSeq Stranded RNA",
-        "small RNA library preparation": "NEBNext miRNA",
-        ".* unsure, please advise": "User unsure"
-        }
-SEQUENCING_TYPES = {
-        "Single Read": "Single Read",
-        "Paired End": "Paired End Read"
-        }
-SEQUENCING_INSTRUMENTS = {
-        "HiSeq X": "HiSeq X",
-        "HiSeq 4000": "HiSeq 4000",
-        "HiSeq 3/4000": "HiSeq 4000",
-        "HiSeq 2500, high output mode": "HiSeq high output",
-        "HiSeq 2500, rapid mode": "HiSeq rapid mode",
-        "HiSeq 2000": "HiSeq high output",
-        "NextSeq 500 .*Mid Output": "NextSeq mid output", # WARNING: NextSeq string broken up in docx
-        "NextSeq 500 .*High Output": "NextSeq high output",
-        "MiSeq": "MiSeq"
-        }
+DNA_PREPS = [
+        ("Nextera.*Flex", "Nextera Flex"),
+        (".*TruSeq.*adapter ligation", "TruSeq Nano"),
+        ("TruSeq.*PCR-free prep", "TruSeq PCR-free"),
+        ("ThruPLEX", "ThruPLEX"),
+        ("16S library prep", "16S prep"),
+        (".* unsure, please advise", "User unsure"),
+        ]
+RNA_PREPS = [
+        ("Regular TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Old form version
+        ("Strand-specific TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"),
+        ("small RNA library preparation", "NEBNext miRNA"),
+        (".* unsure, please advise", "User unsure")
+        ]
+SEQUENCING_TYPES = [ # Note: used both in old (single_choice_checkbox) and new
+                     # (get_instrument_and_mode) instrument table
+        ("Single Read", "Single Read"),
+        ("Paired End", "Paired End Read"),
+        ]
+
+SEQUENCING_INSTRUMENTS = [
+        ("HiSeq X", "HiSeq X"),
+        ("HiSeq 4000", "HiSeq 4000"),
+        ("HiSeq 3/4000", "HiSeq 4000"),
+        ("HiSeq 2500, high output mode", "HiSeq high output"),
+        ("HiSeq 2500, rapid mode", "HiSeq rapid mode"),
+        ("HiSeq 2000", "HiSeq high output"),
+        ("NextSeq .*Mid Output", "NextSeq mid output"), # WARNING: NextSeq string broken up in docx
+        ("NextSeq .*High Output", "NextSeq high output"),
+        ("MiSeq v2 Micro", "MiSeq v2 Micro"),
+        ("MiSeq v2 Nano", "MiSeq v2 Nano"),
+        ("MiSeq v2", "MiSeq v2"),
+        ("MiSeq v3", "MiSeq v3"),
+        ("MiSeq", "MiSeq"),
+        ]
 
 # Some defaults are necessary for put() on required fields
 DEFAULTS = [
@@ -94,12 +102,30 @@ def is_checked(checkbox_elem):
 
 
 # Parsing various inputs
-def get_text_single(cell, line_sep=","):
-    multiline = get_text_multi(cell)
+def get_text_multi(cell, check_placeholder=False):
+    text = ""
+    first = True
+    for node in cell.getiterator():
+        if node.tag == PARA:
+            if not first:
+                text += "\n\n"
+            first = False
+        elif node.tag == BR:
+            text += "\n"
+        elif node.tag == TEXT:
+            text += node.text
+    if check_placeholder and re.search(PLACEHOLDER_STRING, text):
+        return None
+    else:
+        return text
+
+
+def get_text_single(cell, line_sep=",", check_placeholder=True):
+    multiline = get_text_multi(cell, check_placeholder=check_placeholder)
     if multiline is None:
         return None
     val = re.sub(r"\n+", ", ", multiline.strip("\n"))
-    if val.strip() == PLACEHOLDER_STRING:
+    if check_placeholder and re.search(PLACEHOLDER_STRING, val):
         return None
     else:
         return val.strip().rstrip(".")
@@ -127,11 +153,9 @@ def get_substring(prefix, cell):
 
 def get_checkbox(cell):
     checkboxes = cell.getiterator(CHECKBOX)
-    if len(checkboxes) == 1:
-        checked_elem = checkboxes[0].find(CHECKED)
-        return is_checked(checkboxes[0])
-    else:
-        return None
+    for cb in checkboxes: # Process only the first checkbox
+        return is_checked(cb)
+    return None
 
 
 def get_yes_no_checkbox(cell):
@@ -150,16 +174,14 @@ def get_yes_no_checkbox(cell):
                 no_selected = is_selected
                 no_seen = True
             is_selected = None
-
     if yes_seen and no_seen:
         if yes_selected != no_selected:
             return yes_selected
-
     return None
 
 
 def match_key(value_map, partial_key):
-    for key_pattern, value in value_map.items():
+    for key_pattern, value in value_map:
         if re.match(key_pattern, partial_key, re.IGNORECASE):
             return value
 
@@ -212,24 +234,6 @@ def single_checkbox(value, cell):
         return value
 
 
-def get_text_multi(cell):
-    text = ""
-    first = True
-    for node in cell.getiterator():
-        if node.tag == PARA:
-            if not first:
-                text += "\n\n"
-            first = False
-        elif node.tag == BR:
-            text += "\n"
-        elif node.tag == TEXT:
-            text += node.text
-    if text.strip() == PLACEHOLDER_STRING:
-        return None
-    else:
-        return text
-
-
 def is_library(cell):
     if get_checkbox(cell):
         return "QC only"
@@ -238,7 +242,7 @@ def is_library(cell):
 
 
 def library_prep_used(cell):
-    text_nodes = cell.getiterator(TEXT)
+    text_nodes = list(cell.getiterator(TEXT))
     if len(text_nodes) > 2:
         if "If yes, please state which kit / method you used here" in text_nodes[0].text.strip():
             return "".join(text_node.text for text_node in text_nodes[1:])
@@ -264,6 +268,54 @@ def get_delivery_method(cell):
             return None
 
 
+def get_seq_types_read_lengths(single_read_cell, paired_end_cell):
+    """Called on two cells of the header row of the table, to find a list of
+        tuples (sequencing type, read length), one for each column of the
+        following table."""
+    # First version of submission form:
+    columns = []
+    for cell, (seq_type_text, seq_type_val), n_reads in zip(
+            [single_read_cell, paired_end_cell],
+            SEQUENCING_TYPES,
+            [1,2]):
+        seq_type, _, read_lengths = get_text_single(cell, check_placeholder=False).partition(",")
+        if seq_type.strip().lower() != seq_type_text.strip().lower() or read_lengths.strip() == "":
+            return None
+        else:
+            for read_length in read_lengths.split():
+                try:
+                    columns.append((seq_type_val, "{}x{}".format(int(read_length), n_reads)))
+                except ValueError:
+                    return None
+    return columns
+
+
+def get_instrument_and_mode(instrument_output_table, cells):
+    row_label = get_text_single(cells[0], check_placeholder=False)
+    instrument_string = row_label.partition(",")[0].strip()
+    instrument = None
+    for pattern, x_instrument in SEQUENCING_INSTRUMENTS:
+        if re.match(pattern, instrument_string, re.IGNORECASE):
+            instrument = x_instrument
+            break
+    selected = None
+    for values, cell in zip(instrument_output_table, cells[1:]):
+        if get_checkbox(cell):
+            if selected:
+                return None # Multiple selected
+            else:
+                selected = values
+
+    if instrument and selected:
+        return (
+                ('Sequencing instrument requested', instrument),
+                ('Sequencing method',               selected[0]),
+                ('Read length requested',           selected[1]),
+                )
+    else:
+        return None
+
+
 # List of (label, udf, parser_func)
 LABEL_UDF_PARSER = [
         ("Method used to purify DNA / RNA", 'Method used to purify DNA/RNA', get_text_single),
@@ -278,8 +330,8 @@ LABEL_UDF_PARSER = [
         ("Sequencing type", 'Sequencing method', partial(single_choice_checkbox, SEQUENCING_TYPES)),
         ("Desired insert size", 'Desired insert size', get_text_single),
         ("Sequencing Instrument requested", 'Sequencing instrument requested', 
-            partial(single_choice_checkbox, SEQUENCING_INSTRUMENTS)),
-        ("Read Length", 'Read length requested', read_length), # Needs post-proc'ing
+            partial(single_choice_checkbox, SEQUENCING_INSTRUMENTS)), # <2019-04 seq instrument
+        ("Read Length", 'Read length TEMPFIELD', read_length),        # <2019-04 read length; Needs post-proc'ing
         ("Total number lanes", 'Total # of lanes requested', get_text_single),
         ("Project Goal", 'Project goal', get_text_multi),
         ("REK approval number", 'REK approval number', get_text_single),
@@ -308,22 +360,40 @@ LABEL_CONTENT_UDF_PARSER = [
 
 def get_values_from_doc(xml_tree):
     results = []
+    instrument_output_table = None
+    instrument_udfs = []
+    instruments_found = 0
     for row in xml_tree.getiterator(TABLE_ROW):
-        cells = row.getiterator(TABLE_CELL)
-        if len(cells) == 2:
-            label = get_text_single(cells[0])
-            data = cells[1]
-            for test_label, udf, parser_func in LABEL_UDF_PARSER:
-                if re.match(test_label, label, re.IGNORECASE):
-                    value = parser_func(data)
-                    if not value is None:
-                        results.append((udf, value))
-            for test_label, udf, parser_func in LABEL_CONTENT_UDF_PARSER:
-                if re.match(test_label, label, re.IGNORECASE):
-                    value = parser_func(cells[0])
-                    if not value is None:
-                        results.append((udf, value))
-
+        cells = list(row.getiterator(TABLE_CELL))
+        if cells:
+            label = get_text_single(cells[0], check_placeholder=False)
+            # Row-by-row parsing for tables with two columns, based on matching strings
+            # in the first column
+            if len(cells) == 2:
+                data = cells[1]
+                for test_label, udf, parser_func in LABEL_UDF_PARSER:
+                    if re.match(test_label, label, re.IGNORECASE):
+                        value = parser_func(data)
+                        if not value is None:
+                            results.append((udf, value))
+                for test_label, udf, parser_func in LABEL_CONTENT_UDF_PARSER:
+                    if re.match(test_label, label, re.IGNORECASE):
+                        value = parser_func(cells[0])
+                        if not value is None:
+                            results.append((udf, value))
+            # Instrument / Output table has many columns and can't be parsed using the normal
+            # framework. Stateful parsing based on first looking for the header row, then the
+            # per-instrument rows.
+            elif len(cells) == 3:
+                if label == "Instrument / output size":
+                    instrument_output_table = get_seq_types_read_lengths(*cells[1:])
+            elif instrument_output_table and len(cells) == len(instrument_output_table)+1:
+                instrument_udfs_tmp = get_instrument_and_mode(instrument_output_table, cells)
+                if instrument_udfs_tmp:
+                    instruments_found += 1
+                    instrument_udfs = instrument_udfs_tmp
+    if instruments_found == 1:
+        results += instrument_udfs
     return results
 
 
@@ -332,7 +402,7 @@ def process_read_length(fields):
     for i, f in enumerate(fields):
         if f[0] == 'Sequencing method':
             sequencing_method = f[1]
-        elif f[0] == 'Read length requested':
+        elif f[0] == 'Read length TEMPFIELD':
             read_length = f[1]
             read_length_index = i
 
@@ -366,7 +436,7 @@ def process_hazardous(fields):
     for i, f in reversed(list(enumerate(fields))):
         if f[0] == 'Hazardous':
             if f[1]:
-                print "Warning: Hazardous samples. Can't do anything."
+                print("Warning: Hazardous samples. Can't do anything.")
                 del fields[i]
             else:
                 del fields[i]
@@ -402,22 +472,20 @@ def add_defaults(fields):
             fields.append((key, value))
 
 
+
 def parse(docx_data):
     try:
-        document = zipfile.ZipFile(StringIO.StringIO(docx_data))
+        document = zipfile.ZipFile(io.BytesIO(docx_data))
         xml_content = document.read('word/document.xml')
         tree = XML(xml_content)
         document.close()
     except:
         raise RuntimeError("Could not read sample submission form. Please convert it to docx format.")
 
-    try:
-        fields = get_values_from_doc(tree)
-        post_process_values(fields)
-        add_defaults(fields)
-        return fields
-    except Exception, e:
-        raise RuntimeError("Something went wrong in the main parsing code", e)
+    fields = get_values_from_doc(tree)
+    post_process_values(fields)
+    add_defaults(fields)
+    return fields
 
 
 def main(process_id):
@@ -436,7 +504,7 @@ def main(process_id):
             if docx_file.original_location.endswith(".docx"):
                 docx_data = docx_file.download()
             else:
-                print "Error: Submission form has incorrect file extension, should be docx."
+                print("Error: Submission form has incorrect file extension, should be docx.")
                 return 1
     except StopIteration:
         pass
@@ -450,7 +518,7 @@ def main(process_id):
     try:
         fields = parse(docx_data)
     except RuntimeError as e:
-        print e
+        print(e)
         return 1
     for uname, uvalue in fields:
         process.udf[uname] = uvalue
@@ -458,16 +526,18 @@ def main(process_id):
     try:
         process.udf['Sample submission form imported'] = True
         process.put()
-        print "Submission form imported successfully."
+        print("Submission form imported successfully.")
     except requests.exceptions.HTTPError as e:
-        print "Error while updating fields: {0}.".format(e)
+        print("Error while updating fields: {}.".format(e))
         return 1
     return 0
 
 def test(filename):
-    fields = parse(open(filename).read())
-    for key, value in sorted(fields):
-        print u"{0:20}: {1}".format(key, value).encode('utf-8')
+    with open(filename, 'rb') as f:
+        data = f.read()
+        fields = parse(data)
+        for key, value in sorted(fields):
+            print ("{0:20}: {1}".format(key, value))
 
 
 if sys.argv[1] == "test":
