@@ -192,12 +192,12 @@ def generate_sample_sheet(process, i_os, include_lane, use_sampleid=False):
                             ""
                         ])
             else:
-                data.append(data + [
+                data.append(lane_data + [
                             sample.name,
                             sample.name,
                             index1,
                             index2,
-                            sample.project.name,
+                            sample.project.name if sample.project else 'Controls',
                             artifact.id
                         ])
         if validate:
