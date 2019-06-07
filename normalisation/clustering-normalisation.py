@@ -14,12 +14,30 @@
 ## pip install requests
 # (exit; done)
 
+
+# The script can be used on different steps, and thus has to support different sets of UDF names.
+# The third command line argument is used as a code to select UDFs from which to take the values.
+
 from openpyxl.styles import Border, Side, Alignment, Font
 from openpyxl import Workbook
 from genologics.lims import *
 from genologics import config
 import sys
 import re
+
+
+if len(sys.argv) > 3:
+    code = sys.argv[3]
+else:
+    code = "TruSeq"
+if code == "Diag":
+    CONC_INPUT_UDF = "Conc Input (nM) Diag"
+    VOLUME_PHIX_UDF = "Volume PhiX (uL) Diag"
+    VOLUME_FINAL_UDF = "Volume final (uL) Diag"
+elif code == "TruSeq":
+    CONC_INPUT_UDF = "Conc. Input (nM) TruSeq DNA"
+    VOLUME_PHIX_UDF = "Volume PhiX (uL) TruSeq DNA"
+    VOLUME_FINAL_UDF = "Volume final (uL) TruSeq DNA"
 
 
 START_COL = 2
@@ -95,9 +113,9 @@ for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)
 
     # ---- Parameters (use specific for sample, or default) ----
     try:
-        conc_input = output.udf['Conc. Input (nM) TruSeq DNA']
-        phix_input = output.udf['Volume PhiX (uL) TruSeq DNA']
-        final_volume = output.udf['Volume final (uL) TruSeq DNA']
+        conc_input = output.udf[CONC_INPUT_UDF]
+        phix_input = output.udf[VOLUME_PHIX_UDF]
+        final_volume = output.udf[VOLUME_FINAL_UDF]
     except KeyError as e:
         print ("Error: missing value for", e, "for sample", output.name)
         sys.exit(1)
