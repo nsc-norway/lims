@@ -70,13 +70,13 @@ def main(process_id, output_id, concentration_source):
         try:
             norm_conc = output.udf['Normalized conc. (ng/uL)']
         except KeyError:
-            norm_conc = process.udf['Default normalized conc. (ng/uL)']
+            norm_conc = process.udf['Normalized concentration (ng/uL)']
             output.udf['Normalized conc. (ng/uL)'] = norm_conc
             updated_outputs.add(output)
         try:
             output_vol = output.udf['Volume (uL)']
         except KeyError:
-            output_vol = process.udf['Default volume (uL)']
+            output_vol = process.udf['Volume (uL)']
             output.udf['Volume (uL)'] = output_vol
             updated_outputs.add(output)
 
