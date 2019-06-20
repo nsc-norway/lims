@@ -63,7 +63,7 @@ formatting = [
     ("Sample name",         16, None),
     ("Well",                8, None),
     ("Sample conc. [nM]",   10, '0.00'),
-    ("Conc. Input 2.0/3.0nM",10,'0.0'),
+    ("Conc. Input [nM]",    10,'0.0'),
     ("Volum final [uL]",    10, '0'),
     ("Input [uL]",          10, '0.00'),
     ("PhiX [uL]",           10, '0.00'),
