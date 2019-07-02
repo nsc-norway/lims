@@ -115,7 +115,6 @@ def main(process_uri, username, password, sample_type, lims_ids):
     files = []
     if len(lims_ids) == 1:
         process = Process(lims, id=lims_ids[0])
-        print process.uri
         if sample_type == "qc":
             analytes = []
             results = {}
@@ -130,6 +129,9 @@ def main(process_uri, username, password, sample_type, lims_ids):
     elif len(lims_ids) > 1 and lims_ids[0] == "ANALYTES":
         process = None
         analytes = lims.get_batch(Artifact(lims, id=lims_id) for lims_id in lims_ids[1:])
+    elif len(lims_ids) > 1 and lims_ids[0] == "PROCESS_INPUTS":
+        process = Process(lims, id=lims_ids[1])
+        analytes = process.all_inputs(unique=True, resolve=True)
     else:
         print "Invalid argument, use either process-ID or ANALYTES and a list of analytes"
         sys.exit(1)
