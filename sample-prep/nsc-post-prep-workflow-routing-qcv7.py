@@ -6,7 +6,7 @@ from collections import defaultdict
 from genologics.lims import *
 from genologics import config
 
-QC_WORKFLOW = "NSC QC 7.0"
+QC_WORKFLOW = "NSC QC 7.1"
 STAGE_MAPPING = {
         'NSC_16S': 'Quant-iT 16S libraries'
         }
