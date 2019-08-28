@@ -127,7 +127,7 @@ def main(file_format, process_id, graph_file_id, sample_volume, input_file_ids):
             print "Detected a sample in the position", o.location[1], "which should be a standard."
             sys.exit(1)
         conc = (container_data[o.location[0]][o.location[1]] - std0_value) / slope
-        o.udf['Concentration'] = conc
+        o.udf['Concentration (ng/ul)'] = conc
 
     # Plot the data and the curve
     # Intercept parameter is now fixed at 0
