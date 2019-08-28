@@ -58,7 +58,7 @@ def main(process_id, concentration_source, file_id, default_norm_dna, default_vo
                     for i, o in qc_process.input_output_maps:
                         if i['uri'].id == input.id and o['output-type'] == "ResultFile"\
                                 and o['output-generation-type'] == "PerInput":
-                            conc = o['uri'].udf.get('Concentration')
+                            conc = o['uri'].udf.get('Concentration (ng/ul)') or o['uri'].udf.get('Concentration')
                             if conc is not None:
                                 qi_conc = conc
             if qi_conc is None:
