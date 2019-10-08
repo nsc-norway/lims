@@ -263,13 +263,14 @@ class Job(object):
                 CheckFields(self),
                 ReadSampleFile(self),
                 CheckExistingProjects(self),
+                CheckLots(self),
                 CreateProject(self),
                 UploadFile(self),
                 CreateSamples(self),
                 SetIndexes(self),
                 AssignWorkflow(self),
                 RunPoolingStep(self),
-                FindOrCreateLots(self),
+                CreateLots(self),
                 RunDenatureStep(self),
                 StartSequencingStep(self)
             ]
@@ -479,6 +480,24 @@ class CheckExistingProjects(Task):
             raise ValueError("A project named {0} already exists.".format(
                 self.job.project_title))
 
+class CheckLots(Task):
+    NAME = "Check reagent lots"
+    
+    def run(self):
+        for i, box in enumerate([1,2]):
+            self.status = "Searching for reagent lot {0}...".format(box)
+            kitname = self.job.project_type['box{0}_kit_name'.format(box)]
+            try:
+                kit = next(iter(lims.get_reagent_kits(name=kitname)))
+            except StopIteration:
+                raise RuntimeError("The kit type {0} does not exits.".format(kitname))
+            lotnumber = self.job.parameters['param_box{0}lot'.format(box)]
+            ref = self.job.parameters['param_box{0}ref'.format(box)]
+            lots = lims.get_reagent_lots(kitname=kitname, number=lotnumber, name=ref)
+            if lots:
+                raise RuntimeError("The lot {0} ({1}) already exists in the system. Please "
+                    "delete it in Clarity, or enter a different lot number/RGT number.".format(lotnumber, ref))
+
 class CreateProject(Task):
     NAME = "Create project"
 
@@ -575,28 +594,22 @@ class RunPoolingStep(Task):
         process.put()
         self.job.pool = next(o['uri'] for i, o in process.input_output_maps if o['output-type'] == 'Analyte')
 
-class FindOrCreateLots(Task):
-    NAME = "Find or create reagent lots"
+class CreateLots(Task):
+    NAME = "Create reagent lots"
     
     def run(self):
         self.job.lots = []
         expiry_date = (datetime.date.today() + datetime.timedelta(days=7)).isoformat()
         for i, box in enumerate([1,2]):
-            self.status = "Searching for reagent lot {0}...".format(box)
+            self.status = "Creating lot {0}...".format(box)
             kitname = self.job.project_type['box{0}_kit_name'.format(box)]
             lotnumber = self.job.parameters['param_box{0}lot'.format(box)]
             ref = self.job.parameters['param_box{0}ref'.format(box)]
-            lots = lims.get_reagent_lots(kitname=kitname, number=lotnumber)
-            for lot in lots:
-                if lot.name.startswith(ref):
-                    break
-            else: # No lot found
-                self.status = "Creating lot {0}...".format(box)
-                try:
-                    kit = next(iter(lims.get_reagent_kits(name=kitname)))
-                except StopIteration:
-                    raise RuntimeError("The specified kit type {0} does not exits.".format(kitname))
-                lot = lims.create_lot(kit, ref, lotnumber, expiry_date, status='ACTIVE')
+            try:
+                kit = next(iter(lims.get_reagent_kits(name=kitname)))
+            except StopIteration:
+                raise RuntimeError("The specified kit type {0} does not exits.".format(kitname))
+            lot = lims.create_lot(kit, ref, lotnumber, expiry_date, status='ACTIVE')
             self.job.lots.append(lot)
 
 class RunDenatureStep(Task):
