@@ -1,6 +1,7 @@
 import sys
 import csv
 import StringIO
+import datetime
 from genologics.lims import *
 from genologics import config
 
@@ -110,7 +111,7 @@ def main(process_id, output_file_id):
     out.writerow(header)
     out.writerows((out_ro for location, out_ro in rows_sorted))
 
-    output_file_name = "NormalizationSheet.csv"
+    output_file_name = "NormalizationSheet-{0}.csv".format(datetime.date.today())
     outfile = Artifact(lims, id=output_file_id)
     gs = lims.glsstorage(outfile, output_file_name)
     file_obj = gs.post()
