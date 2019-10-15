@@ -17,7 +17,9 @@ def main(process_id, operation):
     for i,o in ios:
         if o['output-type'] == "Analyte":
             a = o['uri']
-            prefix = "%4.2f nM | " % (i['uri'].udf.get('Molarity', 0.0))
+            prefix = "%4.2f nM | " % (i['uri'].udf.get('Molarity', 
+                                        i['uri'].udf.get('Normalized conc. (nM)',
+                                            0.0)))
             if operation == "add":
                 if not a.name.startswith(prefix):
                     a.name = prefix + a.name
