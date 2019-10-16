@@ -35,7 +35,6 @@ SEQUENCERS = {
     'J00146': ('hiseq3k', 'Hiawatha'),
     'E00401': ('hiseq4k', 'Hippo'),
 
-    'E00396': ('hiseqx', 'Dexter'),
     'E00426': ('hiseqx', 'Pixie'),
     'E00423': ('hiseqx', 'Roxanne')
     }
