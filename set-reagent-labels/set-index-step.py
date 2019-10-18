@@ -45,8 +45,11 @@ def main(process_id):
 
     if process.udf.get('Reverse complement index1'):
         split_indexes = [[reverse_complement(i[0])] + i[1:] for i in split_indexes]
-    if process.udf.get('Reverse complement index2') and any(len(i) > 1 for i in split_indexes):
-        split_indexes = [i[0:1] + [reverse_complement(i[1])] for i in split_indexes]
+    if process.udf.get('Reverse complement index2'):
+        try:
+            split_indexes = [i[0:1] + [reverse_complement(i[1])] for i in split_indexes]
+        except IndexError:
+            raise ValueError("Can't reverse-complement index2, at least one of the samples does not appear to have a dual index.")
     if process.udf.get('Swap index1 and index2'):
         split_indexes = [reversed(i) for i in split_indexes]
 
