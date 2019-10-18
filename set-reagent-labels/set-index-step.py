@@ -17,7 +17,10 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
 def reverse_complement(seq):
     complement={'A':'T', 'C':'G', 'G':'C', 'T':'A'}
-    return "".join(reversed([complement[c] for c in seq]))
+    try:
+        return "".join(reversed([complement[c] for c in seq]))
+    except KeyError as e:
+        raise ValueError("Invalid base {0}, cannot reverse-complement index '{1}'".format(e, seq))
 
 def main(process_id):
     """Assign reagents based on available reagent types, the Index requested/used UDF,
@@ -42,7 +45,7 @@ def main(process_id):
 
     if process.udf.get('Reverse complement index1'):
         split_indexes = [[reverse_complement(i[0])] + i[1:] for i in split_indexes]
-    if process.udf.get('Reverse complement index2'):
+    if process.udf.get('Reverse complement index2') and any(len(i) > 1 for i in split_indexes):
         split_indexes = [i[0:1] + [reverse_complement(i[1])] for i in split_indexes]
     if process.udf.get('Swap index1 and index2'):
         split_indexes = [reversed(i) for i in split_indexes]
