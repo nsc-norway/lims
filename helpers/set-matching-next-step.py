@@ -26,6 +26,7 @@ def main(process_id, name_pattern):
             if action == "nextstep":
                 next_action['step-uri'] = next_step_uri
             next_action['action'] = action
+    step.actions.put()
 
 main(
         process_id=sys.argv[1],
