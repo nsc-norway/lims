@@ -1,16 +1,13 @@
 import sys
 import xlwt
 
-# NOTE this file is obsolete, but remains to support the old version of the
-# protocol step -- Master step Pooling and normalization Diag 4.0 and earlier.
-# Once these steps are no longer active, this file could be deleted, and the
-# new version robot-pooling-file-2.py should be used.
-
 from genologics.lims import *
 from genologics import config
 
 #from openpyxl.styles import Border, Side, Alignment, Font
 from openpyxl import Workbook
+
+TUBE = 'Tube'
 
 def get_well_key(artifact):
     container = artifact.location[0].name
@@ -30,6 +27,14 @@ def main(process_id, output_file_id):
     lims.get_batch(process.all_inputs(unique=True) + process.all_outputs(unique=True))
     lims.get_batch(input.samples[0] for input in process.all_inputs(unique=True))
 
+    input_tubes = sorted(set(
+                        int(inp.location[0].id.partition("-")[2]) for inp in process.all_inputs()
+                                if inp.location[0].type_name == TUBE
+                    ))
+    output_tubes = sorted(set(
+                        int(oup.location[0].id.partition("-")[2]) for oup in process.all_outputs()
+                                if oup.type == 'Analyte' and oup.location[0].type_name == TUBE
+                    ))
 
     book = xlwt.Workbook()
     sheet1 = book.add_sheet('Sheet1')
@@ -58,7 +63,10 @@ def main(process_id, output_file_id):
 
         target_sample_conc = pool_norm_conc * 1.0 / len(pool.inputs)
 
-        dest_well = display_well(output.location[1])
+        if output.location[0].type_name == TUBE:
+            dest_well = output_tubes.index(int(output.location[0].id.partition("-")[2])) + 1
+        else:
+            dest_well = display_well(output.location[1])
         first_in_pool = True
         for input in sorted(pool.inputs, key=get_well_key):
             try:
@@ -69,7 +77,10 @@ def main(process_id, output_file_id):
                 return 1
             row_index += 1
             row = sheet1.row(row_index)
-            source_well = display_well(input.location[1])
+            if input.location[0].type_name == TUBE:
+                source_well = input_tubes.index(int(input.location[0].id.partition("-")[2])) + 1
+            else:
+                source_well = display_well(input.location[1])
             row.write(0, source_well)
             row.write(1, dest_well)
             row.write(2, round(sample_volume, 1))
