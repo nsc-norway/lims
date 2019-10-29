@@ -26,7 +26,7 @@ def sort_key(elem):
     input, output = elem
     container, well = output.location
     row, col = well.split(":")
-    return (container, int(col), row)
+    return (container.id, int(col), row)
 
 headers = [
     "Antall",
