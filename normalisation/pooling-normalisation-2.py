@@ -4,9 +4,7 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
-# Old version of the script, left in place because old protocols refer
-# to this location and not to processtype/...
-# Can be deleted once Pooling and Normalization Diag 4.0 is out of production.
+TUBE = 'Tube'
 
 def get_tuple_key(tupl):
     artifact = tupl[0]
@@ -64,6 +62,15 @@ def main(process_id, output_file_id):
         print "This is used in case the per-pool value is not given for some pools"
         sys.exit(1)
 
+    input_tubes = sorted(set(
+        int(inp.location[0].id.partition("-")[2]) for inp in process.all_inputs()
+        if inp.location[0].type_name == TUBE
+    ))
+    output_tubes = sorted(set(
+        int(oup.location[0].id.partition("-")[2]) for oup in process.all_outputs()
+        if oup.type == 'Analyte' and oup.location[0].type_name == TUBE
+    ))
+
     error = False # "Soft" error, still will upload the file
 
     rows = []
@@ -105,7 +112,10 @@ def main(process_id, output_file_id):
             error = True
 
         dest_container = output.location[0].name.encode('utf-8')
-        dest_well = output.location[1]
+        if output.location[0].type_name == TUBE:
+            dest_well = output_tubes.index(int(output.location[0].id.partition("-")[2])) + 1
+        else:
+            dest_well = output.location[1]
 
         first_in_pool = True
         sum_frag_length = 0.0
@@ -119,7 +129,10 @@ def main(process_id, output_file_id):
             input_mol_conc_str = "%4.2f" % (input.udf['Molarity'])
             sample_vol_str = "%4.2f" % sample_volume
             source_container = input.location[0].name.encode('utf-8')
-            source_well = input.location[1]
+            if input.location[0].type_name == TUBE:
+                source_well = input_tubes.index(int(input.location[0].id.partition("-")[2])) + 1
+            else:
+                source_well = input.location[1]
             if first_in_pool:
                 rows.append([
                     pool.name.encode('utf-8'),
