@@ -37,7 +37,7 @@ def main(process_id, file_id):
                             # Convert UDI plate to well position
                             match = re.match(r"(24)?UD[PI](\d{4}) .*", index_name)
                             udi_nr = int(match.group(2))
-                            colnr = (udi_nr - 1) // 8
+                            colnr = ((udi_nr - 1) // 8) % 12
                             rownr = (udi_nr - 1) % 8
                             index_well = "%s%02d" % (alpha[rownr], colnr+1)
                         except:
