@@ -37,12 +37,10 @@ headers = [
     "Alternative Sample ID",
     "Konsentrasjon ng/µL",
     "Posisjon",
-    "µL EB",
-    "µL DNA",
     ]
 
 title_cell = ws.cell(row=1, column=1)
-title_cell.value = "Oppsett til SNP-ID"
+title_cell.value = "Oppsett Nextera Flex"
 title_cell.font = Font(size=14, bold=True)
 
 for i, header in enumerate(headers, 1):
@@ -82,17 +80,6 @@ for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)
     ws.cell(row=row_index, column=next(col)).value = output.location[1].replace(":", "")
     for i in range(2, len(headers)+1):
         ws.cell(row=row_index, column=i).alignment = Alignment(horizontal="right")
-    if conc >= 9 and conc <= 180:
-        ws.cell(row=row_index, column=next(col)).value = 43
-        ws.cell(row=row_index, column=next(col)).value = 2
-    else:
-        # Compute 3 ng/uL in 45 uL total volume
-        if conc == 0.0:
-            sample_vol = 2
-        else:
-            sample_vol = (3 * 45) / conc
-        ws.cell(row=row_index, column=next(col)).value = max(0, 45 - sample_vol)
-        ws.cell(row=row_index, column=next(col)).value = sample_vol
 
 wb.save(sys.argv[2] + '.xlsx')
 
