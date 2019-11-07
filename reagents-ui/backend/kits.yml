@@ -70,6 +70,14 @@
 - {hasUniqueId: true, lotcode: 300-V2, name: HiSeq X SBS Reagents 2/2, ref: '15057936',
   setActive: true}
 - {hasUniqueId: true, lotcode: V1, name: HiSeq cBot 2 Manifold, ref: '15067566', setActive: true}
+- {hasUniqueId: true, lotcode: SetC-V1, name: IDT for Illumina - Nextera DNA UD indexes,
+  ref: '20026934', setActive: true}
+- {hasUniqueId: true, lotcode: SetD-V1, name: IDT for Illumina - Nextera DNA UD indexes,
+  ref: '20026933', setActive: true}
+- {hasUniqueId: true, lotcode: SetB-V1, name: IDT for Illumina - Nextera DNA UD indexes,
+  ref: '20026930', setActive: true}
+- {hasUniqueId: true, lotcode: SetA-V1, name: IDT for Illumina - Nextera DNA UD indexes,
+  ref: '20026121', setActive: true}
 - {hasUniqueId: true, lotcode: V1, name: 'Indices: Nextera Rapid Capture/TruSight
     One/Cardio', ref: '15065077', setActive: false}
 - {hasUniqueId: true, lotcode: V1-288R, name: 'Indices: Nextera Rapid Capture/TruSight
@@ -98,6 +106,8 @@
 - {hasUniqueId: true, lotcode: HO-V2.5, name: NextSeq 500 FC, ref: '20022408', setActive: true}
 - {hasUniqueId: true, lotcode: MO-V2, name: NextSeq 500 FC, ref: '15065974', setActive: true}
 - {hasUniqueId: true, lotcode: HO-V2, name: NextSeq 500 FC, ref: '15065973', setActive: true}
+- {hasUniqueId: true, lotcode: FC-MO-500-V2.5, name: NextSeq 500 FC, ref: '20022409',
+  setActive: true}
 - {hasUniqueId: false, lotcode: RC-HO-75-V2, name: NextSeq 500 RC, ref: '15057934',
   setActive: true}
 - {hasUniqueId: false, lotcode: RC-MO-300-V2, name: NextSeq 500 RC, ref: '15057939',
@@ -109,6 +119,16 @@
 - {hasUniqueId: false, lotcode: RC-MO-150-V2, name: NextSeq 500 RC, ref: '15057940',
   setActive: true}
 - {hasUniqueId: true, lotcode: V2, name: NextSeq Accessory Box, ref: '15058251', setActive: true}
+- {hasUniqueId: true, lotcode: V1, name: Nextera DNA Flex Enrichment Reagents - Beads
+    and Buffers, ref: '20026210', setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: Nextera DNA Flex Enrichment Reagents - PCR
+    Reagents and Buffers, ref: '20026209', setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: Nextera DNA Flex Pre-Enrichment Library Prep
+    - Beads, ref: '20026214', setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: Nextera DNA Flex Pre-Enrichment Library Prep
+    - Buffers, ref: '20026215', setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: Nextera DNA Flex Pre-Enrichment Library Prep
+    - PCR Reagents, ref: '20026213', setActive: false}
 - {hasUniqueId: true, lotcode: TruSight One, name: 'Oligos: Nextera Rapid Capture/TruSight
     One/Cardio', ref: '15047151', setActive: false}
 - {hasUniqueId: true, lotcode: V1-864R, name: 'Oligos: Nextera Rapid Capture/TruSight
