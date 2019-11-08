@@ -7,7 +7,9 @@ var ICONS = {
 	'nextseq':	'graphics/nextseq.png',
 	'hiseq3k': 'graphics/hiseq-4000.png',
 	'hiseq4k': 'graphics/hiseq-4000.png',
-	'miseq':	'graphics/miseq.png'
+	'miseq':	'graphics/miseq.png',
+	'novaseq':	'graphics/novaseq.png',
+	'mystery':	'graphics/mystery.png',
 	};
 
 var TYPES = {
@@ -16,7 +18,9 @@ var TYPES = {
 	'nextseq':	'NextSeq',
 	'hiseq3k': 'HiSeq 3000',
 	'hiseq4k': 'HiSeq 4000',
-	'miseq':	'MiSeq'
+	'miseq':	'MiSeq',
+	'novaseq':	'NovaSeq',
+	'mystery':	'????',
 	};
 
 var statusEventSource = null;

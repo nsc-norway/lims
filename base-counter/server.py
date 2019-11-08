@@ -36,7 +36,9 @@ SEQUENCERS = {
     'E00401': ('hiseq4k', 'Hippo'),
 
     'E00426': ('hiseqx', 'Pixie'),
-    'E00423': ('hiseqx', 'Roxanne')
+    'E00423': ('hiseqx', 'Roxanne'),
+
+    'YXXXXX': ('mystery', 'N...')
     }
 
 
@@ -188,6 +190,8 @@ def instrument_rate(m_id):
         per_hour = 4137931034
     elif instrument == "miseq":
         per_hour = 133928571
+    elif instrument == "novaseq":
+        per_hour = 34722222222
     return per_hour / 3600.0
 
 class RunStatus(object):
@@ -408,6 +412,8 @@ class FakeRun(RunStatus):
             return 400e6
         elif "miseq":
             return 25e6
+        elif "novaseq":
+            return 3.3e9 # 3.3 billion reads, spec S2 flow cell
 
     def get_cycle(self):
         speed = instrument_rate(self.machine_id) / self.get_clusters()
