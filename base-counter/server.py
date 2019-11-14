@@ -38,7 +38,7 @@ SEQUENCERS = {
     'E00426': ('hiseqx', 'Pixie'),
     'E00423': ('hiseqx', 'Roxanne'),
 
-    'YXXXXX': ('mystery', 'N...')
+    'A00943': ('novaseq', 'N...')
     }
 
 
