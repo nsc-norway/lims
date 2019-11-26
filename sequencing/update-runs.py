@@ -157,7 +157,9 @@ def update_clusters_pf(ds, process, current_cycle):
     except (ValueError, illuminate.exceptions.InteropFileNotFoundError):
         return # No information yet
     df = all_df[all_df.code == 103] # Number of clusters PF
-    r1cycles = process.udf['Read 1 Cycles']
+    r1cycles = process.udf.get('Read 1 Cycles')
+    if r1cycles is None:
+        return
     reads = 1
     if current_cycle > r1cycles:
         reads = 2
