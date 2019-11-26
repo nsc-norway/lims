@@ -1,9 +1,9 @@
 {
     "SERVERS": [
     {
-        "INSTRUMENTS":  ["HiSeq X", "HiSeq 3000/4000", "NextSeq", "MiSeq"],
-        "SEQUENCING": ["Illumina Sequencing (HiSeq X) 1.0", "Illumina Sequencing (HiSeq 3000/4000) 1.0", "NextSeq Run (NextSeq) 1.0", "MiSeq Run (MiSeq) 5.0"],
-        "FLOWCELL_TYPES": ["Patterned Flow Cell", "Illumina Flow Cell", "NextSeq Reagent Cartridge", "MiSeq Reagent Cartridge"],
+        "INSTRUMENTS":  ["NovaSeq", "HiSeq X", "HiSeq 3000/4000", "NextSeq", "MiSeq"],
+        "SEQUENCING": ["AUTOMATED - NovaSeq Run (NovaSeq 6000 v3.0)", "Illumina Sequencing (HiSeq X) 1.0", "Illumina Sequencing (HiSeq 3000/4000) 1.0", "NextSeq Run (NextSeq) 1.0", "MiSeq Run (MiSeq) 5.0"],
+        "FLOWCELL_TYPES": ["SP", "S1", "S2", "S4", "Patterned Flow Cell", "Illumina Flow Cell", "NextSeq Reagent Cartridge", "MiSeq Reagent Cartridge"],
         "DATA_PROCESSING": ["Demultiplexing and QC NSC 2.0"],
         "CREDENTIALS_FILE": null
     }
