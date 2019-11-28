@@ -37,8 +37,6 @@ DB_FILE = "/var/db/rundb/runs.db"
 #  from DB once removed from the filesystem.
 
 INSTRUMENT_NAME_MAP = {
-            'D00132': 'Hilma',
-
             'NS500336': 'Nemo',
             'NB501273': 'Nelson',
 
@@ -49,16 +47,16 @@ INSTRUMENT_NAME_MAP = {
             'J00146': 'Hiawatha',
             'E00401': 'Hippo',
 
-            'E00396': 'Dexter',
             'E00426': 'Pixie',
-            'E00423': 'Roxanne'
+            'E00423': 'Roxanne',
+
+            'A00943': 'Nordis',
             }
 
 
 PROCESS_TYPES = [
             "Illumina Sequencing (HiSeq X) 1.0",
             "Illumina Sequencing (HiSeq 3000/4000) 1.0",
-            "Illumina Sequencing (Illumina SBS) 5.0",
             "NextSeq Run (NextSeq) 1.0",
             "MiSeq Run (MiSeq) 5.0"
         ]
@@ -390,13 +388,6 @@ def set_initial_fields(process, run_dir, run_id):
     if process.type_name.startswith("MiSeq Run"):
         tree.parse(os.path.join(run_dir, "runParameters.xml"))
         process.udf['Chemistry Version'] = tree.find("ReagentKitVersion").text.replace("Version", "")
-    elif process.type_name.startswith("Illumina Sequencing (Illumina SBS)"):
-        tree.parse(os.path.join(run_dir, "runParameters.xml"))
-        rp_run_mode = tree.find("Setup/RunMode").text
-        if rp_run_mode == "RapidHighOutput":
-            process.udf['Run Mode'] = "High Output"
-        elif rp_run_mode == "RapidRun":
-            process.udf['Run Mode'] = "Rapid"
     process.udf['Run started'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     process.put()
 
