@@ -1,0 +1,12 @@
+bash -l -c "/opt/gls/clarity/bin/java -jar /opt/gls/clarity/extensions/ngs-common/v5/EPP/ngs-extensions.jar -i {stepURI:v2} -u {username} -p {password} \
+    script:evaluateDynamicExpression \
+        -exp 'step.::Run Mode:: = input.::Flowcell Type:: ; if (!step.::Experiment Name::.matches(::[a-zA-Z0-9-_]+::)) { fail(::Experiment Name contains prohibited characters. Allowed characters are: a-z, A-Z, 0-9, -, and _::) }; if (step.::Workflow Type:: == ::No Index::) { if (step.::Index Read 1:: != 0) { fail(::Index Read 1 must be 0 if the Workflow Type is No Index.::) } } else { if (step.::Index Read 1:: == 0) { fail(::Index Read 1 must be greater than 0 if the Workflow Type is :: + step.::Workflow Type:: + ::.::) } }; if (step.::Paired End::.toBoolean() && step.::Read 2 Cycles:: == 0) { fail(::Read 2 Cycles must not be zero if it is Paired End read.::) }; if (step.::Workflow Type:: == ::Dual Index:: && step.::Index Read 2:: == 0) { fail(::Index Read 2 must not be zero if Workflow Type is Dual Index.::) }; if (step.::Workflow Type:: == ::No Index:: || step.::Workflow Type:: == ::Single Index::) { step.::Index Read 2:: = 0 }; if (!step.::Paired End::.toBoolean()) { step.::Read 2 Cycles:: = 0 }; if (input.::Flowcell Type::!=::SP:: && step.::Read 1 Cycles:: > 151) { fail(::Read 1 Cycles must not be larger than 151 if it is not SPrime Flowcell::) };if (input.::Flowcell Type::!=::SP:: && step.::Read 2 Cycles:: > 151) { fail(::Read 2 Cycles must not be larger than 151 if it is not SPrime Flowcell::) }; nextStep = ::ADVANCE::' \
+        -log {compoundOutputFileLuid1} \
+        -t true \
+&& /opt/gls/clarity/bin/java -jar /opt/gls/clarity/extensions/ngs-common/v5/EPP/DriverFileGenerator.jar -i {stepURI:v2} -u {username} -p {password} \
+    script:driver_file_generator \
+        -t /opt/gls/clarity/extensions/conf/driverfiletemplates/NovaSeq_BCL2FASTQ_Samplesheet.csv \
+        -o {compoundOutputFileLuid0}.csv \
+        -q true \
+        -destLIMSID {compoundOutputFileLuid0} \
+        -l {compoundOutputFileLuid1}"

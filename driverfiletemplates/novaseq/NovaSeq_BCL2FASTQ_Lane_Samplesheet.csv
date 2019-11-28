@@ -1,0 +1,49 @@
+SORT.BY.${OUTPUT.CONTAINER.PLACEMENT}${INPUT.CONTAINER.ROW}${INPUT.CONTAINER.COLUMN}
+OUTPUT.FILE.NAME,${OUTPUT.CONTAINER.NAME}.csv
+PROCESS.POOLED.ARTIFACTS
+CONTROL.SAMPLE.DEFAULT.PROJECT.NAME,Controls
+HIDE, ${INPUT.REAGENT.SEQUENCE##Dual}, IF, NODATA
+<HEADER_BLOCK>
+[Header]
+Investigator Name,${PROCESS.TECHNICIAN}
+Experiment Name,${PROCESS.UDF.Experiment Name}
+Date,${DATE}
+Workflow,${PROCESS.UDF.Workflow}
+[Reads]
+${PROCESS.UDF.Read 1 Cycles}
+${PROCESS.UDF.Read 2 Cycles}
+[Data]
+</HEADER_BLOCK>
+<HEADER>
+Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,index,index2,Sample_Project,Description
+</HEADER>
+<DATA>
+${OUTPUT.CONTAINER.PLACEMENT##Lane},${INPUT.LIMSID},${SAMPLE.NAME##NoSpecialCharacters},${INPUT.CONTAINER.NAME},${INPUT.CONTAINER.PLACEMENT},${INPUT.REAGENT.SEQUENCE##Single},${INPUT.REAGENT.SEQUENCE##Dual},${SAMPLE.PROJECT.NAME##NoSpecialCharacters},
+</DATA>
+<TOKEN_FORMAT>
+${INPUT.REAGENT.SEQUENCE##Single}
+def index = token.indexOf("-")
+if (index > 0) {
+    return token.substring(0,index)
+} else {
+   return token
+}
+
+${INPUT.REAGENT.SEQUENCE##Dual}
+def index = token.indexOf("-")
+if (index >= 0) {
+    return token.substring(index + 1)
+} else {
+    return null
+}
+
+${SAMPLE.NAME##NoSpecialCharacters}
+return token.replaceAll(\"[^a-zA-Z0-9_]\", \"_\")
+
+${SAMPLE.PROJECT.NAME##NoSpecialCharacters}
+return token.replaceAll(\"[^a-zA-Z0-9_]\", \"_\")
+
+${OUTPUT.CONTAINER.PLACEMENT##Lane}
+return token.substring(0, 1)
+
+</TOKEN_FORMAT>
