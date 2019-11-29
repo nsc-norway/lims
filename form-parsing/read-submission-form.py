@@ -22,20 +22,22 @@ CHECKED = WORD_NAMESPACE + 'checked'
 DEFAULT = WORD_NAMESPACE + 'default'
 VAL = WORD_NAMESPACE + 'val'
 
-PLACEHOLDER_STRING = "Click here"
+PLACEHOLDER_STRING = "Click.*here.*left.*of.*box"
 
 
 DNA_PREPS = [
         ("Nextera.*Flex", "Nextera Flex"),
         (".*TruSeq.*adapter ligation", "TruSeq Nano"),
         ("TruSeq.*PCR-free prep", "TruSeq PCR-free"),
-        ("ThruPLEX", "ThruPLEX"),
+        (".*ThruPLEX.*", "ThruPLEX"),
         ("16S library prep", "16S prep"),
         (".* unsure, please advise", "User unsure"),
         ]
 RNA_PREPS = [
         ("Regular TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Old form version
-        ("Strand-specific TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"),
+        ("Strand-specific TruSeqTM.*mRNA.*", "TruSeq Stranded mRNA"),
+        ("Strand-specific TruSeq,*total.*RNA.*", "TruSeq Stranded total RNA"),
+        ("Strand-specific TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Pre v.15: Not separate total/mRNA
         ("small RNA library preparation", "NEBNext miRNA"),
         (".* unsure, please advise", "User unsure")
         ]
@@ -59,6 +61,14 @@ SEQUENCING_INSTRUMENTS = [
         ("MiSeq v2", "MiSeq v2"),
         ("MiSeq v3", "MiSeq v3"),
         ("MiSeq", "MiSeq"),
+        ("NovaSeq SP.*½", "NovaSeq SP ½"),
+        ("NovaSeq SP", "NovaSeq SP"),
+        ("NovaSeq S1.*½", "NovaSeq S1 ½"),
+        ("NovaSeq S1", "NovaSeq S1"),
+        ("NovaSeq S2.*½", "NovaSeq S2 ½"),
+        ("NovaSeq S2", "NovaSeq S2"),
+        ("NovaSeq S4.*¼", "NovaSeq S4 ¼"),
+        ("NovaSeq S4", "NovaSeq S4"),
         ]
 
 # Some defaults are necessary for put() on required fields
@@ -102,7 +112,7 @@ def is_checked(checkbox_elem):
 
 
 # Parsing various inputs
-def get_text_multi(cell, check_placeholder=False):
+def get_text_multi(cell, check_placeholder=True):
     text = ""
     first = True
     for node in cell.getiterator():
@@ -145,7 +155,7 @@ def get_substring(prefix, cell):
             value_index = substring_index + len(prefix)
             suffix = data[value_index:]
             val = suffix.partition("\n")[0]
-            if val.strip() != PLACEHOLDER_STRING:
+            if not re.search(PLACEHOLDER_STRING, val):
                 return val
         except (ValueError, IndexError):
             return None
@@ -245,7 +255,9 @@ def library_prep_used(cell):
     text_nodes = list(cell.getiterator(TEXT))
     if len(text_nodes) > 2:
         if "If yes, please state which kit / method you used here" in text_nodes[0].text.strip():
-            return "".join(text_node.text for text_node in text_nodes[1:])
+            data = "".join(text_node.text for text_node in text_nodes[1:])
+            if not re.search(PLACEHOLDER_STRING, data):
+                return data
         
 
 def get_portable_hard_drive(cell):
@@ -259,7 +271,6 @@ def get_portable_hard_drive(cell):
 
 
 def get_delivery_method(cell):
-    # First checkbox is User HDD, second is New HDD
     selected = [is_checked(node) for node in cell.getiterator(CHECKBOX)]
     if (len(selected) in [4,5]) and sum(1 for s in selected if s) == 1: 
         try:
@@ -420,16 +431,29 @@ def process_read_length(fields):
         
 
 def process_contact_billing(fields, field_name, contact_name, billing_name):
-    # If there are two instances of the field, the first is contact and the
-    # second is billing
+    # If there are two instances of the field (field_name), the first is contact and the
+    # second is billing. If there's one instance only, we can put it as "contact".
+
+    # First argument fields should be a list of (key, value) tuples.
+
+    # Create a list of all indexes in the list matching this field name. Last first.
     index_instances = [
             (i, f) 
             for i, f in reversed(list(enumerate(fields))) # reversed, so we can del w/o changing indexes
             if f[0] == field_name]
-    for (i, f), udfname in zip(index_instances, (billing_name, contact_name)):
-        del fields[i]
-        if len(index_instances) == 2:
-            fields.append((udfname, f[1])) 
+
+    # Now spread these into two UDFs, or just add contact if there's one
+    if len(index_instances) == 2:
+        del fields[index_instances[0][0]]
+        fields.append((billing_name, index_instances[0][1][1]))
+        del fields[index_instances[1][0]]
+        fields.append((contact_name, index_instances[1][1][1]))
+    elif len(index_instances) == 1:
+        del fields[index_instances[0][0]]
+        fields.append((contact_name, index_instances[0][1][1]))
+    else:
+        for (i, f) in index_instances:
+            del fields[i]
     
 
 def process_hazardous(fields):
