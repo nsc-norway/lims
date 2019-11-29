@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Run information update script. Reads information which is not 
-# available from LIMS. 
+# available from LIMS. (Note: not processing NovaSeq)
 
 import glob
 import os
@@ -49,8 +49,6 @@ INSTRUMENT_NAME_MAP = {
 
             'E00426': 'Pixie',
             'E00423': 'Roxanne',
-
-            'A00943': 'Nordis',
             }
 
 
@@ -66,7 +64,10 @@ RUN_STORAGES=[
     "/data/runScratch.boston"
     ]
 
-RUN_ID_MATCH = r"\d\d\d\d\d\d_[A-Z0-9\-_]+"
+# This RUN ID match string does intentionally not match NovaSeq, which is 111111_A0....
+# We don't need this script for NovaSeq, and then we can sidestep the issue that
+# the illuminate library doesn't work well with NovaSeq InterOp files.
+RUN_ID_MATCH = r"\d\d\d\d\d\d_[B-Z0-9\-_]+"
 
 
 def get_mi_nextseq_container(run_dir):
@@ -97,92 +98,12 @@ def get_lims_container_name(run_dir):
     except (IOError, AttributeError):
         return get_hiseq_container(run_dir)
 
-def get_qm(dataset):
-    """Get QualityMetrics dataframe and suppress output
-    while doing it"""
-    tmp_out = sys.stdout
-    tmp_err = sys.stderr
-    sys.stdout = open(os.devnull, "w")
-    sys.stderr = open(os.devnull, "w")
-    qm = dataset.QualityMetrics()
-    sys.stdout = tmp_out
-    sys.stderr = tmp_err
-    return qm
-
-def get_lane_q30(df, lane, cycle_start, cycle_end):
-    global qs
-    global moo
-    moo = df
-    qs = df[(df.lane==lane) & (df.cycle >= cycle_start) & (df.cycle < cycle_end)].sum()
-    q30 = qs[("q%d" % (q) for q in range(30, 51))].sum()
-    qall = qs.sum()
-    if qall == 0.0:
-        return 0.0
-    return q30 * 100.0 / qall
-
-def hiseq_lane_q30(run_dir, dataset, process):
-    lanes = process.all_inputs(resolve=True)
-    reads = 1 if process.udf.get('Read 2 Cycles') is None else 2
-    do_update = True
-    for lane in lanes:
-        if lane.udf.get('Yield PF (Gb) R%d' % reads) is None:
-            do_update = False
-    if do_update:
-        read_thresholds = [
-            (1, 1 + process.udf['Read 1 Cycles'])
-            ]
-        if reads == 2:
-            r2start = sum([1,
-                    process.udf['Read 1 Cycles'],
-                    process.udf.get('Index 1 Read Cycles', 0),
-                    process.udf.get('Index 2 Read Cycles', 0)
-                    ])
-            read_thresholds.append((r2start, r2start + process.udf['Read 2 Cycles']))
-        qm = get_qm(dataset)
-        for lane in lanes:
-            for read_index, (start_cycle, end_cycle) in zip( (1,2), read_thresholds ):
-                lane_number = int(lane.location[1].split(":")[0])
-                q30pct = get_lane_q30(qm.df, lane_number, start_cycle, end_cycle)
-                lane.udf['%% Bases >=Q30 R%d' % read_index] = q30pct
-
-        lims.put_batch(lanes)
-
-    return do_update
-
-def update_clusters_pf(ds, process, current_cycle):
-    try:
-        all_df = ds.TileMetrics().df
-    except (ValueError, illuminate.exceptions.InteropFileNotFoundError):
-        return # No information yet
-    df = all_df[all_df.code == 103] # Number of clusters PF
-    r1cycles = process.udf.get('Read 1 Cycles')
-    if r1cycles is None:
-        return
-    reads = 1
-    if current_cycle > r1cycles:
-        reads = 2
-
-    lanes = process.all_inputs(resolve=True)
-    for lane_ana in lanes:
-        lane_str = lane_ana.location[1].split(":")[0]
-        if lane_str == "A":
-            lane = 1
-        else: 
-            lane = int(lane_str)
-        if len(lanes) > 0:
-            clusters = df[df.lane == lane].value.sum()
-        else:
-            clusters = df.sum()
-        for i_read in range(1, reads+1):
-            lane_ana.udf['Clusters PF R%d' % i_read] = clusters
-    lims.put_batch(lanes)
 
 def get_cycle(dataset, run_dir, lower_bound_cycle):
     """Get total cycles and current cycle based on files written in the run folder. 
 
     Will look at lane 1 only, to reduce I/O and complexity.
     """
-
     total_cycles = sum(r['cycles'] for r in dataset.Metadata().read_config)
     
     lower_bound_cycle = max(0, lower_bound_cycle)
@@ -260,11 +181,8 @@ def main():
                     process = processes[-1]
                     if set(process.all_inputs()) == set(lims_containers[-1].placements.values()):
                         handle_now = True
-			if "Illumina" in process.type_name: # HiSeq
-                            if process.udf.get("Status"):
-                                set_hiseq_reagents(process)
-                            else:
-                                handle_now = False
+                        if "Illumina" in process.type_name: # HiSeq
+                            handle_now = process.udf.get("Status")
                         if handle_now:
                             new_runs.remove(run_id)
                             set_initial_fields(process, r, run_id)
@@ -314,7 +232,6 @@ def main():
                                     process.get()
                                     set_run_metadata(ds, r, process)
                                     process.put()
-                                update_clusters_pf(ds, process, current_cycle)
                                 process.get(force=True)
                                 process.udf['Status'] = "Cycle %d of %d" % (current_cycle, total_cycles)
                                 if not process.udf.get('Finish Date'): # Another work-around for race condition
@@ -333,46 +250,6 @@ def main():
         for r in completed_runs:
             f.write("{0}\tCOMPLETED\n".format(r))
 
-def set_hiseq_reagents(process):
-    step = Step(lims, id=process.id)
-    run_id = process.udf.get('Run ID', 'Unknown')
-    kits = step.configuration.required_reagent_kits
-
-    sbs_lots_val = process.udf.get('SBS Kit Lot #', '')
-    sbs_lots = [part.strip().upper() for part in sbs_lots_val.split(",")]
-    if len(sbs_lots) != 2:
-        print "Invalid SBS lots '" + sbs_lots_val + "' for run:", run_id
-        return
-    set_lots = []
-    for kit in kits:
-        if kit.name.endswith("SBS Reagents 1/2"):
-            rgts = sbs_lots
-        elif kit.name.endswith("SBS Reagents 2/2"):
-            rgts = reversed(sbs_lots)
-        else:
-            rgts = [process.udf.get("Flow Cell ID", "UNKNOWN_FLOWCELL")]
-        found = False
-        for rgt in rgts:
-            lots = [lot for lot in lims.get_reagent_lots(kitname=kit.name) if lot.name.startswith(rgt) and lot.status == "ACTIVE"]
-            if len(lots) > 1:
-                print "Error: Multiple lots match for kit", kit.name, ", ID", rgt, ", run ID", run_id
-                return
-            elif len(lots) == 1:
-                set_lots.append(lots[0])
-                found = True
-        if not found:
-            print "Error: No lots found for kit", kit.name, ", ID", " or ".join(rgts), ", run ID", run_id
-            return
-    existing_lots = step.reagentlots.reagent_lots
-    if len(existing_lots) > 0:
-        if set(set_lots) == set(existing_lots):
-            print "Info: Lots were already specified for run ID", run_id
-        else:
-            print "Warning: Existing lots for run ID", run_id, "don't match detected lots"
-    else:
-        step.reagentlots.set_reagent_lots(set_lots)
-        print "Info: Set lots for run", run_id
-
 def set_initial_fields(process, run_dir, run_id):
     process.udf['Operator'] = process.technician.username
 
@@ -382,7 +259,6 @@ def set_initial_fields(process, run_dir, run_id):
             break
     else:
         print "The run ID", run_id, "did not match any of the known instruments, Instrument Name not set."
-
 
     tree = ElementTree()
     if process.type_name.startswith("MiSeq Run"):
