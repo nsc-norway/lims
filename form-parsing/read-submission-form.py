@@ -36,7 +36,7 @@ DNA_PREPS = [
 RNA_PREPS = [
         ("Regular TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Old form version
         ("Strand-specific TruSeqTM.*mRNA.*", "TruSeq Stranded mRNA"),
-        ("Strand-specific TruSeq,*total.*RNA.*", "TruSeq Stranded total RNA"),
+        ("Strand-specific TruSeq.*total.*RNA.*", "TruSeq Stranded total RNA"),
         ("Strand-specific TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Pre v.15: Not separate total/mRNA
         ("small RNA library preparation", "NEBNext miRNA"),
         (".* unsure, please advise", "User unsure")
@@ -349,6 +349,7 @@ LABEL_UDF_PARSER = [
         ("Upload to https site", 'Delivery method', partial(single_checkbox, 'Norstore')), # Support old form versions
         ("Portable hard drive", 'Delivery method', get_portable_hard_drive),    # Support old form versions
         ("Upload to https site", 'Delivery method', get_delivery_method),       # New delivery method table
+        ("If you want to get primary data analysis", 'Bioinformatic services', get_checkbox),
         ("Contact Name", 'Contact person', get_text_single),
         ("Institution", 'Institution', get_text_single),# Needs post-processing (Contact / Billing same field name)
         ("Address", 'Contact address', get_text_multi),
