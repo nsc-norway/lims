@@ -154,7 +154,9 @@ def start_programs():
         logging.debug("Sequencing is finished, checking if we can start some jobs")
 
         # Check the native Clarity program status
-        step.program_status.get(force=True)
+        step.get(force=True)
+        if step.program_status:
+            step.program_status.get(force=True)
         if step.program_status == None or step.program_status.status == "OK":
 
             # Now ready to start the program (push the button)
