@@ -151,34 +151,6 @@ def hiseq_lane_q30(run_dir, dataset, process):
 
     return do_update
 
-def update_clusters_pf(ds, process, current_cycle):
-    try:
-        all_df = ds.TileMetrics().df
-    except (ValueError, illuminate.exceptions.InteropFileNotFoundError):
-        return # No information yet
-    df = all_df[all_df.code == 103] # Number of clusters PF
-    r1cycles = process.udf.get('Read 1 Cycles')
-    if r1cycles is None:
-        return
-    reads = 1
-    if current_cycle > r1cycles:
-        reads = 2
-
-    lanes = process.all_inputs(resolve=True)
-    for lane_ana in lanes:
-        lane_str = lane_ana.location[1].split(":")[0]
-        if lane_str == "A":
-            lane = 1
-        else: 
-            lane = int(lane_str)
-        if len(lanes) > 0:
-            clusters = df[df.lane == lane].value.sum()
-        else:
-            clusters = df.sum()
-        for i_read in range(1, reads+1):
-            lane_ana.udf['Clusters PF R%d' % i_read] = clusters
-    lims.put_batch(lanes)
-
 def get_cycle(dataset, run_dir, lower_bound_cycle):
     """Get total cycles and current cycle based on files written in the run folder. 
 
@@ -316,7 +288,6 @@ def main():
                                     process.get()
                                     set_run_metadata(ds, r, process)
                                     process.put()
-                                update_clusters_pf(ds, process, current_cycle)
                                 process.get(force=True)
                                 process.udf['Status'] = "Cycle %d of %d" % (current_cycle, total_cycles)
                                 if not process.udf.get('Finish Date'): # Another work-around for race condition
