@@ -15,17 +15,11 @@ if SITE == "ous":
     SEQ_PROCESSES = [
             "MiSeq Run (MiSeq) 5.0",
             "NextSeq Run (NextSeq) 1.0",
-            "Illumina Sequencing (Illumina SBS) 5.0",
             "Illumina Sequencing (HiSeq 3000/4000) 1.0",
             "Illumina Sequencing (HiSeq X) 1.0"
             ]
-elif SITE == "ous-seqlab":
-    SEQ_PROCESSES = [
-            "AUTOMATED - Sequence"
-            ]
 else:
     SEQ_PROCESSES = [
-            "Illumina Sequencing (Illumina SBS) 5.0",
             "Illumina Sequencing (HiSeq 3000/4000) 1.0"
             ]
 
