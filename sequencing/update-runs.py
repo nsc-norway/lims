@@ -288,10 +288,12 @@ def main():
                                     process.get()
                                     set_run_metadata(ds, r, process)
                                     process.put()
-                                process.get(force=True)
-                                process.udf['Status'] = "Cycle %d of %d" % (current_cycle, total_cycles)
-                                if not process.udf.get('Finish Date'): # Another work-around for race condition
-                                    process.put()
+                                else:
+                                    process.get(force=True)
+                                if 'Run ID'  in process.udf: # Glitches happen. If no UDFs, don't push new changes
+                                    process.udf['Status'] = "Cycle %d of %d" % (current_cycle, total_cycles)
+                                    if not process.udf.get('Finish Date'): # Another work-around for race condition
+                                        process.put()
 
     completed_runs -= missing_runs
     new_runs -= missing_runs
