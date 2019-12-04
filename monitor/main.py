@@ -286,7 +286,7 @@ def get_run_type(instrument, process):
         return ""
 
 
-def read_sequencing(server, process, machines):
+def read_sequencing(server, process):
     url = proc_url(process)
     flowcell = process.all_inputs()[0].location[0]
     flowcell_id = flowcell.name
@@ -298,15 +298,10 @@ def read_sequencing(server, process, machines):
             )
     projects = get_projects(server, process)
     eta = None
-    machine = None
     try:
         runid = get_run_id(process)
-        if runid:
-            machine = re.match(r"\d{6}_([\dA-Z]+)_", runid).group(1)
     except KeyError:
         runid = ""
-
-    other_flowcell_sequencing_info = machines.get(machine)
 
     try:
         status = process.udf['Status']
@@ -323,9 +318,6 @@ def read_sequencing(server, process, machines):
             elif instrument == "MiSeq" and cycles_re.group(1) == "0":
                 status = "Cycle <26 of %s" % (cycles_re.group(2))
 
-            if instrument == "HiSeq 2500" and other_flowcell_sequencing_info: # Update for dual
-                other_flowcell_sequencing_info.eta = eta
-
     except KeyError:
         if 'Run Status' in process.udf:
             status = process.udf['Run Status']
@@ -341,8 +333,6 @@ def read_sequencing(server, process, machines):
     seq_info = SequencingInfo(
             process.type_name, url, flowcell_id, projects, status, eta, runid, run_type, finished
             )
-    if machine:
-        machines[machine] = seq_info
     return seq_info
 
 
@@ -538,13 +528,10 @@ def prepare_page():
 
         clear_monitor(completed)
 
-        # Keep track of machine-ID, to estimate correct time for single/dual flow cell runs
-        machines = {}
-
         # List of one element per (server, machine type), then one element per process inside of
         # that
         sequencing = [
-            [read_sequencing(server, proc, machines) 
+            [read_sequencing(server, proc) 
                 for proc in seq_processes[sp]]
                 for (server, sp) in servers_seq_process_types
             ]
