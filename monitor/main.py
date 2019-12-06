@@ -218,7 +218,7 @@ def get_projects(server, process):
     return [read_project(server, p) for p in lims_projects if not p is None]
 
 
-def estimated_time_completion(process, instrument, rapid, dual, done_cycles, total_cycles):
+def estimated_time_completion(process, instrument, rapid, done_cycles, total_cycles):
     if total_cycles > 0 and done_cycles < total_cycles:
         now = datetime.datetime.now()
         if instrument == "HiSeq X":
@@ -230,8 +230,6 @@ def estimated_time_completion(process, instrument, rapid, dual, done_cycles, tot
                 return "" # Cycle #5 is much longer than others. We can't give a reliable time.
             if rapid:
                 time_per_cycle = 430
-            elif dual:
-                time_per_cycle = 2160
             else:
                 time_per_cycle = 1158
         elif instrument == "MiSeq":
@@ -312,7 +310,6 @@ def read_sequencing(server, process):
                         process, 
                         instrument,
                         "Rapid" in flowcell.type_name or process.udf.get('Chemistry Version') == "2",
-                        other_flowcell_sequencing_info, #dual flowcell
                         int(cycles_re.group(1)), int(cycles_re.group(2))
                         )
             elif instrument == "MiSeq" and cycles_re.group(1) == "0":
