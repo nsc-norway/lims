@@ -174,18 +174,23 @@ def main(process_id, filegen, file_id, params):
             sample_volume = norm_mass * 1.0 / input_conc
             buffer_volume = vol - sample_volume
 
-
             if buffer_volume < 0:
                 buffer_volume = 0.0
                 sample_volume = vol
                 warning.append(output.name)
+
+            sample = input.samples[0]
+
             columns = [
                     ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
+                    ("Archive pos.", sample.udf.get('Archive position Diag', '')),
+                    ("Sample conc.", round(sample.udf.get('Sample conc. (ng/ul)', ''), 2)),
                     ("Labware", "Rack%d" % ((index // 32) + 1)),
                     ("Position_ID", str((index % 32) + 1)),
                     ("Volume_DNA", round(sample_volume, 1)),
                     ("Volume_EB", round(buffer_volume, 1)),
                     ("Destination_Well_ID", well),
+                    ("Norm. conc.", round(norm_mass * 1.0 / vol, 2)),
                 ]
         elif filegen == "Inputfil_Hamilton_Normalisering_NSC":
 
