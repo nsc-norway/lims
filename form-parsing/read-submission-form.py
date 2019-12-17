@@ -253,9 +253,10 @@ def is_library(cell):
 
 def library_prep_used(cell):
     text_nodes = list(cell.getiterator(TEXT))
-    if len(text_nodes) > 2:
-        if "If yes, please state which kit / method you used here" in text_nodes[0].text.strip():
-            data = "".join(text_node.text for text_node in text_nodes[1:])
+    if len(text_nodes) >= 1:
+        prompt = "If yes, please state which kit / method you used here:"
+        if prompt in text_nodes[0].text.strip():
+            data = "".join(text_node.text for text_node in text_nodes)[len(prompt):].strip()
             if not re.search(PLACEHOLDER_STRING, data):
                 return data
         
