@@ -15,14 +15,12 @@ if SITE == "ous":
     SEQ_PROCESSES = [
             "MiSeq Run (MiSeq) 5.0",
             "NextSeq Run (NextSeq) 1.0",
-            "Illumina Sequencing (Illumina SBS) 5.0",
             "Illumina Sequencing (HiSeq 3000/4000) 1.0",
             "Illumina Sequencing (HiSeq X) 1.0",
             "AUTOMATED - NovaSeq Run (NovaSeq 6000 v3.0)"
             ]
 else:
     SEQ_PROCESSES = [
-            "Illumina Sequencing (Illumina SBS) 5.0",
             "Illumina Sequencing (HiSeq 3000/4000) 1.0"
             ]
 

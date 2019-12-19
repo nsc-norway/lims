@@ -11,6 +11,7 @@ import blinker
 import Queue
 import weakref
 import bitstring
+import subprocess
 
 import _strptime # Prevent import in thread
 
@@ -251,6 +252,17 @@ class RunStatus(object):
         return self.total_cycles
 
     def get_clusters(self):
+        instrument = SEQUENCERS[self.machine_id][0]
+        if instrument == "novaseq":
+            process = subprocess.Popen(['nsc-python27', 
+                            '/opt/gls/clarity/customextensions/lims/base-counter/clusters-helper.py',
+                             self.run_dir],
+                        stdout=subprocess.PIPE)
+            try:
+                out, err = process.communicate()
+                return float(out)
+            except (subprocess.CalledProcessError, ValueError):
+                return None
         try:
             ds = illuminate.InteropDataset(self.run_dir)
             all_df = ds.TileMetrics().df

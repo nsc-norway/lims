@@ -8,7 +8,7 @@ from genologics import config
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
-    inputs = process.all_inputs(unique=True)
+    inputs = [i['uri'].stateless for i, o in process.input_output_maps]
     lims.get_batch(inputs)
     lims.get_batch(sample for input in inputs for sample in input.samples)
     routables = []

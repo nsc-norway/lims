@@ -9,6 +9,7 @@ project_fields = [
         "Reference genome",
         "Desired insert size",
         "Sample prep requested",
+        "Bioinformatic services",
         "Contact person",
         "Contact institution",
         "Contact address",
