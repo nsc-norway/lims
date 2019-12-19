@@ -9,6 +9,7 @@
 # It only triggers scripts (emulates button presses) using the API to
 # manage the processing status. 
 
+import fcntl
 import logging
 import re
 import sys
@@ -89,7 +90,9 @@ def start_programs():
         # (monitor/main.py), but we can't rely on that, since that may not be
         # used.
         step = Step(lims, id=process.id)
-        if step.current_state.upper() == "COMPLETED":
+        if step.current_state.upper() == "COMPLETED" and (
+                step.program_status == None or
+                step.program_status.status == "OK"):
             process.get()
             process.udf['Monitor'] = False
             process.put()
@@ -151,6 +154,9 @@ def start_programs():
         logging.debug("Sequencing is finished, checking if we can start some jobs")
 
         # Check the native Clarity program status
+        step.get(force=True)
+        if step.program_status:
+            step.program_status.get(force=True)
         if step.program_status == None or step.program_status.status == "OK":
 
             # Now ready to start the program (push the button)
@@ -181,7 +187,7 @@ def start_programs():
                         logging.debug("A script is running (state: " + step.program_status.status + ")...")
                         if step.program_status not in ['QUEUED', 'RUNNING']:
                             fail = True
-                        time.sleep(1)
+                        time.sleep(10)
                         step.program_status.get(force=True)
                     step.get(force=True)
                 logging.debug("Completed " + process.id + ".")
@@ -198,6 +204,19 @@ if __name__ == "__main__":
     if TAG == "dev":
         logging.basicConfig(level=logging.DEBUG)
     logging.debug("auto.py Workflow management script")
-    start_programs()
+    # Require that only one instance is running
+    pid_file = "/tmp/auto-next-script.pid"
+    fp = open(pid_file, "w")
+    try:
+        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except IOError:
+        sys.exit(0)
+    try:
+        start_programs()
+    finally:
+        try: 
+            os.unlink(pid_file)
+        except:
+            pass
 
 

@@ -40,7 +40,7 @@ def main(process_id):
         category = None
 
     split_indexes_1 = [a.samples[0].udf[SAMPLE_INDEX_UDF].replace('+','-').split("-") for a in analytes]
-    split_indexes = [map(lambda i: i.strip(" \t\xca\xa0\xc2"), ixs) for ixs in split_indexes_1]
+    split_indexes = [map(lambda i: str(i.strip(u" \t\xca\xa0\xc2")), ixs) for ixs in split_indexes_1]
     lengths = set(len(ii) for ii in split_indexes)
     if len(lengths) > 1:
         raise ValueError("Mix of dual/single indexes. Multiplicities: " + str(list(lengths)) + ".")
