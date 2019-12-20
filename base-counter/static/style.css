@@ -116,6 +116,7 @@ div#rate {
 }
 
 h2.total-count-header {
+    color:red;
 }
 
 div.grandtotal {

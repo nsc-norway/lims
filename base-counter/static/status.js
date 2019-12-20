@@ -7,7 +7,7 @@ var ICONS = {
 	'nextseq':	'graphics/nextseq.png',
 	'hiseq3k': 'graphics/hiseq-4000.png',
 	'hiseq4k': 'graphics/hiseq-4000.png',
-	'miseq':	'graphics/miseq.png',
+	'miseq':	'graphics/mice.png',
 	'novaseq':	'graphics/novaseq.png',
 	'mystery':	'graphics/mystery.png',
 	};
