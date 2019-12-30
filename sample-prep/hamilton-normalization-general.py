@@ -6,7 +6,7 @@ from genologics.lims import *
 from genologics import config
 
 # Excel (xls) file generator for Hamilton robots for normalisation steps
-# This is for the first steps in Nextera and SureSelect protocols
+# For TruSeq PCR-free (WGS) and SureSelect Exome prep.
 
 # { Concentration => volume } mapping for SureSelect
 DEFAULT_OUTPUT_VOL = {
@@ -15,13 +15,13 @@ DEFAULT_OUTPUT_VOL = {
         }
 
 def sort_key(elem):
-    input, output, sample = elem
+    output = elem[1]
     container, well = output.location
     row, col = well.split(":")
     return (container, int(col), row)
 
 
-def main(process_id, filegen, concentration_source, file_id, default_norm_dna, default_vol):
+def main(process_id, concentration_source, file_id, default_vol):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
 
@@ -39,7 +39,7 @@ def main(process_id, filegen, concentration_source, file_id, default_norm_dna, d
 
     lims.get_batch(inputs + outputs)
     samples = [input.samples[0] for input in inputs]
-    Slims.get_batch(samples)
+    lims.get_batch(samples)
 
     if concentration_source == "sample":
         concentrations = [sample.udf.get('Sample conc. (ng/ul)') for sample in samples]
@@ -66,10 +66,8 @@ def main(process_id, filegen, concentration_source, file_id, default_norm_dna, d
             sys.exit(1)
 
         # Use output-level UDF, fallback to input-specific default, then global default
-        vol = output.udf.get('Volume (uL)', 
-                DEFAULT_OUTPUT_VOL.get(norm_mass,
-                    default_vol))
-        output.udf['Volume (uL)'] = vol
+        vol = output.udf.get('Volume (uL) Diag', float(default_vol))
+        output.udf['Volume (uL) Diag'] = vol
         
         if input_conc == 0.0:
             sample_volume = vol + 1 # Will produce a warning below
@@ -111,7 +109,7 @@ def main(process_id, filegen, concentration_source, file_id, default_norm_dna, d
     book.save(outputstream)
 
     outfile = Artifact(lims, id=file_id)
-    filename = filegen + ".xls"
+    filename = "Inputfil_Hamilton_Normalisering.xls"
     gs = lims.glsstorage(outfile, filename)
     file_obj = gs.post()
     file_obj.upload(outputstream.getvalue())
@@ -121,5 +119,5 @@ def main(process_id, filegen, concentration_source, file_id, default_norm_dna, d
         sys.exit(1)
 
 
-main(process_id=sys.argv[1], filegen=sys.argv[2], file_id=sys.argv[3],
-    default_norm_dnas=sys.argv[4], default_vol=sys.argv[5])
+main(process_id=sys.argv[1], concentration_source=sys.argv[2], file_id=sys.argv[3],
+                default_vol=sys.argv[4])
