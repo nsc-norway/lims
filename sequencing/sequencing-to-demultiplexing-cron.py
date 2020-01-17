@@ -47,8 +47,14 @@ def main():
     for seq in SEQ_PROCESSES:
         procs = lims.get_processes(type=seq, udf={'Monitor': True})
 
-        # Check if there's already a demultiplexing
         for proc in procs:
+            # Should wait until NovaSeq run is completed before starting
+            # demultiplexing. Avoid bug in integrations where it will no
+            # longer update the run status.
+            if 'NovaSeq' in seq and not proc.date_run:
+                continue
+
+            # Check if there's already a demultiplexing
             demux = lims.get_processes(type=DEMULTIPLEXING, inputartifactlimsid=[input.id for input in proc.all_inputs()])
             if not demux:
                 analytes = proc.all_inputs(unique=True)
