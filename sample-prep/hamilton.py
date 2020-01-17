@@ -6,13 +6,7 @@ from genologics.lims import *
 from genologics import config
 
 # Excel (xls) file generator for Hamilton robots for normalisation steps
-# This is for the first steps in Nextera and SureSelect protocols
-
-# { Concentration => volume } mapping for SureSelect
-DEFAULT_OUTPUT_VOL = {
-        3000: 130,
-        200: 50
-        }
+# This is for the first steps in Nextera protocol
 
 def sort_key(elem):
     input, output, sample = elem
@@ -148,49 +142,6 @@ def main(process_id, filegen, file_id, params):
             output.udf['Normalized conc. (ng/uL)'] = norm_conc
             output.udf['Volume (uL)'] = vol
 
-        elif filegen == "Inputfil_Hamilton_Normalisering":
-            if input_conc == 0.0:
-                print "Error: Zero input concentration for sample", input.name
-                sys.exit(1)
-
-            # SureSelect protocol is based on the DNA quantity, not concentration
-            try:
-                norm_mass = output.udf['Amount of DNA per sample (ng)']
-            except KeyError:
-                print "Missing value for Amount of DNA per sample (ng) on", output.name, "(and possibly others)"
-                sys.exit(1)
-
-            vol = output.udf.get('Volume (uL) SSXT')
-            if vol is None:
-                try:
-                    vol = DEFAULT_OUTPUT_VOL[norm_mass]
-                    output.udf['Volume (uL) SSXT'] = vol
-                except KeyError:
-                    print "No default volume available for DNA qty", norm_mass, "ng"
-                    sys.exit(1)
-            
-            sample_volume = norm_mass * 1.0 / input_conc
-            buffer_volume = vol - sample_volume
-
-            if buffer_volume < 0:
-                buffer_volume = 0.0
-                sample_volume = vol
-                warning.append(output.name)
-
-            sample = input.samples[0]
-
-            columns = [
-                    ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
-                    ("Archive pos.", sample.udf.get('Archive position Diag', '')),
-                    ("Sample conc.", round(sample.udf.get('Sample conc. (ng/ul)', ''), 2)),
-                    ("Labware", "Rack%d" % ((index // 32) + 1)),
-                    ("Position_ID", str((index % 32) + 1)),
-                    ("Volume_DNA", round(sample_volume, 1)),
-                    ("Volume_EB", round(buffer_volume, 1)),
-                    ("Destination_Well_ID", well),
-                    ("Norm. conc.", round(norm_mass * 1.0 / vol, 2)),
-                ]
-
         if not headers:
             row = sheet1.row(0)
             headers = [x[0] for x in columns]
@@ -219,16 +170,8 @@ def main(process_id, filegen, file_id, params):
 # COMMAND LINE PARAMETERS
 #-----------------------------
 # For NEXTERA HAMILTON
-#   Use:  main PROCESS_ID TYPE FILEID CONCENTRATION VOLUME
+#   Use:  main PROCESS_ID TYPE FILEID PARAMS_CONCENTRATION_AND_VOLUME
 #   (params = [CONCENTRATION, VOLUME])
 #   TYPE (filegen) is "HamiltonDilution1" or "HamiltonDilution2"
 
-# For SURESELECT HAMILTON
-#   Use:  main PROCESS_ID "Inputfil_Hamilton_Normalisering" FILEID
-#   Parameters determined from output artifacts
-
-if len(sys.argv) > 4:
-    main(process_id=sys.argv[1], filegen=sys.argv[2], file_id=sys.argv[3], params=sys.argv[4:])
-else:
-    main(process_id=sys.argv[1], filegen=sys.argv[2], file_id=sys.argv[3], params=[])
-
+main(process_id=sys.argv[1], filegen=sys.argv[2], file_id=sys.argv[3], params=sys.argv[4:])

@@ -7,6 +7,7 @@ import os
 import threading
 import glob
 import re
+import math
 import blinker
 import Queue
 import weakref
@@ -261,7 +262,8 @@ class RunStatus(object):
                         stdout=subprocess.PIPE)
             try:
                 out, err = process.communicate()
-                return float(out)
+                val = float(out)
+                return None if math.isnan(val) else val
             except (subprocess.CalledProcessError, ValueError):
                 return None
         try:
@@ -373,7 +375,7 @@ class RunStatus(object):
             data_factor = (next_data_cycles - self.current_cycle) / mean_stride
 
             return self.clusters * mean_cycle_rate * data_factor
-        elif self.total_cycles != 0:
+        elif len(self.cycle_arrival) != 0:
             return instrument_rate(self.machine_id)
         else:
             return 0
