@@ -65,7 +65,7 @@ def is_sequencing_finished(process):
         logging.warning("Cannot detect the sequencing process, returning as if it's not completed")
         return False
     try:
-        if seq_process.udf.get('Run Status') == "RunCompleted": # SeqLab
+        if seq_process.udf.get('Run Status') == "RunCompletedSuccessfully": # NovaSeq
             return True
         if seq_process.udf['Finish Date'] and seq_process.udf['Read 1 Cycles']:
             match = re.match(r"Cycle (\d+) of (\d+)", seq_process.udf['Status'])
