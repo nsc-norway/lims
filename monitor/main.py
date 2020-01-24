@@ -207,6 +207,8 @@ def read_project(server, lims_project):
             }
     if tag != "E":
         tag += delivery_method_tag.get(lims_project.udf.get('Delivery method'), '?!')
+        if lims_project.udf.get('Bioinformatic services'):
+            tag += "B"
     return Project(url, lims_project.name, eval_url, tag)
 
 
