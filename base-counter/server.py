@@ -195,7 +195,7 @@ def instrument_rate(m_id):
     elif instrument == "miseq":
         per_hour = 133928571
     elif instrument == "novaseq":
-        per_hour = 25000000000
+        per_hour = 3125000000
     return per_hour / 3600.0
 
 class RunStatus(object):
