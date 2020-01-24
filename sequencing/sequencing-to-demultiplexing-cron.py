@@ -16,8 +16,7 @@ if SITE == "ous":
             "MiSeq Run (MiSeq) 5.0",
             "NextSeq Run (NextSeq) 1.0",
             "Illumina Sequencing (HiSeq 3000/4000) 1.0",
-            "Illumina Sequencing (HiSeq X) 1.0",
-            "AUTOMATED - NovaSeq Run (NovaSeq 6000 v3.0)"
+            "Illumina Sequencing (HiSeq X) 1.0"
             ]
 else:
     SEQ_PROCESSES = [
@@ -48,12 +47,6 @@ def main():
         procs = lims.get_processes(type=seq, udf={'Monitor': True})
 
         for proc in procs:
-            # Should wait until NovaSeq run is completed before starting
-            # demultiplexing. Avoid bug in integrations where it will no
-            # longer update the run status.
-            if 'NovaSeq' in seq and not proc.date_run:
-                continue
-
             # Check if there's already a demultiplexing
             demux = lims.get_processes(type=DEMULTIPLEXING, inputartifactlimsid=[input.id for input in proc.all_inputs()])
             if not demux:
