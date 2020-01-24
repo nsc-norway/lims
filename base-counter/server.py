@@ -261,7 +261,7 @@ class RunStatus(object):
             process = subprocess.Popen(['nsc-python27', 
                             '/opt/gls/clarity/customextensions/lims/base-counter/clusters-helper.py',
                              self.run_dir],
-                        stdout=subprocess.PIPE)
+                        stdout=subprocess.PIPE, stderr=open(os.devnull, 'w'))
             try:
                 out, err = process.communicate()
                 val = float(out)
