@@ -25,24 +25,24 @@ from flask import Flask, url_for, redirect, jsonify, Response, request
 
 RUN_STORAGE = "/data/runScratch.boston"
 
+SEQUENCER_LIST = [
+    ('A00943', ('novaseq', 'Nordis')),
 
-SEQUENCERS = {
-    'NS500336': ('nextseq', 'Nemo'),
-    'NB501273': ('nextseq', 'Nelson'),
+    ('M01132', ('miseq', 'Milo')),
+    ('M01334', ('miseq', 'Mina')),
+    ('M02980', ('miseq', 'Mike')),
 
-    'M01132': ('miseq', 'Milo'),
-    'M01334': ('miseq', 'Mina'),
-    'M02980': ('miseq', 'Mike'),
+    ('NS500336', ('nextseq', 'Nemo')),
+    ('NB501273', ('nextseq', 'Nelson')),
 
-    'J00146': ('hiseq3k', 'Hiawatha'),
-    'E00401': ('hiseq4k', 'Hippo'),
+    ('J00146', ('hiseq3k', 'Hiawatha')),
+    ('E00401', ('hiseq4k', 'Hippo')),
 
-    'E00426': ('hiseqx', 'Pixie'),
-    'E00423': ('hiseqx', 'Roxanne'),
+    ('E00426', ('hiseqx', 'Pixie')),
+    ('E00423', ('hiseqx', 'Roxanne')),
+    ]
 
-    'A00943': ('novaseq', 'Nordis')
-    }
-
+SEQUENCERS = dict(SEQUENCER_LIST)
 
 app = Flask(__name__)
 db = None # Set on bottom of script
@@ -163,7 +163,7 @@ class Database(object):
     @property
     def machine_list(self):
         machines = {}
-        for m_id, (m_type, m_name) in SEQUENCERS.items():
+        for m_id, (m_type, m_name) in SEQUENCER_LIST:
             run_ids = [
                 run_id for run_id in sorted(self.status.keys())[::-1]
                 if re.match("\\d{6}_%s_.*" % (m_id), run_id)
@@ -176,7 +176,9 @@ class Database(object):
                 }
 
         # Sort machines with newest runs first
-        return list(reversed(sorted(machines.values(), key=lambda x: (not x['type'].startswith("-"), x['run_ids']))))
+        #return list(reversed(sorted(machines.values(), key=lambda x: (not x['type'].startswith("-"), x['run_ids']))))
+        # Don't sort machines, use fixed order as in config
+        return [machines[m_id] for m_id, _ in SEQUENCER_LIST]
 
 
 
