@@ -10,7 +10,7 @@ def start_step(lims, analytes, workflow):
     protocol = workflow.protocols[0]
     ps = protocol.steps[0]
     queue = ps.queue()
-    for attempt in xrange(3):
+    for attempt in range(3):
         if set(analytes) <= set(queue.artifacts):
             lims.create_step(ps, analytes)
             break
