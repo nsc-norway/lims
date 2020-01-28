@@ -102,7 +102,7 @@ def get_sequencing_process(server, process):
     first_in_artifact = first_io[0]['uri']
 
     processes = server.lims.get_processes(inputartifactlimsid=first_in_artifact.id)
-    seq_processes = [proc for proc in processes if proc.type_name in server.SEQUENCING]
+    seq_processes = [proc for proc in processes if any(proc.type_name in sq for sq in server.SEQUENCING)]
     # Use the last sequencing process. In case of crashed runs, this will be the right one.
     try:
         return seq_processes[-1]
@@ -286,11 +286,18 @@ def get_run_type(instrument, process):
         return ""
 
 
+def get_instrument_index_for_processtype(server, processtypename):
+    for i, sequencing in enumerate(server.SEQUENCING):
+        if processtypename in sequencing:
+            return i
+    raise ValueError("No such process type: " + str(processtypename))
+
+
 def read_sequencing(server, process):
     url = proc_url(process)
     flowcell = process.all_inputs()[0].location[0]
     flowcell_id = flowcell.name
-    instrument = server.INSTRUMENTS[server.SEQUENCING.index(process.type_name)]
+    instrument = server.INSTRUMENTS[get_instrument_index_for_processtype(server, process.type_name)]
     run_type = get_run_type(instrument, process)
     lims_projects = set(
             art.samples[0].project
@@ -394,11 +401,11 @@ def get_recent_run(server, fc):
     Caching should be done by the caller."""
 
     sequencing_process = next(iter(server.lims.get_processes(
-            type=set(server.SEQUENCING),
+            type=sum(server.SEQUENCING, []),
             inputartifactlimsid=fc.placements.values()[0].id
             )))
 
-    instrument_index = server.SEQUENCING.index(sequencing_process.type_name)
+    instrument_index = get_instrument_index_for_processtype(server, sequencing_process.type_name)
 
     url = proc_url(sequencing_process)
     try:
@@ -485,10 +492,10 @@ def prepare_page():
 
     try:
         servers_seq_process_types = [
-            (server, proctype) for server in servers for proctype in server.SEQUENCING]
+            (server, proctypes) for server in servers for proctypes in server.SEQUENCING]
 
         servers_data_process_types = [
-            (server, proctype) for server in servers for proctype in server.DATA_PROCESSING]
+            (server, [proctype]) for server in servers for proctype in server.DATA_PROCESSING]
 
         all_servers_process_types = servers_seq_process_types + servers_data_process_types
 
@@ -496,9 +503,10 @@ def prepare_page():
         # Of course it can't be this efficient :( Multiple process types not supported
         #monitored_process_list = lims.get_processes(udf={'Monitor': True}, type=all_process_types)
         monitored_process_list = []
-        for server, ptype in set(all_servers_process_types):
-            monitored_process_list += [ (server, proc) for
-                            proc in server.lims.get_processes(udf={'Monitor': True}, type=ptype)
+        for server, ptypes in all_servers_process_types:
+            monitored_process_list += [ (server, proc)
+                            for ptype in ptypes
+                            for proc in server.lims.get_processes(udf={'Monitor': True}, type=ptype)
                             ]
 
         # Refresh data for all processes (need this for almost all monitored procs, so
@@ -513,7 +521,7 @@ def prepare_page():
         post_processes = []
         completed = []
         for (server, p), step in zip(monitored_process_list, steps):
-            if p.type_name in server.SEQUENCING:
+            if any(p.type_name in ptypes for ptypes in server.SEQUENCING):
                 if is_step_completed(step):
                     completed.append(p)
                 else:
@@ -527,12 +535,12 @@ def prepare_page():
 
         clear_monitor(completed)
 
-        # List of one element per (server, machine type), then one element per process inside of
-        # that
+        # List of one element per (server, machine type)
         sequencing = [
             [read_sequencing(server, proc) 
-                for proc in seq_processes[sp]]
-                for (server, sp) in servers_seq_process_types
+                for sp in sptypes
+                for proc in seq_processes[sp] ]
+                for (server, sptypes) in servers_seq_process_types
             ]
 
 
@@ -546,7 +554,7 @@ def prepare_page():
         for index in range(len(servers_seq_process_types)):
             machine_items = [] # all processes for a type of sequencing machine
             for (server, process), sequencing_process in zip(post_processes, sequencing_processes):
-                if sequencing_process and sequencing_process.type_name == servers_seq_process_types[index][1]:
+                if sequencing_process and sequencing_process.type_name in servers_seq_process_types[index][1]:
                     machine_items.append(read_post_sequencing_process(server, process, sequencing_process))
             post_sequencing.append(machine_items)
             
