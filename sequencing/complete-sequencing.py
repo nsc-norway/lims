@@ -1,5 +1,4 @@
-# Move run into processed/ on primary storage, and mark as completed
-# in LIMS 
+# Mark as completed in LIMS 
 
 import sys
 from datetime import date
