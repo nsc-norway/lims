@@ -39,9 +39,19 @@ SEQ_PROCESSES=[
                 ('miseq', 'MiSeq Run (MiSeq) 5.0'),
                 ('novaseq', 'AUTOMATED - NovaSeq Run (NovaSeq 6000 v3.0)')
             ]
+QC_PROCESSES=[
+                ('hiseqx', 'Illumina Sequencing (HiSeq X) 1.0'),
+                ('hiseqx', 'AUTOMATED - Sequence'),
+                ('hiseq4k', 'Illumina Sequencing (HiSeq 3000/4000) 1.0'),
+                ('hiseq', 'Illumina Sequencing (Illumina SBS) 5.0'),
+                ('nextseq', 'NextSeq Run (NextSeq) 1.0'),
+                ('miseq', 'MiSeq Run (MiSeq) 5.0'),
+                ('novaseq', 'NovaSeq Data QC NSC 1.0')
+            ]
 
 JOB_STATE_CODE_UDF = "Job state code"
 CURRENT_JOB_UDF = "Current job"
+
 
 def get_sequencing_process(process):
     """Copied from utitilies (pipeline repo)."""
@@ -53,6 +63,26 @@ def get_sequencing_process(process):
 
     processes = process.lims.get_processes(inputartifactlimsid=first_in_artifact.id)
     seq_processes = [proc for proc in processes if proc.type_name in [p[1] for p in SEQ_PROCESSES]]
+    # Use the last sequencing process. In case of crashed runs, this will be the right one.
+    try:
+        return seq_processes[-1]
+    except IndexError:
+        return None
+
+
+def get_qc_process(process):
+    """Get a QC process -- same as sequencing process except for NovaSeq.
+    
+    QC process is a manual checkpoint, completed only when demultiplexing results are
+    accepted."""
+
+    # Each entry in input_output_maps is an input/output specification with a single
+    # input and any number of outputs. This gets the first input.
+    first_io = process.input_output_maps[0]
+    first_in_artifact = first_io[0]['uri']
+
+    processes = process.lims.get_processes(inputartifactlimsid=first_in_artifact.id)
+    seq_processes = [proc for proc in processes if proc.type_name in [p[1] for p in QC_PROCESSES]]
     # Use the last sequencing process. In case of crashed runs, this will be the right one.
     try:
         return seq_processes[-1]
@@ -133,7 +163,7 @@ def start_programs():
                     + ". Checking if step should be closed...")
             
             if process.udf.get('Close when finished'):
-                seq_proc = get_sequencing_process(process)
+                seq_proc = get_qc_process(process)
                 if not seq_proc or Step(lims, id=seq_proc.id).current_state.upper() == "COMPLETED":
                     logging.debug("Yes, will finish if no program is running.")
                     next_program = None
