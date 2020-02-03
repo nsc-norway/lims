@@ -332,7 +332,10 @@ def read_sequencing(server, process):
         else:
             status = "Pending/running"
     try:
-        finished = process.udf['Finish Date']
+        if process.udf.get("Status") == "Completed":
+            finished = "Completed"
+        else:
+            finished = process.udf['Finish Date']
     except KeyError:
         finished = ""
 
