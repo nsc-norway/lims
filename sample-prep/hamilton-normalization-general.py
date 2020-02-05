@@ -84,6 +84,7 @@ def main(process_id, concentration_source, file_id, default_vol):
         columns = [
                 ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
                 ("Archive pos.", sample.udf.get('Archive position Diag', '')),
+                ("Alt sample ID", sample.udf.get('Alternative sample ID Diag', '')),
                 ("Sample conc.", round(sample.udf.get('Sample conc. (ng/ul)', ''), 2)),
                 ("Labware", "Rack%d" % ((index // 32) + 1)),
                 ("Position_ID", str((index % 32) + 1)),
