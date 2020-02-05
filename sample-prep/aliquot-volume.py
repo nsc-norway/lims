@@ -4,7 +4,7 @@ import StringIO
 from genologics.lims import *
 from genologics import config
 
-# Computation for SSXT Aliquote DNA step at the beginning of Target Enrichment protocol
+# Computation for SSXT Aliquot DNA step at the end of PreCapture protocol
 
 MAX_VOL = 30
 
@@ -15,7 +15,7 @@ WORKSHEET_HEADER = [
         "Conc. (ng/uL)",
         "From well",
         "To well",
-        "Volume to aliquote (uL)",
+        "Volume to aliquot (uL)",
         "DNA quantity (ng)"
         ]
 
@@ -27,7 +27,7 @@ ROBOT_HEADER = [
         ]
 
 def sort_key(elem):
-    input, output, qc = elem
+    output = elem[1]
     container, well = output.location
     row, col = well.split(":")
     return (container, int(col), row)
@@ -56,23 +56,17 @@ def main(process_id, output_file_id, mode):
             input = i['uri']
             inputs.append(input)
             outputs.append(output)
-
-    try:
-        qc_results = lims.get_qc_results_re(inputs, "Quant-iT QC")
-    except KeyError, e:
-        print "Missing QC result for:", e
-        sys.exit(1)
-    lims.get_batch(inputs + outputs + qc_results)
+    lims.get_batch(inputs + outputs)
     lims.get_batch(input.samples[0] for sample in inputs)
 
     rows = []
     updated_outputs = []
     warning = []
-    i_o_s_q = zip(inputs, outputs, qc_results)
-    for input, output, qc_result in sorted(i_o_s_q, key=sort_key):
+    i_o_s = zip(inputs, outputs)
+    for input, output in sorted(i_o_s, key=sort_key):
 
         quantity = process.udf['DNA per sample (ng)']
-        input_conc = qc_result.udf['Concentration']
+        input_conc = input.udf['Concentration (ng/ul)']
     
         if input_conc <= 0:
             volume = MAX_VOL
@@ -80,8 +74,7 @@ def main(process_id, output_file_id, mode):
             volume = min(quantity * 1.0 / input_conc, MAX_VOL)
 
         rows.append(ROW[mode](
-                input, output, qc_result,
-                quantity, volume
+                input, output, quantity, volume
                ))
 
     lims.put_batch(updated_outputs)
@@ -98,7 +91,7 @@ def main(process_id, output_file_id, mode):
     
 
 
-def get_robot_line(input, output, qc_result, quantity, volume):
+def get_robot_line(input, output, quantity, volume):
     return [
             "Hybridisering",
             input.location[1].replace(":",""),
@@ -106,7 +99,7 @@ def get_robot_line(input, output, qc_result, quantity, volume):
             volume
             ]
 
-def get_worksheet_line(input, output, qc_result, quantity, volume):
+def get_worksheet_line(input, output, quantity, volume):
     project_name = input.samples[0].project.name.encode('utf-8')
     sample_name = input.name.encode('utf-8')
     dest_container = output.location[0].name
@@ -118,7 +111,7 @@ def get_worksheet_line(input, output, qc_result, quantity, volume):
     return [
             project_name,
             sample_name,
-            "%4.2f" % qc_result.udf['Concentration'],
+            "%4.2f" % input.udf['Concentration (ng/ul)'],
             source_well,
             dest_well,
             "%4.2f" % volume,
