@@ -136,8 +136,9 @@ def main(file_format, process_id, graph_file_id, sample_volume, input_file_ids):
     for o in result_files:
         conc = (container_data[o.location[0]][o.location[1]] - std0_value) / slope
         o.udf['Concentration'] = conc
-        o.udf['Molarity'] = (conc / (660.0*o.udf['Average Fragment Size'])) * 1e6
-        if conc < process.udf.get('QC threshold Molarity', 0) or standard_fail:
+        molarity = (conc / (660.0*o.udf['Average Fragment Size'])) * 1e6
+        o.udf['Molarity'] = molarity
+        if molarity < process.udf.get('QC threshold Molarity', 0) or standard_fail:
             qcfail_count += 1
             o.qc_flag = "FAILED"
         else:
