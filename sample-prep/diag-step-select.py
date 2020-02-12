@@ -22,9 +22,9 @@ def main(process_id, high_conc_step, low_conc_step=None):
 
     # Get next steps
     for transition in step.configuration.transitions:
-        if transition.get('name') == high_conc_step:
+        if transition.get('name').startswith(high_conc_step):
             high_conc_step_uri = transition['next-step-uri']
-        if transition.get('name') == low_conc_step:
+        if transition.get('name').startswith(low_conc_step):
             low_conc_step_uri = transition['next-step-uri']
 
     if not high_conc_step_uri or not low_conc_step_uri:
