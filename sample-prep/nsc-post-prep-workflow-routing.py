@@ -6,9 +6,9 @@ from collections import defaultdict
 from genologics.lims import *
 from genologics import config
 
-DEFAULT_WORKFLOW = "QC NSC"
+DEFAULT_WORKFLOW = "NSC QC"
 WORKFLOW_MAPPING = {
-        'NSC_16S': '16S first QC'
+        'NSC_16S': 'NSC 16S'
         }
 
 
