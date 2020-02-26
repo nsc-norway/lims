@@ -230,14 +230,11 @@ class RunStatus(object):
             return False
         self.read_config = list(ds.meta.read_config)
         self.total_cycles = sum(read['cycles'] for read in self.read_config)
-        # Build look-up table for number of cycles -> number of data cycles
-        #for read in self.read_config:
-        #    base = self.data_cycles_lut[-1]
-        #    if read['is_index']:
-        #        self.data_cycles_lut += [base] * read['cycles']
-        #    else:
-        #        self.data_cycles_lut += range(base+1, base+1+read['cycles'])
-
+        self.cycle_first_in_read_flag = sum(
+            ([True] + [False]*(read['cycles']-1)
+            for read in self.read_config),
+            []
+        )
         return self.total_cycles != 0
 
     def get_cycle(self):
@@ -291,13 +288,7 @@ class RunStatus(object):
                 return True
             if len(self.cycle_arrival) > 2:
                 cycle_rate, cycle_stride = self.get_cycle_rate()
-                next_index_cycles = sum(
-                        1
-                        for i in range(self.current_cycle+1, self.total_cycles)
-                        if self.data_cycles_lut[i] == self.data_cycles_lut[self.current_cycle]
-                        )
-                after_index_read = 0
-                if next_index_cycles:
+                if self.cycle_first_in_read_flag[self.current_cycle]:
                     after_index_read = 25 # Some slack on start of read 2, takes about 25 cycles before writing on MiSeq
                 cancelled = current_cycle_time > (6+after_index_read+next_index_cycles) * (cycle_stride / cycle_rate)
                 return cancelled
