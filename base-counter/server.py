@@ -43,6 +43,8 @@ SEQUENCER_LIST = [
     ]
 
 SEQUENCERS = dict(SEQUENCER_LIST)
+# Mark as cancelled if waiting for N times the measured cycle time
+CANCELLED_TIME_N_CYCLES = 3
 
 app = Flask(__name__)
 db = None # Set on bottom of script
@@ -284,13 +286,13 @@ class RunStatus(object):
             return True
         if (not self.finished) and len(self.cycle_arrival) > 0:
             current_cycle_time = time.time() - self.cycle_arrival[self.current_cycle]
-            if current_cycle_time > 25*3600 or (SEQUENCERS[self.machine_id][0] != 'hiseq' and current_cycle_time > 3600*7):
-                return True
+            if current_cycle_time > 7*3600:
+                return True # Time based check: very long cycle time gets marked as a fail
             if len(self.cycle_arrival) > 2:
                 cycle_rate, cycle_stride = self.get_cycle_rate()
                 if self.cycle_first_in_read_flag[self.current_cycle]:
-                    after_index_read = 25 # Some slack on start of read 2, takes about 25 cycles before writing on MiSeq
-                cancelled = current_cycle_time > (6+after_index_read+next_index_cycles) * (cycle_stride / cycle_rate)
+                    after_index_read = 25 # Some slack on start of read 2, takes less than 25 cycles before writing on MiSeq
+                cancelled = current_cycle_time > (CANCELLED_TIME_N_CYCLES+after_index_read+next_index_cycles) * (cycle_stride / cycle_rate)
                 return cancelled
         return False
 
