@@ -95,10 +95,12 @@ class Database(object):
         with open(self.COUNT_FILE) as f:
             self.count = int(f.read())
 
-        runs_on_storage = set((
+        runs_on_storage = [
                 os.path.basename(os.path.dirname(rpath)) for rpath in
                 glob.glob(os.path.join(RUN_STORAGE, "??????_*_*", "*"))
-                ))
+            ]
+        runs_on_storage = set(r for r in runs_on_storage
+                            if re.match(r"[0-9]{6}_[A-Z0-9]+_[_A-Z0-9-]+$", r))
         new = runs_on_storage - set(self.status.keys())
 
         for r_id in new:
@@ -215,7 +217,6 @@ class RunStatus(object):
         self.last_update = time.time()
         self.booked = 0
         self.committed = False  # Is base count added to grand total?
-        self.data_cycles_lut = [0]
         self.start_time = 0
         self.cycle_arrival = {} # (cycle, time) pairs
         self.finished = False
@@ -230,12 +231,12 @@ class RunStatus(object):
         self.read_config = list(ds.meta.read_config)
         self.total_cycles = sum(read['cycles'] for read in self.read_config)
         # Build look-up table for number of cycles -> number of data cycles
-        for read in self.read_config:
-            base = self.data_cycles_lut[-1]
-            if read['is_index']:
-                self.data_cycles_lut += [base] * read['cycles']
-            else:
-                self.data_cycles_lut += range(base+1, base+1+read['cycles'])
+        #for read in self.read_config:
+        #    base = self.data_cycles_lut[-1]
+        #    if read['is_index']:
+        #        self.data_cycles_lut += [base] * read['cycles']
+        #    else:
+        #        self.data_cycles_lut += range(base+1, base+1+read['cycles'])
 
         return self.total_cycles != 0
 
@@ -263,7 +264,7 @@ class RunStatus(object):
                              self.run_dir],
                         stdout=subprocess.PIPE, stderr=open(os.devnull, 'w'))
             try:
-                out, err = process.communicate()
+                out, _ = process.communicate()
                 val = float(out)
                 return None if math.isnan(val) else val
             except (subprocess.CalledProcessError, ValueError):
@@ -308,22 +309,22 @@ class RunStatus(object):
         now = time.time()
         updated = False
         initial_update = False
+        # Get number of cycles, run metadata
         if not self.read_config:
             updated = self.set_metadata()
             initial_update = updated
+            # If no metadata, the run hasn't really started yet.
             self.start_time = now
-        old_cycle = self.current_cycle
-        self.current_cycle = self.get_cycle()
-        if self.cycle_arrival.setdefault(self.current_cycle, now) == now: # Add if not exists
-            updated = True
-        new_clusters = self.get_clusters()
-        self.clusters = new_clusters or self.clusters
-        if self.clusters:
-            #self.booked = self.data_cycles_lut[self.current_cycle] * self.clusters
-            self.booked = self.current_cycle * self.clusters
-        else:
-            self.booked = 0
-
+        if self.read_config:
+            self.current_cycle = self.get_cycle()
+            if self.cycle_arrival.setdefault(self.current_cycle, now) == now: # Add if not exists
+                updated = True
+            new_clusters = self.get_clusters()
+            self.clusters = new_clusters or self.clusters
+            if self.clusters:
+                self.booked = self.current_cycle * self.clusters
+            else:
+                self.booked = 0
         if self.check_finished():
             self.finished = True
             updated = True
@@ -368,14 +369,8 @@ class RunStatus(object):
 
         if len(self.cycle_arrival) > 2 and self.clusters != 0:
             mean_cycle_rate, mean_stride = self.get_cycle_rate()
-
-            #next_data_cycles = self.data_cycles_lut[
-            #        min(self.current_cycle+int(mean_stride), self.total_cycles)
-            #            ]
             next_data_cycles = min(self.current_cycle+int(mean_stride), self.total_cycles)
-            #data_factor = (next_data_cycles - self.data_cycles_lut[self.current_cycle]) / mean_stride
             data_factor = (next_data_cycles - self.current_cycle) / mean_stride
-
             return self.clusters * mean_cycle_rate * data_factor
         elif len(self.cycle_arrival) != 0:
             return instrument_rate(self.machine_id)
