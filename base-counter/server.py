@@ -359,13 +359,12 @@ class RunStatus(object):
 
         if self.finished or self.cancelled:
             return 0
-
         if len(self.cycle_arrival) > 2 and self.clusters != 0:
             mean_cycle_rate, mean_stride = self.get_cycle_rate()
             next_data_cycles = min(self.current_cycle+int(mean_stride), self.total_cycles)
             data_factor = (next_data_cycles - self.current_cycle) / mean_stride
             return self.clusters * mean_cycle_rate * data_factor
-        elif len(self.cycle_arrival) != 0:
+        elif len(self.cycle_arrival) <= 1:
             return instrument_rate(self.machine_id)
         else:
             return 0
