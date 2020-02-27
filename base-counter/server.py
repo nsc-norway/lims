@@ -291,8 +291,10 @@ class RunStatus(object):
             if len(self.cycle_arrival) > 2:
                 cycle_rate, cycle_stride = self.get_cycle_rate()
                 if self.cycle_first_in_read_flag[self.current_cycle]:
-                    after_index_read = 25 # Some slack on start of read 2, takes less than 25 cycles before writing on MiSeq
-                cancelled = current_cycle_time > (CANCELLED_TIME_N_CYCLES+after_index_read+next_index_cycles) * (cycle_stride / cycle_rate)
+                    first_cycle_in_read = 25 # Some slack on start of read 2, takes less than 25 cycles before writing on MiSeq
+                else:
+                    first_cycle_in_read = 0
+                cancelled = current_cycle_time > (CANCELLED_TIME_N_CYCLES+first_cycle_in_read) * (cycle_stride / cycle_rate)
                 return cancelled
         return False
 
