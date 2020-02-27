@@ -235,7 +235,7 @@ class RunStatus(object):
         self.cycle_first_in_read_flag = sum(
             ([True] + [False]*(read['cycles']-1)
                 for read in self.read_config),
-            start=[]
+            []
         ) + [False]
         return self.total_cycles != 0
 
