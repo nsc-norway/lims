@@ -364,7 +364,7 @@ class RunStatus(object):
             next_data_cycles = min(self.current_cycle+int(mean_stride), self.total_cycles)
             data_factor = (next_data_cycles - self.current_cycle) / mean_stride
             return self.clusters * mean_cycle_rate * data_factor
-        elif len(self.cycle_arrival) > 1:
+        elif len(self.cycle_arrival) > 0 and self.current_cycle != 0:
             return instrument_rate(self.machine_id)
         else:
             return 0
