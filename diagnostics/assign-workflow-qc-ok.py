@@ -8,16 +8,22 @@ from genologics import config
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
-    inputs = [i['uri'].stateless for i, o in process.input_output_maps]
+    inputs = [i['uri'].stateless for i, o in process.input_output_maps
+                    if o['output-generation-type'] == "PerReagentLabel"]
     lims.get_batch(inputs)
     lims.get_batch(sample for input in inputs for sample in input.samples)
+    if any(i.qc_flag is None for i in inputs):
+        qc_results = dict(zip(inputs, lims.get_qc_results_re(inputs, r"NovaSeq Data QC")))
+        lims.get_batch(qc_results)
+    else:
+        qc_results = {}
     routables = []
-    for i, o in process.input_output_maps:
-        if o['output-generation-type'] == "PerReagentLabel":
-            if i['uri'].stateless.qc_flag == "PASSED":
-                if i['uri'].samples[0].project.udf.get('Project type') == "Diagnostics":
-                    routables += [sample.artifact for sample in i['uri'].samples]
-
+    for i in inputs:
+        if i.qc_flag == "PASSED" or (
+                i in qc_results and qc_results[i].qc_flag == "PASSED"
+                ):
+            if i.samples[0].project.udf.get('Project type') == "Diagnostics":
+                routables += [sample.artifact for sample in i.samples]
     if routables:
         workflows = lims.get_workflows()
         match_workflows = [] # Contains version, then workflow object
