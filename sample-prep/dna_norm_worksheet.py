@@ -106,7 +106,7 @@ for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key)
             conc = input.udf['Concentration']
     except KeyError:
         ws.cell(row=row_index, column=6).value = "MISSING_CONC"
-        continue
+        conc = 0
 
     if conc == 0.0:
         sample_volume = total_volume + 1
