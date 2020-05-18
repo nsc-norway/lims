@@ -9,10 +9,10 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 if len(sys.argv) > 1 and re.match(r"\d\d\d\d-\d\d-\d\d", sys.argv[1]):
     until_date = sys.argv[1]
 else:
-    until_date = raw_input("Enter until date (yyyy-mm-dd): ")
+    until_date = raw_input("Enter until date (yyyy-mm-dd): ").strip()
 
 
-projects = lims.get_projects(open_date=until_date)
+projects = lims.get_projects()
 
 for project in projects:
     if not project.close_date and project.name.lower().startswith("diag-"):
