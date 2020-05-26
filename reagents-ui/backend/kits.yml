@@ -135,3 +135,11 @@
     One/TruSight One Expanded/Cardio', ref: '15042393', setActive: true}
 - {hasUniqueId: true, lotcode: V1, name: 'Oligos: Nextera Rapid Capture/TruSight One/TruSight
     One Expanded/Cardio', ref: '15065078', setActive: false}
+- {hasUniqueId: false, lotcode: V1, name: TapeStation High Sensitivity D1000 ScreenTape,
+  ref: 5067-5584, setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: TruSeq DNA PCR-Free LP (96 samples) Box 1,
+  ref: '15037059', setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: TruSeq DNA PCR-Free LP (96 samples) Box 2,
+  ref: '15037163', setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: TruSeq DNA UD index (96 indexes), ref: '20023784',
+  setActive: false}
