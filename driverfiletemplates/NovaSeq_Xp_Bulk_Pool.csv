@@ -1,0 +1,6 @@
+<HEADER>
+Sample Name,Per Sample Volume (ul)
+</HEADER>
+<DATA>
+${INPUT.NAME},${INPUT.UDF.Adjusted Per Sample Volume (ul)}
+</DATA>

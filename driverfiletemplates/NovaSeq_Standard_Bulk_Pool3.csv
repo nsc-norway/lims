@@ -1,0 +1,8 @@
+<HEADER>
+
+
+Volume of Pool to Denature (ul),NaOH Volume (ul),Tris-HCl Volume (ul)
+</HEADER>
+<DATA>
+${OUTPUT.UDF.Volume of Pool to Denature (ul)},${OUTPUT.UDF.NaOH Volume (ul)},${OUTPUT.UDF.Tris-HCl Volume (ul)}
+</DATA>
