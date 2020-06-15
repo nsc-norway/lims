@@ -1,8 +1,8 @@
 <HEADER>
 
 
-RSB Volume (ul) to Add to Pool
+Buffer Volume (ul) to Add to Pool
 </HEADER>
 <DATA>
-${OUTPUT.UDF.RSB Volume (ul)}
+${OUTPUT.UDF.Buffer Volume (ul)}
 </DATA>
