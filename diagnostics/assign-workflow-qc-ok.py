@@ -8,11 +8,11 @@ from genologics import config
 def main(process_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
-    inputs = [i['uri'].stateless for i, o in process.input_output_maps
-                    if o['output-generation-type'] == "PerReagentLabel"]
+    inputs = list(set(i['uri'].stateless for i, o in process.input_output_maps
+                    if o['output-generation-type'] == "PerReagentLabel"))
     lims.get_batch(inputs)
     lims.get_batch(sample for input in inputs for sample in input.samples)
-    if any(i.qc_flag is None for i in inputs):
+    if any(i.qc_flag == "UNKNOWN" for i in inputs):
         qc_results = dict(zip(inputs, lims.get_qc_results_re(inputs, r"NovaSeq Data QC")))
         lims.get_batch(qc_results)
     else:
