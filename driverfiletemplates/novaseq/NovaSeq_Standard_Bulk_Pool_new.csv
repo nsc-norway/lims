@@ -2,5 +2,5 @@
 Sample Name,Per Sample Volume (ul),Buffer Volume (ul) to Add to Pool,PhiX v3 (ul),Volume of Pool to Denature (ul),NaOH Volume (ul),Tris-HCl Volume (ul)
 </HEADER>
 <DATA>
-${INPUT.NAME},${INPUT.UDF.Adjusted Per Sample Volume (ul)},${OUTPUT.UDF.Buffer Volume (ul)},${OUTPUT.UDF.PhiX v3 (ul)},${OUTPUT.UDF.Volume of Pool to Denature (ul)},${OUTPUT.UDF.NaOH Volume (ul)},${OUTPUT.UDF.Tris-HCl Volume (ul)}
+${INPUT.NAME},${INPUT.UDF.Adjusted Per Sample Volume (ul)},${OUTPUT.UDF.Buffer Volume (ul)},${PROCESS.UDF.PhiX v3 (ul)},${OUTPUT.UDF.Volume of Pool to Denature (ul)},${OUTPUT.UDF.NaOH Volume (ul)},${OUTPUT.UDF.Tris-HCl Volume (ul)}
 </DATA>
