@@ -643,7 +643,7 @@ class RunDenatureStep(Task):
         self.job.sequencing_pool.udf['PhiX %'] = self.job.parameters['param_phix']
         self.job.sequencing_pool.put()
         have_run_program = False
-        timeout = 30
+        timeout = 120
         while step.current_state.upper() != "COMPLETED":
             if timeout == 0:
                 raise RuntimeError("Timeout while advancing step.")
