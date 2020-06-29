@@ -13,8 +13,9 @@ def main(process_id):
     lims.get_batch(inputs)
     lims.get_batch(sample for input in inputs for sample in input.samples)
     if any(i.qc_flag == "UNKNOWN" for i in inputs):
-        qc_results = dict(zip(inputs, lims.get_qc_results_re(inputs, r"NovaSeq Data QC")))
-        lims.get_batch(qc_results)
+        qc_list = [qc.stateless for qc in lims.get_qc_results_re(inputs, r"NovaSeq Data QC")]
+        lims.get_batch(qc_list)
+        qc_results = dict(zip(inputs, qc_list))
     else:
         qc_results = {}
     routables = []
