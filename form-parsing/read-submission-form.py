@@ -563,7 +563,10 @@ def test(filename):
         data = f.read()
         fields = parse(data)
         for key, value in sorted(fields):
-            print ("{0:20}: {1}".format(key, value))
+            try:
+                print ("{0:20}: {1}".format(key, value))
+            except UnicodeEncodeError:
+                print ("{0:20}: <unicode error, skipped in test mode>".format(key))
 
 
 if sys.argv[1] == "test":
