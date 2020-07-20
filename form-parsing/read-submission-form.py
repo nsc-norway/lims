@@ -148,7 +148,7 @@ def get_text_lower(cell):
 
 def get_substring(prefix, cell):
     """Get a substring of the cell value. Reads from after prefix, to the next line break"""
-    data = get_text_multi(cell)
+    data = get_text_multi(cell, check_placeholder=False)
     if data:
         try:
             substring_index = data.index(prefix)
