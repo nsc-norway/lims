@@ -232,11 +232,11 @@ class RunStatus(object):
             return False
         self.read_config = list(ds.meta.read_config)
         self.total_cycles = sum(read['cycles'] for read in self.read_config)
-        self.cycle_first_in_read_flag = sum(
-            ([True] + [False]*(read['cycles']-1)
-                for read in self.read_config),
-            []
-        ) + [False]
+        self.cycle_first_in_read_flag = [True] + sum(
+            (
+                [False]*(read['cycles']-1) + [True] for read in self.read_config),
+                []
+            )
         return self.total_cycles != 0
 
     def get_cycle(self):
