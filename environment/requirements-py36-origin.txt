@@ -1,0 +1,6 @@
+matplotlib
+numpy
+openpyxl
+requests
+xlrd
+xlwt
