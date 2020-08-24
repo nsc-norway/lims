@@ -2,5 +2,6 @@ matplotlib
 numpy
 openpyxl
 requests
+virtualenv
 xlrd
 xlwt
