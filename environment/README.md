@@ -12,23 +12,16 @@ The scripts here use a Docker container to download the required Python packages
 
 1. Download and dependency resolution: Use any host connected to the internet with docker.
 
-`script01-create-environments.sh`: Creates virtual environments for each of the python versions under the `envs/` directory.
-
-`script02-download.sh`: Downloads the pip packages into the virtual environments and then creates a tar file `envs.tar` containing the environments with packages.
+`script01-download.sh`: Downloads the pip packages into the `packages/` directory and packs them into a tar file.
 
 2. Transfer the tar file to a LIMS server.
-3. Unpack the tar file in `/opt/nsc` [exactly this location must be used, based on the previous commands]:
-
+3. Place the tar file in the directory containing this file on the LIMS server (e.g. /opt/gls/clarity/customextensions/lims/environment).
+4. Run `script02-limsserver-install.sh` as the root user to install the environments under `/opt/nsc/envs`, and create symlinks to the python interpreters.
+5. Test by running:
 ```
-sudo mkdir -p /opt/nsc
-cd /opt/nsc
-sudo tar xfz envs.tar.gz
+$ nsc-python27
+>>> import matplotlib
+>>>
 ```
-
-4. Create links to the python binaries:
-```
-for nscpython in nsc-python27 nsc-python36
-do
-    sudo ln -s /opt/nsc/envs/$nscpython/bin/python /usr/bin/$nscpython
-done
-```
+And similarly for python 3.6.
+6. Delete packages and tar files (`rm -r packages*`).
