@@ -1,0 +1,8 @@
+Main procedure: Install/Upgrade
+https://genologics.zendesk.com/hc/en-us/articles/360025478471-BaseSpace-Clarity-LIMS-Installation-Upgrade-Procedure
+
+Pre-installation requirements
+https://genologics.zendesk.com/hc/en-us/articles/360024942472
+
+Technical overview
+https://genologics.zendesk.com/hc/en-us/articles/360025240471-Clarity-LIMS-Technical-Overview
