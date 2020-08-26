@@ -10,6 +10,7 @@ Prepare new instance:
 * Accounts arvindsu, paalmbj with sudo access
 o Transfer in the backup file and unpack in a directory not at the fs root
 o Install the postgres config files pg_hba.conf and postgresql.conf from backup
+o Install the pip environments (see parent directory)
 
 ----
 * Mount point for ous-lims and cees-lims
