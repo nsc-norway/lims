@@ -70,7 +70,7 @@ def get_zip_file(collection, run_id):
         return "Error: Invalid run-id specified", 400
     run_path = os.path.join(base_dir, run_id)
     outputbuffer = io.BytesIO()
-    zfile = zipfile.ZipFile(outputbuffer, 'w')
+    zfile = zipfile.ZipFile(outputbuffer, 'w', allowZip64=True)
     for file in request.args.get('files', '').split(','):
         try:
             if file in ("RunInfo.xml", "RTAConfiguration.xml"):
