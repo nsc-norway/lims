@@ -14,6 +14,7 @@ deactivate
 
 python3 -m venv /opt/nsc/envs/nsc-python36
 source /opt/nsc/envs/nsc-python36/bin/activate
+pip install --upgrade pip
 pip install --no-index --find-links packages/nsc-python36/ -r requirements-py36-origin.txt
 deactivate
 
