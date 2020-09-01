@@ -2,7 +2,7 @@
 
 set -e
 yum install python2 python3
-tar xf packages.tar
+tar xfz packages.tar.gz
 pip3 install --no-index --find-links packages/nsc-python36 virtualenv
 
 virtualenv -p python2 /opt/nsc/envs/nsc-python27
