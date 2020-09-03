@@ -2,7 +2,7 @@
 
 # Run as the root user on the old clarity server before upgrade
 
-yum --enablerepo=* install ClarityLIMS-UpgradePreValidation
+yum --enablerepo=GLS_clarity52 install ClarityLIMS-UpgradePreValidation
 bash /opt/gls/ClarityUpgradeValidation/bin/validate.sh
 yum remove ClarityLIMS-UpgradePreValidation
 
