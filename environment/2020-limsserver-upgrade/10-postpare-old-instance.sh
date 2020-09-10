@@ -9,6 +9,8 @@ yum remove ClarityLIMS-UpgradePreValidation
 
 /opt/gls/clarity/bin/run_clarity.sh stop
 
+# TODO Check exact name for clarity DB and make a note of it.
+# sandbox-lims: clarityDB
 pg_dump -U <database_user> -b -O -Ft clarityDB -f ~glsjboss/backups/database/clarity-old_version-`date +%Y%m%d%H%M`.tar
 
 cd /
@@ -22,4 +24,4 @@ tar cfJ /opt/backups.tar.xz \
     /var/lib/pgsql/9.6/data/pg_hba.conf \
     /var/lib/pgsql/9.6/data/postgresql.conf \
     clarityrpms.txt \
-    DATABASE_FILE_TODELOO
+    /opt/clarity-5.1-*.tar
