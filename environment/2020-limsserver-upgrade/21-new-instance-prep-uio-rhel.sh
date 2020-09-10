@@ -48,10 +48,10 @@ sudo -u postgres createdb --owner clarity "clarityDB"
 # Create the tenant lookup DB
 sudo -u postgres createdb --owner clarity "clarityTenantLookup"
 
+echo "TZ='Europe/Oslo'; export TZ" > /etc/profile.d/01_tz.sh
+
 # Enable remote HTTP(S) access in firewall configuration
 sudo firewall-cmd --zone=public --add-service=https
 sudo firewall-cmd --zone=public --permanent --add-service=https
 sudo firewall-cmd --zone=public --add-service=http
 sudo firewall-cmd --zone=public --permanent --add-service=http
-
-echo "TZ='Europe/Oslo'; export TZ" > /etc/profile.d/01_tz.sh
