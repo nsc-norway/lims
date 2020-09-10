@@ -1,3 +1,8 @@
+# Install procedure script.
+# While this is a .sh file, it's not necessarily meant to be run as a script.
+# Recommended: reaad the file and execute the commands one by one.
+
+
 # Check SELinux is disabled
 echo -n "## SELinux state: "
 getenforce
