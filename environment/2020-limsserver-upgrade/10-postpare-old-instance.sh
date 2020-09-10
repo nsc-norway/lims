@@ -21,6 +21,7 @@ tar cfJ /opt/backups.tar.xz \
     /opt/gls/clarity/glscontents \
     /etc/httpd/conf.d \
     /etc/httpd/sslcertificate \
+    /etc/crontab \
     /var/lib/pgsql/9.6/data/pg_hba.conf \
     /var/lib/pgsql/9.6/data/postgresql.conf \
     clarityrpms.txt \
