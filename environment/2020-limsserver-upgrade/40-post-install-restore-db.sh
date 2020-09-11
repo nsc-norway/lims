@@ -1,4 +1,7 @@
 
+# Install/Upgrade guide item
+# 2. Restore backup
+
 sudo -u postgres dropdb "clarityDB"
 sudo -u postgres createdb -O clarity "clarityDB"
 sudo chown postgres /opt/backup/opt/clarity-5.1-*.tar
@@ -12,6 +15,8 @@ then
     echo "## ... tar xf /opt/backup/opt/clarity-5.1-*.tar"
     echo "## ... sudo chown -R postgres ."
     echo "## ... sudo -u postgres pg_restore -Fd -d clarityDB ."
+    echo -n "If running this as a script, you should do the above commands then press Enter."
+    read
 fi
 
 sudo rsync -r /opt/backup/opt/gls/clarity/users/glsftp/ /opt/gls/clarity/users/glsftp/
@@ -49,9 +54,21 @@ sudo cp /opt/backup/etc/crontab /etc/crontab
 # Make sure we're here
 cd /opt/gls/clarity/config/
 
-# Migrate the database to new clarity version
+# 5. Migrate the database to new clarity version
 sudo -u glsjboss ./migrate_claritylims_database.sh
 
+# 6. Install NGS package and preconfigured workflow
+sudo yum --enablerepo=GLS_clarity52 install ClarityLIMS-NGS-Package-v5 BaseSpaceLIMS-Pre-configured-Workflows-Package
 
-TODO GUIDE STEPS 6 & 7
-sudo yum install ClarityLIMS-NGS-Package-v5 PCWP...
+# Also install sequencer integration RPMs
+
+# 7. Delete ElasticSearch indices
+sudo service elasticsearch start
+curl -XDELETE 'http://localhost:9200/_all'
+
+sudo /opt/gls/clarity/bin/run_clarity.sh stop
+sudo /opt/gls/clarity/bin/run_clarity.sh start
+
+echo "After completing this procedure, perform the validation"
+echo "Sequencer integrations are not installed by commands in this script. Determine the"
+echo "appropriate sequencer integrations and install them manually."
