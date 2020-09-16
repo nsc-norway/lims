@@ -8,7 +8,7 @@
 # The Pre-validation RPM for the new version should be installed here.
 # (this is not usually the case, we have to add the repo file explicitly)
 # Install PreValidation 5.2:
-yum --enablerepo=* install ClarityLIMS-UpgradePreValidation
+yum --enablerepo=GLS_clarity52 install ClarityLIMS-UpgradePreValidation
 bash /opt/gls/ClarityUpgradeValidation/bin/validate.sh
 yum remove ClarityLIMS-UpgradePreValidation
 
@@ -32,6 +32,7 @@ tar cfJ /opt/backups.tar.xz \
     /opt/gls/clarity/glscontents \
     /etc/httpd/conf.d \
     /etc/httpd/sslcertificate \
+    /etc/crontab \
     /var/lib/pgsql/9.6/data/pg_hba.conf \
     /var/lib/pgsql/9.6/data/postgresql.conf \
     clarityrpms.txt \

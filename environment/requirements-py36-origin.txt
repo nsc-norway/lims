@@ -1,6 +1,8 @@
 matplotlib
 numpy
 openpyxl
+pip
 requests
+virtualenv
 xlrd
 xlwt
