@@ -12,7 +12,7 @@ import glob
 
 app = Flask(__name__)
 
-CURRENT_RUN_DIR = "/var/www/html"
+CURRENT_RUN_DIR = "/data/runScratch.boston"
 CURRENT_RUN_GLOB = "{0}/[0-9]*_*_*/".format(CURRENT_RUN_DIR)
 ARCHIVE_RUN_DIR = "/data/runScratch.boston/processed"
 ARCHIVE_RUN_GLOB = "{0}/[0-9]*_*_*/".format(ARCHIVE_RUN_DIR)
