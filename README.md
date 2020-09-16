@@ -6,25 +6,33 @@ See wiki for operation procedures: https://github.com/nsc-norway/lims/wiki
 ## Overview
 
 This repo contains a large number of stand-alone scripts, which are called by the 
-External Program Plugin (EPP) interface of Clarity LIMS. There are also several
+automation worker (previously "EPP") interface of Clarity LIMS. There are also several
 cron jobs and small web applications (see below).
 
 
 Requirements:
   - Many scripts require the SciLife genologics library, or the NSC extended
-    version. The genologics library itself requires "requests" (from pip or yum).
+    version (https://github.com/nsc-norway/genologics/). The genologics library
+    itself requires "requests" (from pip or yum). The library should exist in a
+    directory next to this `lims` repo. I.e.:
+
+```
+$ ls -F ..
+genologics/
+lims/
+```
 
   - There are other requirements, including Word / Excel file interfaces, numpy,
-    etc. In some cases it will be specified in comments in the script, and other
-    scripts need to be updated to include this information (it is then possible 
-    to determine the requirement by looking at import statements).
+    etc. Use the scripts in `environment/` to configure a consistent python
+    environment for the scripts.
 
 
 ## Repo organisation
 
 The code is located in directories depending on which broad topic it relates to.
 A more systematic approach is the tree under the processtype/ directory: Each 
-"process type" in LIMS may have a number of scripts (EPP) associated with it. In the 
+"process type" -- now called Master Step -- in LIMS may have a number of scripts 
+associated with it ("automations", or previously called EPPs). In the 
 processtype directory, there is a subdirectory for each process type, with links 
 to the scripts used by that process type. This makes it easy to associate between
 scripts and process types. There are some exceptions:
@@ -53,9 +61,11 @@ Non-EPP scripts are either manually invoked scripts, cron jobs, or web applicati
       "external" users who are not heavily involved in the LIMS.
   - Otter
     - deploy/ : Deployment scripts -- pushes the current git commit into production
+    - environment/ : Related to python dependencies and server setup.
+    - misc/ : Contains other scripts.
     - tests/ : Unit tests. The number and quality of tests is currently limited.
 
-## Directories
+## Directories for automation scripts
 
   - aggregate-qc/ : scripts for general QC procedures. `set-user-measurements.py`
     is run on any step to emulate a simple version of Aggregate QC. The other 

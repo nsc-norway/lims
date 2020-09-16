@@ -1,0 +1,19 @@
+Point prefix legend:
+        *: Managed in ansible and 21-new-instance-prep-uio-rhel.sh
+        -: Managed in ansible NSC-OUS, not UiO
+        o: Manual only
+
+Prepare new instance: 
+
+* postgresql 9.6 repo installed, package installed
+* Create users in postgresql
+* Create databases
+* Open ports in firewall
+* Accounts arvindsu, paalmbj with sudo access
+- SELinux disabled. Note this doesnt seem to be working well. SELinux comes back on. To temporarily fix it, edit /etc/selinux/config and set to disabled, then reboot immediately after that.
+- Install the Clarity repository files (cant paste here in github, contains secret password)
+- Mount point for ous-lims and cees-lims
+o Transfer in the backup file and unpack in a directory not at the fs root
+o Install the postgres config files pg_hba.conf and postgresql.conf from backup
+o Install the pip environments (see parent directory)
+

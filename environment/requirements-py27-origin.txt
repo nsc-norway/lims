@@ -1,0 +1,8 @@
+flask
+jinja2
+matplotlib
+numpy
+openpyxl
+requests
+xlrd
+xlwt
