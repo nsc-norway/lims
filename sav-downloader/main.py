@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask import Flask, redirect, request, jsonify, Response
+from flask import Flask, redirect, request, jsonify, Response, send_file
 from genologics.lims import *
 from genologics import config
 import io
@@ -70,7 +70,7 @@ def get_zip_file(collection, run_id):
         return "Error: Invalid run-id specified", 400
     run_path = os.path.join(base_dir, run_id)
     outputbuffer = io.BytesIO()
-    zfile = zipfile.ZipFile(outputbuffer, 'w')
+    zfile = zipfile.ZipFile(outputbuffer, 'w', allowZip64=True)
     for file in request.args.get('files', '').split(','):
         try:
             if file in ("RunInfo.xml", "RTAConfiguration.xml"):
@@ -114,7 +114,8 @@ def get_zip_file(collection, run_id):
             else:
                 raise
     zfile.close()
-    return Response(outputbuffer.getvalue(), mimetype="application/zip")
+    outputbuffer.seek(0)
+    return send_file(outputbuffer, mimetype="application/zip")
 
 
 if __name__ == '__main__':
