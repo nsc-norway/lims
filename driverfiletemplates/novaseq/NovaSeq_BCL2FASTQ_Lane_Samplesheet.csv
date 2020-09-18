@@ -3,6 +3,11 @@ OUTPUT.FILE.NAME,${OUTPUT.CONTAINER.NAME}.csv
 PROCESS.POOLED.ARTIFACTS
 CONTROL.SAMPLE.DEFAULT.PROJECT.NAME,Controls
 HIDE, ${INPUT.REAGENT.SEQUENCE##Dual}, IF, NODATA
+HIDE, ${PROCESS.UDF.Settings Header}, IF, NODATA
+HIDE, ${PROCESS.UDF.UMI - Read 1 Length}, IF, NODATA
+HIDE, ${PROCESS.UDF.UMI - Read 2 Length}, IF, NODATA
+HIDE, ${PROCESS.UDF.UMI - Read 1 Start From Cycle}, IF, NODATA
+HIDE, ${PROCESS.UDF.UMI - Read 2 Start From Cycle}, IF, NODATA
 <HEADER_BLOCK>
 [Header]
 Investigator Name,${PROCESS.TECHNICIAN}
@@ -12,6 +17,11 @@ Workflow,${PROCESS.UDF.Workflow}
 [Reads]
 ${PROCESS.UDF.Read 1 Cycles}
 ${PROCESS.UDF.Read 2 Cycles}
+${PROCESS.UDF.Settings Header}
+Read1UMILength,${PROCESS.UDF.UMI - Read 1 Length}
+Read2UMILength,${PROCESS.UDF.UMI - Read 2 Length}
+Read1StartFromCycle,${PROCESS.UDF.UMI - Read 1 Start From Cycle}
+Read2StartFromCycle,${PROCESS.UDF.UMI - Read 2 Start From Cycle}
 [Data]
 </HEADER_BLOCK>
 <HEADER>

@@ -1,8 +1,7 @@
-SORT.BY.${INPUT.CONTAINER.ROW}${INPUT.CONTAINER.COLUMN}
+SORT.BY.${OUTPUT.CONTAINER.PLACEMENT}${INPUT.CONTAINER.ROW}${INPUT.CONTAINER.COLUMN}
 OUTPUT.FILE.NAME,${OUTPUT.CONTAINER.NAME}.csv
 PROCESS.POOLED.ARTIFACTS
 CONTROL.SAMPLE.DEFAULT.PROJECT.NAME,Controls
-HIDE, ${INPUT.REAGENT.SEQUENCE##Dual}, IF, NODATA
 HIDE, ${PROCESS.UDF.Settings Header}, IF, NODATA
 HIDE, ${PROCESS.UDF.UMI - Read 1 Length}, IF, NODATA
 HIDE, ${PROCESS.UDF.UMI - Read 2 Length}, IF, NODATA
@@ -25,10 +24,10 @@ Read2StartFromCycle,${PROCESS.UDF.UMI - Read 2 Start From Cycle}
 [Data]
 </HEADER_BLOCK>
 <HEADER>
-Sample_ID,Sample_Name,Sample_Plate,Sample_Well,index,index2,Sample_Project,Description
+Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,index,index2,Sample_Project,Description
 </HEADER>
 <DATA>
-${INPUT.LIMSID},${SAMPLE.NAME##NoSpecialCharacters},${INPUT.CONTAINER.NAME},${INPUT.CONTAINER.PLACEMENT},${INPUT.REAGENT.SEQUENCE##Single},${INPUT.REAGENT.SEQUENCE##Dual},${SAMPLE.PROJECT.NAME##NoSpecialCharacters},
+${OUTPUT.CONTAINER.PLACEMENT##Lane},${INPUT.LIMSID},${SAMPLE.NAME##NoSpecialCharacters},${INPUT.CONTAINER.NAME},${INPUT.CONTAINER.PLACEMENT},${INPUT.REAGENT.SEQUENCE##Single},${INPUT.REAGENT.SEQUENCE##Index2RC},${SAMPLE.PROJECT.NAME##NoSpecialCharacters},
 </DATA>
 <TOKEN_FORMAT>
 ${INPUT.REAGENT.SEQUENCE##Single}
@@ -39,12 +38,20 @@ if (index > 0) {
    return token
 }
 
-${INPUT.REAGENT.SEQUENCE##Dual}
+${INPUT.REAGENT.SEQUENCE##Index2RC}
 def index = token.indexOf("-")
-if (index >= 0) {
-    return token.substring(index + 1)
+if (index > 0) {
+    return token.split('-')[1].toUpperCase().reverse().collect { base ->
+        switch (base) {
+            case 'A': return 'T'
+            case 'C': return 'G'
+            case 'G': return 'C'
+            case 'T': return 'A'
+            default : throw new Exception("Input sequence '${sequence}' contains an invalid base '${base}'.")
+        }
+    }.join('')
 } else {
-    return null
+    return ''
 }
 
 ${SAMPLE.NAME##NoSpecialCharacters}
@@ -52,5 +59,8 @@ return token.replaceAll(\"[^a-zA-Z0-9_]\", \"_\")
 
 ${SAMPLE.PROJECT.NAME##NoSpecialCharacters}
 return token.replaceAll(\"[^a-zA-Z0-9_]\", \"_\")
+
+${OUTPUT.CONTAINER.PLACEMENT##Lane}
+return token.substring(0, 1)
 
 </TOKEN_FORMAT>
