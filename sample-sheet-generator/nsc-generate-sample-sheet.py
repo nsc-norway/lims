@@ -88,7 +88,7 @@ def filter_ascii(data):
 def header_section(process):
     try:
         return [['Investigator Name', filter_ascii(process.technician.name)],
-                ['Experiment Name', process.udf['Experiment Name']],
+                ['Experiment Name', process.udf.get('Experiment Name', '')],
                 ['Date', str(datetime.date.today())],
                 ['Workflow', 'GenerateFASTQ'],
                 ]
