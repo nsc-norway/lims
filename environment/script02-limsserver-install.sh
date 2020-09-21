@@ -20,3 +20,4 @@ deactivate
 
 ln -sf /opt/nsc/envs/nsc-python27/bin/python /usr/bin/nsc-python27
 ln -sf /opt/nsc/envs/nsc-python36/bin/python /usr/bin/nsc-python36
+ln -sf /usr/bin/nsc-python36 /usr/bin/nsc-python3
