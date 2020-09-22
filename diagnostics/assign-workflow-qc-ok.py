@@ -12,15 +12,17 @@ def main(process_id):
                     if o['output-generation-type'] == "PerReagentLabel"))
     lims.get_batch(inputs)
     lims.get_batch(sample for input in inputs for sample in input.samples)
+    qc_results = {}
     if any(i.qc_flag == "UNKNOWN" for i in inputs):
-        try:
-            qc_list = [qc.stateless for qc in lims.get_qc_results_re(inputs, r"NovaSeq Data QC")]
+        for typ in ["NovaSeq Data QC", "NextSeq 500/550 Run NSC 3.0"]:
+            try:
+                qc_list = [qc.stateless for qc in lims.get_qc_results_re(inputs, typ)]
+                break
+            except KeyError: # If missing QC result, get_qc_results_re throws KeyError
+                qc_list = []
+        if qc_list:
             lims.get_batch(qc_list)
             qc_results = dict(zip(inputs, qc_list))
-        except KeyError: # If missing QC result, get_qc_results_re throws KeyError
-            qc_results = {}
-    else:
-        qc_results = {}
     routables = []
     for i in inputs:
         if i.qc_flag == "PASSED" or (
