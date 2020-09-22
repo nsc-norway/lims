@@ -36,8 +36,10 @@ SEQ_PROCESSES=[
                 ('hiseq4k', 'Illumina Sequencing (HiSeq 3000/4000) 1.0'),
                 ('hiseq', 'Illumina Sequencing (Illumina SBS) 5.0'),
                 ('nextseq', 'NextSeq Run (NextSeq) 1.0'),
+                ('nextseq', 'NextSeq 500/550 Run NSC 3.0'),
                 ('miseq', 'MiSeq Run (MiSeq) 5.0'),
-                ('novaseq', 'AUTOMATED - NovaSeq Run (NovaSeq 6000 v3.0)')
+                ('novaseq', 'AUTOMATED - NovaSeq Run (NovaSeq 6000 v3.0)'),
+                ('novaseq', 'AUTOMATED - NovaSeq Run NSC 3.0')
             ]
 QC_PROCESSES=[
                 ('hiseqx', 'Illumina Sequencing (HiSeq X) 1.0'),
@@ -45,6 +47,8 @@ QC_PROCESSES=[
                 ('hiseq4k', 'Illumina Sequencing (HiSeq 3000/4000) 1.0'),
                 ('hiseq', 'Illumina Sequencing (Illumina SBS) 5.0'),
                 ('nextseq', 'NextSeq Run (NextSeq) 1.0'),
+                ('nextseq', 'NextSeq 500/550 Run NSC 3.0'),
+                ('miseq', 'MiSeq Run (MiSeq) 5.0'),
                 ('miseq', 'MiSeq Run (MiSeq) 5.0'),
                 ('novaseq', 'NovaSeq Data QC NSC 1.0')
             ]
