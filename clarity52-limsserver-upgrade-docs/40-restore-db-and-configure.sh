@@ -7,6 +7,8 @@ sudo -u postgres createdb -O clarity "clarityDB"
 sudo chown postgres /opt/backup/opt/clarity-5.1-*.tar
 sudo -u postgres ls /opt/backup/opt/clarity-5.1-*.tar
 
+# If running this script line by line (recommended), then perform the "sudo .......tar"
+# command and see if it works, or see the echo statements if it fails.
 if [ ! sudo -u postgres pg_restore -Ft -d clarityDB /opt/backup/opt/clarity-5.1-*.tar ]
 then
     echo "## Restore failure. Extract the tar file and run pg_restore with format 'd'"
@@ -19,15 +21,13 @@ then
     read
 fi
 
+# Restore file store
 sudo rsync -r /opt/backup/opt/gls/clarity/users/glsftp/ /opt/gls/clarity/users/glsftp/
 sudo chown -R glsftp:claritylims /opt/gls/clarity/users/glsftp/
 
+# Restore custom scripts
 sudo rsync -rl /opt/backup/opt/gls/clarity/customextensions/ /opt/gls/clarity/customextensions/
 sudo chown -R glsjboss:claritylims /opt/gls/clarity/customextensions
-
-# Set permissions to make it easier for claritylims group to work
-sudo chmod g+s /opt/gls/clarity/customextensions
-sudo setfacl -d -m g::rwx /opt/gls/clarity/customextensions
 
 # Skip restore content of:
 # - /opt/gls/clarity/glscontents. We have nothing in it.
@@ -48,7 +48,7 @@ echo "It will give an error that they are the same file, because we have already
 echo "restored them to the correct location, as per the instructions."
 sudo bash installCertificates.sh
 
-# Restore corntab
+# Restore corntab if applicable
 sudo cp /opt/backup/etc/crontab /etc/crontab
 
 # Make sure we're here

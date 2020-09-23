@@ -46,5 +46,5 @@ sudo /opt/gls/clarity/config/pending/40_root_install_proxy.sh
 
 # Custom NSC steps
 # Add users to claritylims group locally
-sudo usermod -a -G claritylims paalmbj
-sudo usermod -a -G claritylims arvindsu
+#sudo usermod -a -G claritylims paalmbj
+#sudo usermod -a -G claritylims arvindsu

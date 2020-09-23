@@ -3,7 +3,7 @@ Point prefix legend:
         -: Managed in ansible NSC-OUS, not UiO
         o: Manual only
 
-Prepare new instance: 
+Prepare new instance:
 
 * postgresql 9.6 repo installed, package installed
 * Create users in postgresql
@@ -14,6 +14,4 @@ Prepare new instance:
 - Install the Clarity repository files (cant paste here in github, contains secret password)
 - Mount point for ous-lims and cees-lims
 o Transfer in the backup file and unpack in a directory not at the fs root
-o Install the postgres config files pg_hba.conf and postgresql.conf from backup
-o Install the pip environments (see parent directory)
-
+o Install the pip environments (see ../environment) (TODO - HOW TO)
