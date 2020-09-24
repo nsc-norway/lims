@@ -47,7 +47,7 @@ QC_PROCESSES=[
                 ('hiseq', 'Illumina Sequencing (Illumina SBS) 5.0'),
                 ('nextseq', 'NextSeq 500/550 Run NSC 3.0'),
                 ('miseq', 'MiSeq Run (MiSeq) 5.0'),
-                ('miseq', 'MiSeq Run (MiSeq) 5.0'),
+                ('novaseq', 'NovaSeq Data QC NSC 1.0'),
                 ('novaseq', 'NovaSeq Data QC NSC 1.0')
             ]
 
