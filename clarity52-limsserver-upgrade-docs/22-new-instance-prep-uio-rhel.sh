@@ -5,8 +5,10 @@
 echo "User passwords (Specified in the PreReqs document):"
 echo " The users are created after installing the RPM, so we set them in the 30-... script."
 
+echo "Install postgresql and other required yum packages"
+
 sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-sudo yum install -y postgresql96-server git vim
+sudo yum install -y postgresql96-server git vim mod_wsgi
 sudo /usr/pgsql-9.6/bin/postgresql96-setup initdb
 
 # Edit: /var/lib/pgsql/9.6/data/postgresql.conf
@@ -55,4 +57,5 @@ sudo firewall-cmd --zone=public --add-service=https
 sudo firewall-cmd --zone=public --permanent --add-service=https
 sudo firewall-cmd --zone=public --add-service=http
 sudo firewall-cmd --zone=public --permanent --add-service=http
+
 
