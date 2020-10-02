@@ -21,6 +21,11 @@ sudo -i -u glsjboss java -jar /opt/gls/clarity/tools/propertytool/omxprops-Confi
 # For dev-lims, set the test location(s).
 ## sudo -i -u glsjboss java -jar /opt/gls/clarity/tools/propertytool/omxprops-ConfigTool.jar set -y -f $HOST  nextseq.v2.seqservice.eventFileDirectory.1 '/boston/runScratch/test/gls_events_neseq'
 
+## Check
+
+#sudo -i -u glsjboss java -jar /opt/gls/clarity/tools/propertytool/omxprops-ConfigTool.jar export | grep nextseq.v2
+
+
 # 5. Enable & Start service
 sudo systemctl enable nextseq_seqservice-v2
 sudo systemctl start nextseq_seqservice-v2
