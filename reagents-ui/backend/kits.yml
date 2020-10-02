@@ -121,16 +121,11 @@
 - {hasUniqueId: false, lotcode: RC-MO-150-V2, name: NextSeq 500 RC, ref: '15057940',
   setActive: true}
 - {hasUniqueId: true, lotcode: V2, name: NextSeq Accessory Box, ref: '15058251', setActive: true}
-- {hasUniqueId: true, lotcode: V1, name: Nextera DNA Flex Enrichment Reagents - Beads
-    and Buffers, ref: '20026210', setActive: false}
-- {hasUniqueId: true, lotcode: V1, name: Nextera DNA Flex Enrichment Reagents - PCR
-    Reagents and Buffers, ref: '20026209', setActive: false}
-- {hasUniqueId: true, lotcode: V1, name: Nextera DNA Flex Pre-Enrichment Library Prep
-    - Beads, ref: '20026214', setActive: false}
-- {hasUniqueId: true, lotcode: V1, name: Nextera DNA Flex Pre-Enrichment Library Prep
-    - Buffers, ref: '20026215', setActive: false}
-- {hasUniqueId: true, lotcode: V1, name: Nextera DNA Flex Pre-Enrichment Library Prep
-    - PCR Reagents, ref: '20026213', setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: DNA/RNA Fast Hyb Enrichment Beads + Buffers, ref: '20026210', setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: Nextera DNA Flex Enrichment PCR Reagents + Buffers, ref: '20026209', setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: DNA Prep Tagmentation Beads, ref: '20026214', setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: DNA/RNA Prep Tagmentation Buffers, ref: '20026215', setActive: false}
+- {hasUniqueId: true, lotcode: V1, name: DNA/RNA Prep Tagmentation PCR Reagents, ref: '20026213', setActive: false}
 - {hasUniqueId: true, lotcode: TruSight One, name: 'Oligos: Nextera Rapid Capture/TruSight
     One/Cardio', ref: '15047151', setActive: false}
 - {hasUniqueId: true, lotcode: V1-864R, name: 'Oligos: Nextera Rapid Capture/TruSight
