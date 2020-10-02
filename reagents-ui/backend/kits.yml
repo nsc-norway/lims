@@ -10,9 +10,9 @@
   ref: '15046897', setActive: false}
 - {hasUniqueId: true, lotcode: V1-96R, name: 'Box 2: Nextera Rapid Capture/TruSightOne/Cardio',
   ref: '15034789', setActive: true}
-- {hasUniqueId: true, lotcode: V4, name: HiSeq 2500 Cluster Kit 1/2, ref: '15049946',
-  setActive: true}
 - {hasUniqueId: true, lotcode: SR-V4, name: HiSeq 2500 Cluster Kit 1/2, ref: '15054276',
+  setActive: true}
+- {hasUniqueId: true, lotcode: V4, name: HiSeq 2500 Cluster Kit 1/2, ref: '15049946',
   setActive: true}
 - {hasUniqueId: true, lotcode: RAPID-SR-V2, name: HiSeq 2500 Cluster Kit 1/2, ref: '15056111',
   setActive: true}
@@ -93,6 +93,8 @@
 - {hasUniqueId: true, lotcode: 300-V2, name: MiSeq Reagent Kit 1/2, ref: '15033624',
   setActive: true}
 - {hasUniqueId: true, lotcode: 500-V2, name: MiSeq Reagent Kit 1/2, ref: '15033625',
+  setActive: true}
+- {hasUniqueId: true, lotcode: 50-V2, name: MiSeq Reagent Kit 1/2, ref: '15033623',
   setActive: true}
 - {hasUniqueId: true, lotcode: 600-V3, name: MiSeq Reagent Kit 1/2, ref: '15043895',
   setActive: true}
