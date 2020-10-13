@@ -27,6 +27,8 @@ Technical requirements: https://genologics.zendesk.com/hc/en-us/articles/3600252
 
 ### 10. Check and back up old instance: 10-postpare-old-instance.sh
 
+Take a snapshot of the LIMS server.
+
 After running / examining this script, transfer the backup to the new instance.
 
 
@@ -67,8 +69,8 @@ Add to /etc/fstab:
     /dev/sdb	/var	ext4	defaults	0 0
     /dev/sdc	/opt	ext4	defaults	0 0
 
-Mark the filesystems to be relabeled by SELinux. If you have already run ansible and thus
-disabled SELinux, then this is not possible nor necessary.
+Mount, and mark the filesystems to be relabeled by SELinux. If you have already run ansible
+and thus disabled SELinux, then this is not possible nor necessary.
 
     # touch {/,/var,/opt}/.autorelabel
 
