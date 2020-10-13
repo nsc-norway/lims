@@ -50,8 +50,3 @@ sudo /opt/gls/clarity/config/pending/32_root_configure_rabbitmq.sh
 
 echo "## The certificate config will fail, we fix later"
 sudo /opt/gls/clarity/config/pending/40_root_install_proxy.sh
-
-# Custom NSC steps
-# Add users to claritylims group locally
-#sudo usermod -a -G claritylims paalmbj
-#sudo usermod -a -G claritylims arvindsu

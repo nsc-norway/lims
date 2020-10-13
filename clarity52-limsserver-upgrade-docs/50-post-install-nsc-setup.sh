@@ -12,7 +12,6 @@ read PASSWORD
 echo "PASSWORD=$PASSWORD" >> /opt/gls/clarity/users/glsai/.genologicsrc
 
 
-
 # -- web apps --
 # 1. SAV downloader
 cp /opt/gls/clarity/customextensions/....... /etc/httpd/conf.d/

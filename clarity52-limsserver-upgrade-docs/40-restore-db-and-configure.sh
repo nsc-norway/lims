@@ -58,8 +58,6 @@ sudo -u glsjboss /opt/gls/clarity/config/migrate_claritylims_database.sh
 # 6. Install NGS package and preconfigured workflow
 sudo yum --enablerepo=GLS_clarity52 install ClarityLIMS-NGS-Package-v5 BaseSpaceLIMS-Pre-configured-Workflows-Package
 
-# Also install sequencer integration RPMs
-
 # 7. Delete ElasticSearch indices
 sudo service elasticsearch start
 curl -XDELETE 'http://localhost:9200/_all'

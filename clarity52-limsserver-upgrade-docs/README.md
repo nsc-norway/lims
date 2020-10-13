@@ -122,13 +122,17 @@ and NGS package.
 
 After performing the restore operation, set default full permissions for the limsdev group.
 
-Set both default (-d) permissions and  
+Set both default (-d) permissions and effective permissions.
 
     sudo setfacl -R -d -m g:lims-dev:rwx /opt/gls/clarity/customextensions
     sudo setfacl -R -m g:lims-dev:rwx /opt/gls/clarity/customextensions
 
 
 ## 50. Post-install configuration
+
+Perform steps in 50-post-install... script.
+
+And install local NSC-python virtual environments.
 
 Validate that the LIMS works and all the data are there. Then delete /opt/backup. Cleanup temp hostname
 from /etc/hosts if present.
@@ -138,7 +142,7 @@ from /etc/hosts if present.
 The following view to grant access to principals without password column. Run in psql as
 postgres user:
 
-    sudo -u postgres psql -c 'CREATE OR REPLACE VIEW principals_ AS SELECT principalid, username, isvisible, isloggedin, datastoreid, ownerid, isglobal, createddate, lastmodifieddate, lastmodifiedby, accountlocked, researcherid, locked, hasloggedin FROM principals;'
+    sudo -u postgres psql -c 'CREATE OR REPLACE VIEW principals_ AS SELECT principalid, username, isvisible, isloggedin, datastoreid, ownerid, isglobal, createddate, lastmodifieddate, lastmodifiedby, accountlocked, researcherid, locked, hasloggedin FROM principals;' clarityDB
 
 
 ## 60. Install optional components
