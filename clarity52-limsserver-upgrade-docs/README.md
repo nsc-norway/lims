@@ -82,6 +82,8 @@ After applying the ansible role, set the password for the clarity DB user:
 
     sudo -u postgres psql -c '\password clarity'
 
+The DB password is stored in the nscadmin repo.
+
 Also set the password for the diagnostics database access user diagprod. This password is not
 stored anywhere after the install (by NSC), so if you have to set this, use a new randomly
 generated password and inform them.
@@ -120,9 +122,10 @@ and NGS package.
 
 After performing the restore operation, set default full permissions for the limsdev group.
 
-TODO does this work? 
+Set both default (-d) permissions and  
 
-    sudo setfacl -R -d -m g:limsdev:rwx /opt/gls/clarity/customextensions
+    sudo setfacl -R -d -m g:lims-dev:rwx /opt/gls/clarity/customextensions
+    sudo setfacl -R -m g:lims-dev:rwx /opt/gls/clarity/customextensions
 
 
 ## 50. Post-install configuration

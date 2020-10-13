@@ -17,6 +17,9 @@ then
     echo "## ... tar xf /opt/backup/opt/clarity-5.1-*.tar"
     echo "## ... sudo chown -R postgres ."
     echo "## ... sudo -u postgres pg_restore -Fd -d clarityDB ."
+    echo " -- If still failing because of unknown user (clarityLIMS user): Abort, drop & create DB again,"
+    echo "    rename clarity user to old name (e.g. clarityLIMS), import (pg_restore), rename clarity user"
+    echo "    to clarity. Set clarity user password again."
     echo -n "If running this as a script, you should do the above commands then press Enter."
     read
 fi
@@ -38,24 +41,19 @@ sudo chown -R glsjboss:claritylims /opt/gls/clarity/customextensions
 sudo mkdir /etc/httpd/sslcertificate
 sudo rsync /opt/backup/etc/httpd/sslcertificate/*.* /etc/httpd/sslcertificate
 sudo chmod -R go-rwx /etc/httpd/sslcertificate
-sudo chown root /etc/httpd/sslcertificate
+sudo chown -R root /etc/httpd/sslcertificate
 sudo ls -l /etc/httpd/sslcertificate
-
-cd /opt/gls/clarity/config/
 
 echo "Enter the paths to the certs in /etc/httpd/sslcertificate when asked"
 echo "It will give an error that they are the same file, because we have already"
 echo "restored them to the correct location, as per the instructions."
-sudo bash installCertificates.sh
+sudo bash /opt/gls/clarity/config/installCertificates.sh
 
 # Restore corntab if applicable
 sudo cp /opt/backup/etc/crontab /etc/crontab
 
-# Make sure we're here
-cd /opt/gls/clarity/config/
-
 # 5. Migrate the database to new clarity version
-sudo -u glsjboss ./migrate_claritylims_database.sh
+sudo -u glsjboss /opt/gls/clarity/config/migrate_claritylims_database.sh
 
 # 6. Install NGS package and preconfigured workflow
 sudo yum --enablerepo=GLS_clarity52 install ClarityLIMS-NGS-Package-v5 BaseSpaceLIMS-Pre-configured-Workflows-Package
