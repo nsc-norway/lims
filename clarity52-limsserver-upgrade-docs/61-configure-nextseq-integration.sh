@@ -38,5 +38,7 @@ sudo yum --enablerepo=GLS_Clarity_NextSeq install ClarityLIMS-Illumina-NextSeq-P
 
 
 # 5. Enable & Start service
-##sudo systemctl enable nextseq_seqservice-v2 ???
+sudo chkconfig --add nextseq_seqservice-v2
+sudo chkconfig nextseq_seqservice-v2 on
+# WHAT TODO?
 sudo service nextseq_seqservice-v2 start
