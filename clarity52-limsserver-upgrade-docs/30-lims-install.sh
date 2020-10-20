@@ -50,3 +50,13 @@ sudo /opt/gls/clarity/config/pending/32_root_configure_rabbitmq.sh
 
 echo "## The certificate config will fail, we fix later"
 sudo /opt/gls/clarity/config/pending/40_root_install_proxy.sh
+
+echo "## Configure tomcat memory -- set JAVA_MAX_RAM to 8192. Pess Enter to open vim."
+read
+sudo vim /opt/gls/clarity/tomcat/current/bin/setenv.sh
+
+## From KB article to set Elasticsearch memory. There is no line with ES_HEAP_SIZE, so skip
+## this part.
+#echo "## Configure elasticsearch memory -- set ES_HEAP_SIZE to 2g. Pess Enter to open vim."
+#read
+#sudo vim /etc/sysconfig/elasticsearch
