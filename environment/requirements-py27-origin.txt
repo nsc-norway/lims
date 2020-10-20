@@ -3,6 +3,7 @@ jinja2
 matplotlib
 numpy
 openpyxl
+pyyaml
 requests
 xlrd
 xlwt

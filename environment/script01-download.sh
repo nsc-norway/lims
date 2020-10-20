@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+rm -rf packages/
 mkdir -p packages/nsc-python{27,36}
 chmod a+rwx packages/nsc-python*
 
