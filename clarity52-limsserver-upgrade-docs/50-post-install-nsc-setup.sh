@@ -26,8 +26,8 @@ sudo chmod -R g+rwX /opt/gls/clarity/customextensions
 sudo cp /opt/gls/clarity/customextensions/lims/monitor/sequencing-overview.conf /etc/httpd/conf.d/
 sudo cp /opt/gls/clarity/customextensions/lims/sav-downloader/sav-downloader.conf /etc/httpd/conf.d/
 sudo cp /opt/gls/clarity/customextensions/lims/reagents-ui/reagents.conf /etc/httpd/conf.d/
+sudo cp /opt/gls/clarity/customextensions/lims/proj-imp/project-importer.conf /etc/httpd/conf.d/
 
-proj-imp
 
 # Mini-databases
 # Reagent kit information
