@@ -93,6 +93,26 @@ generated password and inform them.
 The ansible roles for limsservers are then enough to make the servers ready for the next
 step.
 
+### OUS network nodes -- part 3 -- Permissions on primary storage Isilon
+
+1. Get UIDs by checking the local user ID (UID) on the Clarity server.
+
+id glsai; id glsjboss
+
+3. Create local users on Isilon in the LOCAL: System provider with these UID, any names (example glsai-new glsjboss-new below)
+
+2. Configure inheritable read prermission to the root of runScratch (running as root on the Isilon)
+
+    cd /ifs/dta
+    chmod +a user glsjboss-new allow generic_read,object_inherit,container_inherit runScratch
+    chmod +a user glsai-new allow generic_read,object_inherit,container_inherit runScratch
+
+3. Configure write permission to specific locations
+
+    chmod -R +a user glsjboss-new allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit gls_events_*
+    chmod +a user glsai-new allow dir_gen_execute,dir_gen_read SampleSheets
+    chmod -R +a user glsai-new allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit SampleSheets/*
+
 
 ## 30. Installation and validation
 
