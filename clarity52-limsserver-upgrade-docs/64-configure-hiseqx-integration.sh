@@ -6,3 +6,6 @@ sudo yum --enablerepo=GLS_Clarity_HiSeqXFile install ClarityLIMS-Illumina-HiSeq-
 sudo -u glsjboss bash /opt/gls/clarity/config/configure_extensions_hiseqx_sequencingservice-v1.sh
 
 # If any new properties added, also do configure them with the correct paths etc.
+sudo chkconfig hiseqx_seqservice-v1 on
+sudo /etc/init.d/hiseqx_seqservice-v1 start
+sudo /etc/init.d/hiseqx_seqservice-v1 log
