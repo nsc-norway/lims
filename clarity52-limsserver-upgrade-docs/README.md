@@ -162,7 +162,7 @@ from /etc/hosts if present.
 The following view to grant access to principals without password column. Run in psql as
 postgres user:
 
-    sudo -u postgres psql -c 'CREATE OR REPLACE VIEW principals_ AS SELECT principalid, username, isvisible, isloggedin, datastoreid, ownerid, isglobal, createddate, lastmodifieddate, lastmodifiedby, accountlocked, researcherid, locked, hasloggedin FROM principals;' clarityDB
+    sudo -u postgres psql -c 'CREATE OR REPLACE VIEW principalsview AS SELECT principalid, username, isvisible, isloggedin, datastoreid, ownerid, isglobal, createddate, lastmodifieddate, lastmodifiedby, accountlocked, researcherid, locked, hasloggedin FROM principals;' clarityDB
 
 
 ## 60. Install optional components
