@@ -269,10 +269,10 @@ def set_initial_fields(process, run_dir, run_id):
         ri_tree = ElementTree()
         ri_tree.parse(os.path.join(run_dir, "RunInfo.xml"))
         num_tiles = ri_tree.find("FlowcellLayout").attrib['TileCount']
-        if num_tiles = "4": typ = "v2 Micro"
-        elif num_tiles = "1": typ = "v2 Nano"
-        elif num_tiles = "14": typ = "v2"
-        elif num_tiles = "19": typ = "v3"
+        if num_tiles == "4": typ = "v2 Micro"
+        elif num_tiles == "1": typ = "v2 Nano"
+        elif num_tiles == "14": typ = "v2"
+        elif num_tiles == "19": typ = "v3"
         else: typ = "Unknown ({})".format(num_tiles)
         process.udf['Reagent Kit Type'] = typ
     process.udf['Run started'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")

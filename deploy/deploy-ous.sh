@@ -22,7 +22,6 @@
 	tar x && 
 	sed -i  \"s/^SITE=\\\"TESTING\\\"$/SITE=\\\"ous\\\"/\" monitor/main.py &&
 	cd .. &&
-	rm -rf genologics.2 lims.2
-	rsync -rl genologics lims /var/www/html/ )'"
+	rm -rf genologics.2 lims.2 )'"
 
 
