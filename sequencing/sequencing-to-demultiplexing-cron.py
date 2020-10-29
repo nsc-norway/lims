@@ -13,7 +13,7 @@ except IOError:
 
 if SITE == "ous":
     SEQ_PROCESSES = [
-            "MiSeq Run (MiSeq) 5.0",
+            "MiSeq Run (MiSeq) NSC 5.1",
             "NextSeq 500/550 Run NSC 3.0",
             "Illumina Sequencing (HiSeq 3000/4000) 1.0",
             "Illumina Sequencing (HiSeq X) 1.0"

@@ -2,7 +2,7 @@
     "SERVERS": [
     {
         "INSTRUMENTS":  ["NovaSeq", "HiSeq", "NextSeq", "MiSeq"],
-        "SEQUENCING": [["AUTOMATED - NovaSeq Run (NovaSeq 6000 v3.0)", "AUTOMATED - NovaSeq Run NSC 3.0", "NovaSeq Data QC NSC 1.0"], ["Illumina Sequencing (HiSeq X) 1.0", "Illumina Sequencing (HiSeq 3000/4000) 1.0"], ["NextSeq 500/550 Run NSC 3.0", "NextSeq Run (NextSeq) 1.0"], ["MiSeq Run (MiSeq) 5.0"]],
+        "SEQUENCING": [["AUTOMATED - NovaSeq Run (NovaSeq 6000 v3.0)", "AUTOMATED - NovaSeq Run NSC 3.0", "NovaSeq Data QC NSC 1.0"], ["Illumina Sequencing (HiSeq X) 1.0", "Illumina Sequencing (HiSeq 3000/4000) 1.0"], ["NextSeq 500/550 Run NSC 3.0", "NextSeq Run (NextSeq) 1.0"], ["MiSeq Run (MiSeq) 5.0", "MiSeq Run (MiSeq) NSC 5.1"]],
         "FLOWCELL_TYPES": ["SP", "S1", "S2", "S4", "Library Tube", "Patterned Flow Cell", "Illumina Flow Cell", "NextSeq Reagent Cartridge", "MiSeq Reagent Cartridge"],
         "DATA_PROCESSING": ["Demultiplexing and QC NSC 2.0"],
         "CREDENTIALS_FILE": null
