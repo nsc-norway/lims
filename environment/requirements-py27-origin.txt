@@ -1,4 +1,5 @@
 flask
+illuminate
 jinja2
 matplotlib
 numpy
