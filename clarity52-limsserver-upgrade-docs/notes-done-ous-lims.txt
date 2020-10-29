@@ -1,0 +1,103 @@
+notes-done-ous-lims
+
+
+DONE:
+- Prepare VM
+- Run Ansible
+- 20: Done manual steps and automated steps.
+- 30: Installed Clarity yum packages and set local passwords (before switch-over), can't go further with new VM.
+      Output of yum install is longer:
+
+===================================================================================================
+Running transaction
+  Installing : ClarityLIMS-PreReqs-5.2.0.8-49.x86_64                                                                                                         1/11
+The following user was created:
+glsjboss
+- This user runs the Tomcat application server for the Lab Scientist Interface
+You can review the user documentation in /opt/gls/clarity/documentation/users/
+
+  Installing : erlang-18.2-1.el6.x86_64                                                                                                                      2/11
+  Installing : rabbitmq-server-3.6.0-1.noarch                                                                                                                3/11
+  Installing : BaseSpaceLIMS-AutomationWorker-1.2.0.18-68.x86_64                                                                                             4/11
+The following user was created:
+glsai
+- This user runs the Automation Worker service.
+
+You can review the user documentation in /opt/gls/clarity/documentation/users/
+
+Removing soft links from init.d, copy service files and enable the services
+Created symlink from /etc/systemd/system/multi-user.target.wants/automation_worker.service to /usr/lib/systemd/system/automation_worker.service.
+  Installing : mailx-12.5-19.el7.x86_64                                                                                                                      5/11
+  Installing : ClarityLIMS-Support-1.1.0.8-72.x86_64                                                                                                         6/11
+
+
+    Please run the configuration script /opt/gls/clarity/support/bin/configure.sh
+    to change auto-update and health-check options
+
+
+PostInstall Script complete
+  Installing : wget-1.14-18.el7_6.1.x86_64                                                                                                                   7/11
+Creating elasticsearch group... OK
+Creating elasticsearch user... OK
+  Installing : elasticsearch-6.2.4-1.noarch                                                                                                                  8/11
+### NOT starting on installation, please execute the following statements to configure elasticsearch service to start automatically using systemd
+ sudo systemctl daemon-reload
+ sudo systemctl enable elasticsearch.service
+### You can start elasticsearch service by executing
+ sudo systemctl start elasticsearch.service
+  Installing : 1:mod_ssl-2.4.6-93.el7.centos.x86_64                                                                                                          9/11
+  Installing : unzip-6.0-21.el7.x86_64                                                                                                                      10/11
+  Installing : ClarityLIMS-App-5.2.0.342-3307.x86_64                                                                                                        11/11
+GenoLogics: Updating ElasticSearch init.d startup script
+Previous  version of elasticsearch init.d script detected, backing up to /opt/elasticsearch/backup/
+and resetting system start-up
+Installing elasticsearch-plugin, setting JAVA_HOME
+-> Downloading file:///opt/gls/clarity/elasticsearch-analysis-icu/elasticsearch-analysis-icu-6.2.4.zip
+Retrieving zip from file:///opt/gls/clarity/elasticsearch-analysis-icu/elasticsearch-analysis-icu-6.2.4.zip
+[=================================================] 100%
+- Plugin information:
+Name: analysis-icu
+Description: The ICU Analysis plugin integrates Lucene ICU module into elasticsearch, adding ICU relates analysis components.
+Version: 6.2.4
+Native Controller: false
+Requires Keystore: false
+Extended Plugins: []
+ * Classname: org.elasticsearch.plugin.analysis.icu.AnalysisICUPlugin
+-> Installed analysis-icu
+        Please configure Clarity LIMS: As the glsjboss user, run the following configuration scripts found in /opt/gls/clarity/config/pending.
+20_configure_claritylims_platform.sh
+26_initialize_claritylims_tenant.sh
+31_configure_claritylims_mixpanel.sh
+
+        Please configure Clarity LIMS: As the root user, run the following configuration scripts found in /opt/gls/clarity/config/pending.
+32_root_configure_rabbitmq.sh
+40_root_install_proxy.sh
+
+Encrypted the clear text property "password" in /opt/gls/clarity/tools/database/clarity-migrator/conf/migrator.properties
+Removing soft links from init.d, copy service files and enable the services
+Created symlink from /etc/systemd/system/multi-user.target.wants/search-indexing-service.sh.service to /usr/lib/systemd/system/search-indexing-service.sh.service.
+Created symlink from /etc/systemd/system/multi-user.target.wants/clarity_tomcat.service to /usr/lib/systemd/system/clarity_tomcat.service.
+  Verifying  : unzip-6.0-21.el7.x86_64                                                                                                                       1/11
+  Verifying  : ClarityLIMS-Support-1.1.0.8-72.x86_64                                                                                                         2/11
+  Verifying  : erlang-18.2-1.el6.x86_64                                                                                                                      3/11
+  Verifying  : ClarityLIMS-App-5.2.0.342-3307.x86_64                                                                                                         4/11
+  Verifying  : 1:mod_ssl-2.4.6-93.el7.centos.x86_64                                                                                                          5/11
+  Verifying  : ClarityLIMS-PreReqs-5.2.0.8-49.x86_64                                                                                                         6/11
+  Verifying  : elasticsearch-6.2.4-1.noarch                                                                                                                  7/11
+  Verifying  : wget-1.14-18.el7_6.1.x86_64                                                                                                                   8/11
+  Verifying  : mailx-12.5-19.el7.x86_64                                                                                                                      9/11
+  Verifying  : rabbitmq-server-3.6.0-1.noarch                                                                                                               10/11
+  Verifying  : BaseSpaceLIMS-AutomationWorker-1.2.0.18-68.x86_64                                                                                            11/11
+
+Installed:
+  ClarityLIMS-App.x86_64 0:5.2.0.342-3307
+
+Dependency Installed:
+  BaseSpaceLIMS-AutomationWorker.x86_64 0:1.2.0.18-68          ClarityLIMS-PreReqs.x86_64 0:5.2.0.8-49          ClarityLIMS-Support.x86_64 0:1.1.0.8-72
+  elasticsearch.noarch 0:6.2.4-1                               erlang.x86_64 0:18.2-1.el6                       mailx.x86_64 0:12.5-19.el7
+  mod_ssl.x86_64 1:2.4.6-93.el7.centos                         rabbitmq-server.noarch 0:3.6.0-1                 unzip.x86_64 0:6.0-21.el7
+  wget.x86_64 0:1.14-18.el7_6.1
+===================================================================================================
+
+
+

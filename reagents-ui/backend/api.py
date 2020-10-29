@@ -49,7 +49,7 @@ kits = {}
 def load_kits():
     global kits
     try:
-        kit_list = yaml.load(open(kits_file).read())
+        kit_list = yaml.safe_load(open(kits_file).read())
         kits = dict((str(e['ref']), e) for e in kit_list)
     except IOError, e:
         print "Failed to read kits: ", e

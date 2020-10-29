@@ -12,6 +12,8 @@ getenforce
 cat /opt/backup/clarityrpms.txt
 sudo yum --enablerepo=GLS_clarity52 --disablerepo=epel install ClarityLIMS-App
 
+# If you don't have EPEL, this will fail. Then remove "--disablerepo=epel".
+
 # OUTPUT
 
 ##         Please configure Clarity LIMS: As the glsjboss user, run the following configuration scripts found in /opt/gls/clarity/config/pending.
