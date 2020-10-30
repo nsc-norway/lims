@@ -1,4 +1,8 @@
 
+# Stop clarity before installation (or Yum will restart it)
+sudo /opt/gls/clarity/bin/run_clarity.sh stop
+
+
 sudo yum --enablerepo=GLS_NovaSeq install BaseSpaceLIMS-sequencer-api
 
 # Run this:
@@ -16,6 +20,8 @@ sudo -u glsjboss /opt/gls/clarity/config/configure_sequencer_api_application.sh
 #   currently "AUTOMATED - NovaSeq Run NSC 3.0"
 sudo vim /opt/gls/clarity/extensions/sequencer-api/application.yml
 
+
+sudo bash /opt/gls/clarity/config/configure_sequencer_api_proxy.sh
+
 # Restart clarity
-sudo /opt/gls/clarity/bin/run_clarity.sh stop
 sudo /opt/gls/clarity/bin/run_clarity.sh start
