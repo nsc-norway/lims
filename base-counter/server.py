@@ -271,7 +271,7 @@ class RunStatus(object):
         try:
             ds = illuminate.InteropDataset(self.run_dir)
             all_df = ds.TileMetrics().df
-        except (ValueError, TypeError, IOError, bitstring.ReadError):
+        except (ValueError, TypeError, IOError, bitstring.ReadError, illuminate.InteropFileNotFoundError):
             return None # No information yet, or it's being written to
         return all_df[all_df.code == 103].sum().sum() # Number of clusters PF
 
