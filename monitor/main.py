@@ -260,7 +260,7 @@ def get_run_type(instrument, process):
             runmode = process.udf.get("Chemistry", "?")
         elif instrument == "MiSeq":
             try:
-                runmode = "MiSeq v" + process.udf["Chemistry Version"]
+                runmode = "MiSeq " + process.udf["Reagent Kit Type"]
             except KeyError:
                 runmode = "?"
         else:
