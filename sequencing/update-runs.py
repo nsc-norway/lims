@@ -268,7 +268,7 @@ def set_initial_fields(process, run_dir, run_id):
         process.udf['Chemistry Version'] = rp_tree.find("ReagentKitVersion").text.replace("Version", "")
         ri_tree = ElementTree()
         ri_tree.parse(os.path.join(run_dir, "RunInfo.xml"))
-        num_tiles = ri_tree.find("FlowcellLayout").attrib['TileCount']
+        num_tiles = ri_tree.find("Run/FlowcellLayout").attrib['TileCount']
         if num_tiles == "4": typ = "v2 Micro"
         elif num_tiles == "1": typ = "v2 Nano"
         elif num_tiles == "14": typ = "v2"
