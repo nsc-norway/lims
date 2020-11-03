@@ -107,10 +107,11 @@ id glsai; id glsjboss
     chmod +a user glsjboss-new allow generic_read,object_inherit,container_inherit runScratch
     chmod +a user glsai-new allow generic_read,object_inherit,container_inherit runScratch
 
-3. Configure write permission to specific locations
+3. Configure permission to specific locations
 
     chmod -R +a user glsjboss-new allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit gls_events_*
     chmod +a user glsai-new allow dir_gen_execute,dir_gen_read SampleSheets
+    chmod +a user glsai-new allow dir_gen_execute,generic_read,object_inherit,container_inherit processed
     chmod -R +a user glsai-new allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit SampleSheets/*
 
 
