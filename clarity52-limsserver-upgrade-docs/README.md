@@ -109,7 +109,7 @@ id glsai; id glsjboss
 
 3. Configure write permission to specific locations
 
-    chmod -R +a user glsjboss-new allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit gls_events_*
+    chmod -R +a user glsjboss-new allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit gls_events_*
     chmod +a user glsai-new allow dir_gen_execute,dir_gen_read SampleSheets
     chmod -R +a user glsai-new allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit SampleSheets/*
 
