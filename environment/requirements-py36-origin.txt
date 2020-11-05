@@ -6,3 +6,4 @@ requests
 virtualenv
 xlrd
 xlwt
+jinja2
