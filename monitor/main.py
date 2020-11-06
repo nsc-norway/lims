@@ -34,7 +34,7 @@ app = Flask(__name__)
 page = None
 
 # Process type for project eval.
-PROJECT_EVALUATION = "Project Evaluation Step"
+PROJECT_EVALUATION = "Project Evaluation Step 1.1"
 
 # General, for tracking completed runs
 RECENTLY_COMPLETED_UDF = "Recently completed"
