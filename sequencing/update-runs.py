@@ -40,7 +40,7 @@ INSTRUMENT_NAME_MAP = {
             'NS500336': 'Nemo',
             'NB501273': 'Nelson',
 
-            'M01132': 'Milo',
+            'M07166': 'Missy',
             'M01334': 'Mina',
             'M02980': 'Mike',
 

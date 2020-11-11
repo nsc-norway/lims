@@ -28,7 +28,7 @@ RUN_STORAGE = "/data/runScratch.boston"
 SEQUENCER_LIST = [
     ('A00943', ('novaseq', 'Nordis')),
 
-    ('M01132', ('miseq', 'Milo')),
+    ('M07166', ('miseq', 'Missy')),
     ('M01334', ('miseq', 'Mina')),
     ('M02980', ('miseq', 'Mike')),
 
