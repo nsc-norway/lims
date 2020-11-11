@@ -113,6 +113,7 @@ id glsai; id glsjboss
     chmod +a user glsai-new allow dir_gen_execute,dir_gen_read SampleSheets
     chmod +a user glsai-new allow dir_gen_execute,generic_read,object_inherit,container_inherit processed
     chmod -R +a user glsai-new allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit SampleSheets/*
+    chmod +a user glsai-new allow dir_gen_execute,generic_write,generic_read,container_inherit,inherit_only SampleSheets
 
 
 ## 30. Installation and validation
