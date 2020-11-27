@@ -16,6 +16,9 @@ These commands are prepared for the upgrade to 5.2, which involves the following
 The procedure may also be relevant for a complete clean install.
 
 
+**Note that the .sh files are not sufficient, you may have to do some steps which are only given
+here in the README file.**
+
 ## Official documentation
 
 Main procedure: Install/Upgrade: https://genologics.zendesk.com/hc/en-us/articles/360025478471-BaseSpace-Clarity-LIMS-Installation-Upgrade-Procedure
@@ -93,7 +96,9 @@ generated password and inform them.
 The ansible roles for limsservers are then enough to make the servers ready for the next
 step.
 
-### OUS network nodes -- part 3 -- Permissions on primary storage Isilon
+### Permissions on primary storage
+
+#### OUS network nodes
 
 1. Get UIDs by checking the local user ID (UID) on the Clarity server.
 
@@ -113,6 +118,16 @@ id glsai; id glsjboss
     chmod +a user glsai-new allow dir_gen_execute,dir_gen_read SampleSheets
     chmod +a user glsai-new allow dir_gen_execute,generic_read,object_inherit,container_inherit processed
     chmod -R +a user glsai-new allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit SampleSheets/*
+
+#### cees-lims
+
+/etc/fstab: `biolinux2.uio.no:/storage/nscdata/runsIllumina  /storage/nscdata/runsIllumina   nfs     defaults`
+
+Create: /storage/nscdata/runsIllumina
+
+Add glsjboss and glsai to nscdata group locally on the LIMS server(!). Edit /etc/group and add:
+
+nscdata:x:71148:glsjboss,glsai
 
 
 ## 30. Installation and validation
@@ -139,14 +154,21 @@ and NGS package.
 
 
 
-### OUS node: Set permissions to make it easier for multiple users to work
+### Set permissions to make it easier for multiple users to work
 
 After performing the restore operation, set default full permissions for the limsdev group.
 
 Set both default (-d) permissions and effective permissions.
 
+#### ous-lims/dev-lims
+
     sudo setfacl -R -d -m g:lims-dev:rwx /opt/gls/clarity/customextensions
     sudo setfacl -R -m g:lims-dev:rwx /opt/gls/clarity/customextensions
+
+#### cees-lims/sandbox-lims
+
+    sudo setfacl -R -d -m g:ous-nsc-lims-dev:rwx /opt/gls/clarity/customextensions
+    sudo setfacl -R -m g:ous-nsc-lims-dev:rwx /opt/gls/clarity/customextensions
 
 
 ## 50. Post-install configuration
