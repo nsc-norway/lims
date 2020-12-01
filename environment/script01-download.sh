@@ -4,6 +4,8 @@ set -e
 rm -rf packages/
 mkdir -p packages/nsc-python{27,36}
 chmod a+rwx packages/nsc-python*
+chmod a+rx packages
+chmod a+r requirements-py*-origin.txt
 
 docker run -v $PWD:/mnt --rm centos/python-27-centos7 \
         bash -c "pip install --upgrade pip && \

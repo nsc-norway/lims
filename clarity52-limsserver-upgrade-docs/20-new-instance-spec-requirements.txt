@@ -14,4 +14,4 @@ Prepare new instance:
 - Install the Clarity repository files (cant paste here in github, contains secret password)
 - Mount point for ous-lims and cees-lims
 o Transfer in the backup file and unpack in a directory not at the fs root
-o Install the pip environments (see ../environment) (TODO - HOW TO)
+o Install the pip environments (see ../environment)

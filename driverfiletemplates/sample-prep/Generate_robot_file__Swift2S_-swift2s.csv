@@ -1,0 +1,18 @@
+<HEADER>
+Sample Name,Index Pos
+</HEADER>
+<DATA>
+${INPUT.NAME},${OUTPUT.REAGENT.NAME}
+</DATA>
+<TOKEN_FORMAT>
+${OUTPUT.REAGENT.NAME}
+def udi_parts = token.split(" ")
+def udi_num = udi_parts[0].substring(3).toInteger()
+def row_num = (udi_num - 1) % 8
+
+def alpha = ['A','B','C','D','E','F','G','H']
+def row_id = alpha[row_num]
+
+def col_num = (((udi_num - 1) / 8) + 1).toInteger()
+return row_id + col_num
+</TOKEN_FORMAT>
