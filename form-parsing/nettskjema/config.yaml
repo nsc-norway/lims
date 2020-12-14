@@ -1,0 +1,76 @@
+# Configuration file for Nettskjema importer
+
+questions:
+
+  - udf:        'Method used to purify DNA/RNA'
+    line:       'Method used to purify DNA / RNA'
+
+  - udf:        'Method used to determine concentration'
+    line:       'Method used to determine concentration'
+
+  - udf:        'Sample buffer'
+    line:       'Buffer in which samples dissolved'
+
+  - udf:        ''
+    line:       ''
+
+  - udf:        ''
+    line:       ''
+
+
+  - udf:        ''
+    line:       ''
+
+  - udf:        ''
+    line:       ''
+
+  - udf:        ''
+    line:       ''
+
+
+  - udf:        ''
+    line:       ''
+
+  - udf:        ''
+    line:       ''
+
+  - udf:        ''
+    line:       ''
+
+
+  - udf:        ''
+    line:       ''
+
+  - udf:        ''
+    line:       ''
+
+  - udf:        ''
+    line:       ''
+
+
+  - udf:        ''
+    line:       ''
+
+  - udf:        ''
+    line:       ''
+
+  - udf:        ''
+    line:       ''
+
+
+
+
+
+
+
+
+
+
+  - udf:        'Kontostreng (Internal orders only)'
+    line:       'Kontostreng (Koststed-Prosjekt-Kilde)'
+
+
+  
+  # Fields are not in form, but we need to set a value
+  - udf:        'Evaluation type'
+    default:    ' -- Select one --'
