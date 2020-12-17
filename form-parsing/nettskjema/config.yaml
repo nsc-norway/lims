@@ -30,7 +30,7 @@ questions:
   
   - udf:        'Funded by Norsk Forskningsradet'
     line:       'Is project fully or partly funded by The Research Council of Norway (NFR)?'
-    transform:  'yes_no_bool'
+    mapping:    'yes_no_bool'
 
   - udf:        'Evaluation type'
     line:       'Are the samples ready to sequence'
@@ -51,13 +51,15 @@ questions:
   - udf:        'Sequencing instrument requested'
     line:       'Sequencing Instrument requested'
 
+  - udf:        'Sequencing instrument requested'
+    line:       'Choose Flowcell'
+    mapping:    'novaseq_fc'
+
   - udf:        'Read length requested'
     line:       'Choose run length'
-    transform:  'get_read_length'
 
   - udf:        'Read length requested'
     line:       'Choose run type'
-    transform:  'get_read_length'
 
   - udf:        'Total # of lanes requested'
     line:       'Total number of runs requested'
@@ -82,7 +84,7 @@ questions:
 
   - udf:        'Bioinformatic services'
     line:       'Do you want to use our bioinformatic analysis service?'
-    transform:  'yes_no_bool'
+    mapping:    'yes_no_bool'
 
   - udf:        'Contact person'
     line:       'Contact Name'

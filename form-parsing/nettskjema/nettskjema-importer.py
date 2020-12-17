@@ -3,21 +3,10 @@ import sys
 import yaml
 import datetime
 
-
-def get_read_length(value):
-    """Extracts the read length without spaces"""
-    m = re.match(r"(\d) x (\d+) bp", value)
-    if m:
-        return "{}x{}".format(m.group(1), m.group(2))
-    else:
-        return value
-
 transforms = {
     'first_line':       lambda x: x.splitlines()[0],
-    'get_read_length':  get_read_length,
     'skip_first_line':  lambda x: '\n'.join(x.splitlines()[1:]),
-    'todays_date':      lambda x: datetime.date.today(),
-    'yes_no_bool':      lambda x: True if x == "Yes" else False
+    'todays_date':      lambda x: datetime.date.today()
 }
 
 mappings = {
@@ -35,9 +24,19 @@ mappings = {
         ('Yes',                 'QC only'),
         ('No',                  'Prep')
     ],
+    'novaseq_fc': [
+        ('SP',                  'NovaSeq SP'),
+        ('S1',                  'NovaSeq S1'),
+        ('S2',                  'NovaSeq S2'),
+        ('S4',                  'NovaSeq S4')
+    ],
     'project_type': [
         ('Non-sensitive',       'Non-Sensitive'),
         ('Sensitive',           'Sensitive')
+    ],
+    'yes_no_bool': [
+        ('Yes',                 True),
+        ('No',                  False)
     ]
 }
 
