@@ -1,14 +1,15 @@
 import re
 import sys
 import yaml
+import datetime
 
-def get_evaluation_type
 
 transforms = {
-    'evaluation_type': None,
-    'delivery_method': None,
-    'first_line': None,
-    'skip_first_line': None,
+    'delivery_method':  lambda x: 'TODO',
+    'first_line':       lambda x: x.splitlines()[0],
+    'skip_first_line':  lambda x: '\n'.join(x.splitlines()[1:]),
+    'yes_no_bool':      lambda x: True if x == "Yes" else False,
+    'todays_date':      lambda x: datetime.date.today()
 }
 
 mappings = {
@@ -19,10 +20,6 @@ mappings = {
     'evaluation_type': [
         ('Yes',                 'QC only'),
         ('No',                  'Prep')
-    ],
-    'yes_no_bool': [
-        ('Yes',                 True),
-        ('No',                  False)
     ]
 }
 
@@ -76,7 +73,20 @@ def main(input_file_name):
                 sys.exit(1)
             elif len(matching) == 1:
                 value = matching[0][1]
-        
+        if 'mapping' in question:
+            for mapping in mappings[question['mapping']]:
+                if value is not None and value.startswith(mapping[0]):
+                    value = mapping[1]
+                    break
+            else: # If not break
+                raise ValueError(
+                        "Unable to map value '{}' for question '{}'.".format(
+                                    value,
+                                    question.get('line'))
+                        )
+        if 'transform' in question:
+            value = transforms[question['transform']](value)
+
         if value is not None:
             udfs_to_set[question['udf']] = value
     

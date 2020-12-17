@@ -30,18 +30,21 @@ questions:
   
   - udf:        'Funded by Norsk Forskningsradet'
     line:       'Is project fully or partly funded by The Research Council of Norway (NFR)?'
+    transform:  'yes_no_bool'
 
-  - udf:        'Are the samples ready to sequence?'
-    line:       'Evaluation type'
+  - udf:        'Evaluation type'
+    line:       'Are the samples ready to sequence'
     mapping:    'evaluation_type'
 
   - udf:        'Library prep used'
     line:       'If yes, please state which kit / method you used'
 
   - udf:        'Sample prep requested'
-    line:       'For DNA samples'
     default:    'None'
 
+  - udf:        'Sample prep requested'
+    line:       'For DNA samples'
+    
   - udf:        'Sample prep requested'
     line:       'For RNA samples'
 
@@ -60,7 +63,7 @@ questions:
 
   - udf:        'Bioinformatic services'
     line:       'Do you want to use our bioinformatic analysis service?'
-    mapping:    'yes_no_bool'
+    transform:  'yes_no_bool'
 
   - udf:        'Contact person'
     line:       'Contact Name'
@@ -72,7 +75,7 @@ questions:
     line:       'Contact Telephone'
 
   - udf:        'Contact institution'
-    line:       'Institution'
+    line:       'Contact Institution'
 
   - udf:        'Billing contact person'
     line:       'Billing contact person'
