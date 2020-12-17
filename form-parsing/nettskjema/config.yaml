@@ -11,66 +11,100 @@ questions:
   - udf:        'Sample buffer'
     line:       'Buffer in which samples dissolved'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Species'
+    line:       'Species'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Reference genome'
+    line:       'Reference genome and release version'
+    default:    '-- Not provided --'
+  
+  - udf:        'Project Goal'
+    line:       'Project Goal'
+  
+  - udf:        'Project type'
+    line:       'Project type'
+    mapping:    'project_type'
+  
+  - udf:        'REK approval number'
+    line:       'REK approval number'
+  
+  - udf:        'Funded by Norsk Forskningsradet'
+    line:       'Is project fully or partly funded by The Research Council of Norway (NFR)?'
 
+  - udf:        'Are the samples ready to sequence?'
+    line:       'Evaluation type'
+    mapping:    'evaluation_type'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Library prep used'
+    line:       'If yes, please state which kit / method you used'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Sample prep requested'
+    line:       'For DNA samples'
+    default:    'None'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Sample prep requested'
+    line:       'For RNA samples'
 
+  - udf:        'TODO'
+    line:       'Sequencing Instrument requested'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Delivery method'
+    line:       'Data delivery'
+    transform:  'delivery_method'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'NeLS project identifier'
+    line:       'Existing NeLS project ID'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'TODO'
+    line:       'TSD project ID (e.g. pXX)'
 
+  - udf:        'Bioinformatic services'
+    line:       'Do you want to use our bioinformatic analysis service?'
+    mapping:    'yes_no_bool'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Contact person'
+    line:       'Contact Name'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Contact email'
+    line:       'Contact Email'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Contact telephone'
+    line:       'Contact Telephone'
 
+  - udf:        'Contact institution'
+    line:       'Institution'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Billing contact person'
+    line:       'Billing contact person'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Billing email'
+    line:       'Billing Email'
 
-  - udf:        ''
-    line:       ''
+  - udf:        'Billing telephone'
+    line:       'Billing Telephone'
 
+  - udf:        'Billing institution'
+    line:       'Billing institution and full billing address'
+    transform:  'first_line'
 
+  - udf:        'Billing address'
+    line:       'Billing institution and full billing address'
+    transform:  'skip_first_line'
 
-
-
-
-
-
-
+  - udf:        'Purchase order number'
+    line:       'Purchase Order Number'
 
   - udf:        'Kontostreng (Internal orders only)'
     line:       'Kontostreng (Koststed-Prosjekt-Kilde)'
 
+  - udf:        'TODO'
+    line:       'Institution VAT number'
 
-  
-  # Fields are not in form, but we need to set a value
-  - udf:        'Evaluation type'
-    default:    ' -- Select one --'
+  - udf:        'Sample type'
+    default:    '-- Not provided --'
+
+  - udf:        'Prepaid account'
+    default:    'No'
+
+  - udf:        'Date samples received'
+    transform:  'todays_date'

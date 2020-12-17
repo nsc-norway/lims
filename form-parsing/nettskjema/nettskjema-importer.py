@@ -2,6 +2,31 @@ import re
 import sys
 import yaml
 
+def get_evaluation_type
+
+transforms = {
+    'evaluation_type': None,
+    'delivery_method': None,
+    'first_line': None,
+    'skip_first_line': None,
+}
+
+mappings = {
+    'project_type': [
+        ('Non-sensitive',       'Non-Sensitive'),
+        ('Sensitive',           'Sensitive')
+    ],
+    'evaluation_type': [
+        ('Yes',                 'QC only'),
+        ('No',                  'Prep')
+    ],
+    'yes_no_bool': [
+        ('Yes',                 True),
+        ('No',                  False)
+    ]
+}
+
+
 def main(input_file_name):
     with open('config.yaml') as conffile:
         conf = yaml.safe_load(conffile)

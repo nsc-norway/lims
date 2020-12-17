@@ -1,55 +1,7 @@
 LABEL_UDF_PARSER = [
-        ("Are the samples ready to sequence?", 'Evaluation type', is_library),
-        ("For DNA samples", 'Sample prep requested', partial(single_choice_checkbox, DNA_PREPS)),
-        ("For RNA samples", 'Sample prep requested', partial(single_choice_checkbox, RNA_PREPS)),
-        ("Species:", 'Species', get_text_single),
-        ("Reference genome", 'Reference genome', get_text_single),
         ("Sequencing type", 'Sequencing method', partial(single_choice_checkbox, SEQUENCING_TYPES)),
         ("Desired insert size", 'Desired insert size', get_text_single),
-        ("Sequencing Instrument requested", 'Sequencing instrument requested', 
-            partial(single_choice_checkbox, SEQUENCING_INSTRUMENTS)), # <2019-04 seq instrument
         ("Read Length", 'Read length TEMPFIELD', read_length),        # <2019-04 read length; Needs post-proc'ing
         ("Total number lanes", 'Total # of lanes requested', get_text_single),
-        ("Project Goal", 'Project goal', get_text_multi),
         ("REK approval number", 'REK approval number', get_text_single),
-        ("Upload to https site", 'Delivery method', partial(single_checkbox, 'Norstore')), # Support old form versions
-        ("Portable hard drive", 'Delivery method', get_portable_hard_drive),    # Support old form versions
-        ("Upload to https site", 'Delivery method', get_delivery_method),       # New delivery method table
-        ("If you want to get primary data analysis", 'Bioinformatic services', get_checkbox),
-        ("Contact Name", 'Contact person', get_text_single),
-        ("Institution", 'Institution', get_text_single),# Needs post-processing (Contact / Billing same field name)
-        ("Address", 'Contact address', get_text_multi),
-        ("Email", 'Email', get_text_lower),         # Needs post-processing
-        ("Telephone", 'Telephone', get_text_single), # Needs post-processing
-        ("Billing contact person", 'Billing contact person', get_text_single),
-        ("Billing Address", 'Billing address', get_text_multi),
-        ("Postcode", 'Billing postcode', get_text_single),
-        ("Purchase Order Number", 'Purchase order number', get_text_single),
-        ("Project is fully or", 'Funded by Norsk Forskningsradet', get_yes_no_checkbox),
-        ("Kontostreng", 'Kontostreng (Internal orders only)', get_text_single),
-        ("", 'Library prep used', library_prep_used)
-        ]
-
-
-LABEL_CONTENT_UDF_PARSER = [
-        ("Upload to https site", 'NeLS project identifier', partial(get_substring, "please enter it here: ")),
-        ]
-
-
-# Some defaults are necessary for put() on required fields
-DEFAULTS = [
-        ("Evaluation type", "-- Select one --"),
-        ("Sample prep requested", "None"),
-        ("Sample type", "-- Not provided --"),
-        ("Reference genome", "-- Not provided --"),
-        ("Contact person", "-- Not provided --"),
-        ("Contact institution", "-- Not provided --"),
-        ("Contact email", "-- Not provided --"),
-        ("Billing institution", "-- Not provided --"),
-        ("Prepaid account", "No"),
-        ("Date samples received", datetime.date.today()),
-        ("Sample buffer", "-- Not provided --"),
-        ("Method used to purify DNA/RNA", "-- Not provided --"),
-        ("Method used to determine concentration", "-- Not provided --"),
-        ("Billing address", "-- Not provided --"),
         ]
