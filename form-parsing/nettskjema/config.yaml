@@ -48,12 +48,31 @@ questions:
   - udf:        'Sample prep requested'
     line:       'For RNA samples'
 
-  - udf:        'TODO'
+  - udf:        'Sequencing instrument requested'
     line:       'Sequencing Instrument requested'
+
+  - udf:        'Read length requested'
+    line:       'Choose run length'
+    transform:  'get_read_length'
+
+  - udf:        'Read length requested'
+    line:       'Choose run type'
+    transform:  'get_read_length'
+
+  - udf:        'Total # of lanes requested'
+    line:       'Total number of runs requested'
 
   - udf:        'Delivery method'
     line:       'Data delivery'
-    transform:  'delivery_method'
+    mapping:    'delivery_method'
+    
+  - udf:        'Delivery method'
+    line:       'Data delivery'
+    mapping:    'delivery_method'
+    
+  - udf:        'Delivery method'
+    line:       'Select hard drive'
+    mapping:    'delivery_method2_hdd'
 
   - udf:        'NeLS project identifier'
     line:       'Existing NeLS project ID'
@@ -111,3 +130,4 @@ questions:
 
   - udf:        'Date samples received'
     transform:  'todays_date'
+    default:    'placeholder'

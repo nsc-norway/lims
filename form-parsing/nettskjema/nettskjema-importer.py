@@ -4,22 +4,40 @@ import yaml
 import datetime
 
 
+def get_read_length(value):
+    """Extracts the read length without spaces"""
+    m = re.match(r"(\d) x (\d+) bp", value)
+    if m:
+        return "{}x{}".format(m.group(1), m.group(2))
+    else:
+        return value
+
 transforms = {
-    'delivery_method':  lambda x: 'TODO',
     'first_line':       lambda x: x.splitlines()[0],
+    'get_read_length':  get_read_length,
     'skip_first_line':  lambda x: '\n'.join(x.splitlines()[1:]),
-    'yes_no_bool':      lambda x: True if x == "Yes" else False,
-    'todays_date':      lambda x: datetime.date.today()
+    'todays_date':      lambda x: datetime.date.today(),
+    'yes_no_bool':      lambda x: True if x == "Yes" else False
 }
 
 mappings = {
-    'project_type': [
-        ('Non-sensitive',       'Non-Sensitive'),
-        ('Sensitive',           'Sensitive')
+    'delivery_method': [
+        ('(non-sensitive data) Upload to our password protected delivery server.', 'Norstore'),
+        ('(non-sensitive data) Upload to NeLS', 'NeLS project'),
+        ('(sensitive data) Upload to TSD project', 'TSD project'),
+        ('(sensitive data) Portable hard drive', 'HDD_PLACEHOLDER_STRING')
+    ],
+    'delivery_method2_hdd': [
+        ('Your own portable hard drive',     'User HDD'),
+        ('Purchase a portable hard drive',   'New HDD')
     ],
     'evaluation_type': [
         ('Yes',                 'QC only'),
         ('No',                  'Prep')
+    ],
+    'project_type': [
+        ('Non-sensitive',       'Non-Sensitive'),
+        ('Sensitive',           'Sensitive')
     ]
 }
 
@@ -72,10 +90,11 @@ def main(input_file_name):
                 print("Error: Configured question '{}' matches multiple questions in the form.".format(question['line']))
                 sys.exit(1)
             elif len(matching) == 1:
-                value = matching[0][1]
-        if 'mapping' in question:
+                if matching[0][1] != "Not answered":
+                    value = matching[0][1]
+        if 'mapping' in question and value is not None:
             for mapping in mappings[question['mapping']]:
-                if value is not None and value.startswith(mapping[0]):
+                if value.startswith(mapping[0]):
                     value = mapping[1]
                     break
             else: # If not break
@@ -84,7 +103,7 @@ def main(input_file_name):
                                     value,
                                     question.get('line'))
                         )
-        if 'transform' in question:
+        if 'transform' in question and value is not None:
             value = transforms[question['transform']](value)
 
         if value is not None:

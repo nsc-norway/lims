@@ -1,7 +1,5 @@
 LABEL_UDF_PARSER = [
         ("Sequencing type", 'Sequencing method', partial(single_choice_checkbox, SEQUENCING_TYPES)),
         ("Desired insert size", 'Desired insert size', get_text_single),
-        ("Read Length", 'Read length TEMPFIELD', read_length),        # <2019-04 read length; Needs post-proc'ing
         ("Total number lanes", 'Total # of lanes requested', get_text_single),
-        ("REK approval number", 'REK approval number', get_text_single),
         ]
