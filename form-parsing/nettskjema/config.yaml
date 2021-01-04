@@ -19,7 +19,7 @@ questions:
     default:    '-- Not provided --'
   
   - udf:        'Project Goal'
-    line:       'Project Goal'
+    line:       'Project goal'
   
   - udf:        'Project type'
     line:       'Project type'
@@ -79,7 +79,7 @@ questions:
   - udf:        'NeLS project identifier'
     line:       'Existing NeLS project ID'
 
-  - udf:        'TODO'
+  - udf:        'TSD project ID'
     line:       'TSD project ID (e.g. pXX)'
 
   - udf:        'Bioinformatic services'
@@ -121,8 +121,9 @@ questions:
   - udf:        'Kontostreng (Internal orders only)'
     line:       'Kontostreng (Koststed-Prosjekt-Kilde)'
 
-  - udf:        'TODO'
-    line:       'Institution VAT number'
+#  Not importing this information into LIMS
+#  - udf:        'TODO'
+#    line:       'Institution VAT number'
 
   - udf:        'Sample type'
     default:    '-- Not provided --'

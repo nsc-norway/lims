@@ -18,7 +18,9 @@ transforms = {
 }
 
 def main(process_id, test=False):
-    with open('config.yaml') as conffile:
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+
+    with open(os.path.join(script_dir, 'config.yaml')) as conffile:
         conf = yaml.safe_load(conffile)
 
     if test:
@@ -39,7 +41,10 @@ def main(process_id, test=False):
                 if docx_file.original_location.endswith(".docx"):
                     docx_data = docx_file.download()
                 else:
-                    print("Error: Submission form has incorrect file extension, should be docx.")
+                    # Given that we fallback to the previous parser, we shouldn't output a message here, and instead
+                    # rely on the old parser to fail in the same way and print the error about file extension.
+                    # TODO: If ever retiring the old format for good, uncomment this error message:
+                    #print("Error: Submission form has incorrect file extension, should be docx.")
                     return 1
         except StopIteration:
             pass
@@ -52,7 +57,6 @@ def main(process_id, test=False):
         return 0
 
     # Convert to text data using perl script docx2txt
-    script_dir = os.path.dirname(os.path.realpath(__file__))
     perl_cmd = ["perl", "-I", script_dir, os.path.join(script_dir, "docx2txt.pl")]
     p = subprocess.run(perl_cmd,
                 stdout=subprocess.PIPE,
@@ -128,7 +132,7 @@ def main(process_id, test=False):
     if test:
         print(udfs_to_set)
     else:
-        for uname, uvalue in udfs_to_set:
+        for uname, uvalue in udfs_to_set.items():
             process.udf[uname] = uvalue
         try:
             process.udf['Sample submission form imported'] = True
