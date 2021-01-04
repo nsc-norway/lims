@@ -2,6 +2,7 @@ matplotlib
 numpy
 openpyxl
 pip
+pyyaml
 requests
 virtualenv
 xlrd
