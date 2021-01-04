@@ -51,3 +51,9 @@ other properties are optional:
 The UDF will be included in the put request if and only if it has a
 value: that means if there is a match for the line, and the question is 
 answered, or if it has a default value.
+
+When making changes to the custom fields (UDFs) of the project in LIMS, also
+take care to update `../../Project_Evaluation_Step/settings.py`, which defines
+a list of fields to copy between the Project Evaluation Step process and the
+project in LIMS.
+
