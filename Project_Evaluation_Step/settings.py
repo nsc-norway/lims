@@ -53,7 +53,8 @@ project_fields = [
         "Library prep used",
         "Prepaid account",
         "Number of lanes",
-        "Test project"
+        "Test project",
+        "TSD project ID",
 ]
 
 email_fields = ['Contact email', 'Billing email']
