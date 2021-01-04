@@ -133,3 +133,48 @@ questions:
   - udf:        'Date samples received'
     transform:  'todays_date'
     default:    'placeholder'
+
+mappings:
+  delivery_method:
+    - in: (non-sensitive data) Upload to our password protected delivery server.
+      out: Norstore
+    - in: (non-sensitive data) Upload to NeLS
+      out: NeLS project
+    - in: (sensitive data) Upload to TSD project
+      out: TSD project
+    - in: (sensitive data) Portable hard drive
+      out: HDD_PLACEHOLDER_STRING
+
+  delivery_method2_hdd:
+    - in: Your own portable hard drive
+      out: User HDD
+    - in: Purchase a portable hard drive
+      out: New HDD
+
+  evaluation_type:
+    - in: 'Yes'
+      out: QC only
+    - in: 'No'
+      out: Prep
+  
+  novaseq_fc:
+    - in: SP
+      out: NovaSeq SP
+    - in: S1
+      out: NovaSeq S1
+    - in: S2
+      out: NovaSeq S2
+    - in: S4
+      out: NovaSeq S4
+  
+  project_type:
+    - in: Non-sensitive
+      out: Non-Sensitive
+    - in: Sensitive
+      out: Sensitive
+  
+  yes_no_bool:
+    - in: 'Yes'
+      out: True
+    - in: 'No'
+      out: False

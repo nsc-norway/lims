@@ -9,38 +9,6 @@ transforms = {
     'todays_date':      lambda x: datetime.date.today()
 }
 
-mappings = {
-    'delivery_method': [
-        ('(non-sensitive data) Upload to our password protected delivery server.', 'Norstore'),
-        ('(non-sensitive data) Upload to NeLS', 'NeLS project'),
-        ('(sensitive data) Upload to TSD project', 'TSD project'),
-        ('(sensitive data) Portable hard drive', 'HDD_PLACEHOLDER_STRING')
-    ],
-    'delivery_method2_hdd': [
-        ('Your own portable hard drive',     'User HDD'),
-        ('Purchase a portable hard drive',   'New HDD')
-    ],
-    'evaluation_type': [
-        ('Yes',                 'QC only'),
-        ('No',                  'Prep')
-    ],
-    'novaseq_fc': [
-        ('SP',                  'NovaSeq SP'),
-        ('S1',                  'NovaSeq S1'),
-        ('S2',                  'NovaSeq S2'),
-        ('S4',                  'NovaSeq S4')
-    ],
-    'project_type': [
-        ('Non-sensitive',       'Non-Sensitive'),
-        ('Sensitive',           'Sensitive')
-    ],
-    'yes_no_bool': [
-        ('Yes',                 True),
-        ('No',                  False)
-    ]
-}
-
-
 def main(input_file_name):
     with open('config.yaml') as conffile:
         conf = yaml.safe_load(conffile)
@@ -92,9 +60,9 @@ def main(input_file_name):
                 if matching[0][1] != "Not answered":
                     value = matching[0][1]
         if 'mapping' in question and value is not None:
-            for mapping in mappings[question['mapping']]:
-                if value.startswith(mapping[0]):
-                    value = mapping[1]
+            for item in conf['mappings'][question['mapping']]:
+                if value.startswith(item['in']):
+                    value = item['out']
                     break
             else: # If not break
                 raise ValueError(

@@ -9,6 +9,9 @@ file created by pasting the content of the email we receive for each
 submission (this procedure is used because we already keep a record of
 projects in this way).
 
+This script updates a step (process) in LIMS with the data from the
+form, according to a configuration file.
+
 
 ### Functional overview / Input requirements
 
@@ -28,5 +31,23 @@ following lines as the answer, up to the next blank line.
 
 ### Configuration
 
+The configuration file config.yaml contains a list of "UDF" (User Defined
+Fields) definitions, also corresponding to questions in the form. The value
+is called "questions" in the YAML file.
 
+Each configuration item may contain the following. `udf` is required, all
+other properties are optional:
 
+*   `udf`: Name of the custom field (UDF) to set in LIMS.
+*   `line`: Match a line in the question text.
+*   `default`: Sets a default value. The UDF will be set to this value
+    if there is no matching line. The default will also be processed with
+    mappings and transformations (see below).
+*   `transform`: Transform the output according to a function. 
+    Transformations are defined in the python script.
+*   `mapping`: Name of a mapping. Replaces certain input values with
+    other output values. Mappings are defined in the config file.
+
+The UDF will be included in the put request if and only if it has a
+value: that means if there is a match for the line, and the question is 
+answered, or if it has a default value.
