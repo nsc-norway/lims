@@ -1,7 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
-nsc-python35 /opt/gls/clarity/customextensions/lims/form-parsing/read-submission-form.py $1
-/usr/bin/python /opt/gls/clarity/customextensions/lims/form-parsing/read-project-eval-form.py $1
-
+# TODO if the old form type is ever completely removed:
+# The "or" clause must be removed.
+nsc-python3 /opt/gls/clarity/customextensions/lims/form-parsing/nettskjema/nettskjema-importer.py $1 \
+    || nsc-python3 /opt/gls/clarity/customextensions/lims/form-parsing/read-submission-form.py $1
+nsc-python27 /opt/gls/clarity/customextensions/lims/form-parsing/read-project-eval-form.py $1
