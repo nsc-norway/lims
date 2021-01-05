@@ -66,7 +66,12 @@ def main(process_id, test=False):
         return 1
     input_data = p.stdout
 
-    lines = input_data.decode('utf8').splitlines()
+    text = input_data.decode('utf8')
+    if not 'nettskjema' in text:
+        print("Not Nettskjema, returning an error status to fall back to the old script")
+        return 1
+
+    lines = text.splitlines()
 
     # First line of answers have a leading space with something
     # non-spacey after it
