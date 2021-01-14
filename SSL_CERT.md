@@ -1,6 +1,6 @@
 # Renewing SSL cert for LIMS servers
 
-All certificates have to be renewed yearly.
+All certificates have to be renewed yearly. All LIMS servers use certs from UiO.  [Even though we have a certification authority in FreeIPA which supports auto-renewal, we can't use the certs, because some parts of Clarity require globally trusted certificates and has separate trusted root CA database.]
 
 ## Procedure
 
