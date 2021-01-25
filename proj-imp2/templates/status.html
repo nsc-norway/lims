@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Project Importer 2</title>
+<link rel="stylesheet" href="../static/style.css" type="text/css">
+<script src="../static/iimp.js"></script>
+</head>
+<body onload="init('{{ evtSourceUrl }}')">
+
+<h1><img src="../static/logo.png"></h1>
+<h2>Project creation status</h2>
+
+<div class="main_box" id="main_box"><div id="container">
+  <div class="task">If you see this message, the javascript 
+  isn't working!</div>
+  </div>
+</div>
+
+<div id="completion_box">
+Project <span id="completion_project_title">(ERROR)</span>
+was created successfully. The registration is now complete.
+</div>
+
+<div id="error_box">
+Creation of project 
+<span id="error_project_title">(ERROR)</span> 
+failed due to the error shown above. You may need to fix it manually
+by either completing or undoing the project creation.
+<a href="http://placeholder" id="error_link">Last known step in Clarity</a>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,65 @@
+p.error {
+	color: red;
+}
+
+div.main_box {
+	width: 800px;
+	border: 1px solid black;
+    margin: 10px;
+    padding: 10px;
+}
+
+div#error_box {
+    display: none;
+	width: 800px;
+    color: red;
+    font-weight: bold;
+}
+
+a#error_link {
+    display: none;
+}
+
+div#completion_box {
+	width: 800px;
+    display: none;
+}
+
+span#completion_project_title {
+    color: green;
+    font-weight: bold;
+}
+
+img.logo {
+    height: 30px;
+}
+
+div.task {
+	padding-left: 23px;
+}
+
+div.running {
+	background-image: url("chevron.png");
+	background-size: 18px;
+	background-repeat: no-repeat;
+}
+
+div.error {
+	background-image: url("cross.png");
+	background-size: 18px;
+	background-repeat: no-repeat;
+	color:red;
+	font-weight: bold;
+}
+
+div.completed {
+	background-image: url("check.png");
+	background-size: 18px;
+	background-repeat: no-repeat;
+}
+
+p.small {
+	font-size: 0.8em;
+	color: #222;
+}
+

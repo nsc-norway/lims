@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Project importer 2</title>
+<link rel="stylesheet" href="../static/style.css" type="text/css">
+</head>
+<body>
+
+<h1><img src="../static/logo.png" class="logo"></h1>
+<h2>Quick project creation</h2>
+
+{% if error_message %}
+<p class="error">{{ error_message }}</p>
+{% endif %}
+
+<form action="submit" method="post" enctype="multipart/form-data">
+<table>
+  <tr>
+    <td>Clarity Username:</td>
+    <td><input type="text" name="username" value="{{ username }}"></td>
+  </tr>
+
+  <tr>
+    <td>Password:</td>
+    <td><input type="password" name="password" value="{{ password }}"></td>
+  </tr>
+
+  <tr>
+    <td>Project name:</td>
+    <td><input type="text" name="projectname" value="{{ projectname }}"></td>
+  </tr>
+
+  <tr>
+    <td>Sample table file:</td>
+    <td><input type="file" name="sample_file"></td>
+  </tr>
+
+  <tr>
+    <td>Template:</td>
+    <td><select name="template">
+            <option value="NULL">Select one...</option>
+            {% for template in ['FHI-Covid19', 'MIK-Covid19'] %}
+            <option value="{{ template }}"{{ ' selected="selected"' if preset_template == template }}>{{ template }}</option>
+            {% endfor %}
+        </select>
+    </td>
+  </tr>
+
+</table>
+<p>
+<input type="hidden" name="uuid" value="{{ uuid }}">
+<input type="submit" value="Create project">
+</p>
+</form>
+
+</body>
+</html>
+
