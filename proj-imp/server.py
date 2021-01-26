@@ -674,6 +674,7 @@ class RunDenatureStep(Task):
                 lims.set_default_next_step(step)
             try:
                 step.advance()
+                time.sleep(5)
             except requests.exceptions.HTTPError: # When running scripts, data could be outdated
                 timeout -= 1
             time.sleep(1)
