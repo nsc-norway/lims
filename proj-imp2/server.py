@@ -243,8 +243,7 @@ class Job(object):
         self.samples = []
         self.lims_project = None
         self.lims_samples = []
-        #self.pool = None TODO?
-        self.step_url = None
+        self.step_url = None    # Not used; may use in the future.
         self.queue = Mod_Queue.Queue()
         self.tasks = [
                 ReadSampleFile(self),
