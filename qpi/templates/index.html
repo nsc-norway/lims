@@ -38,7 +38,7 @@
   <tr>
     <td>Template:</td>
     <td><select name="template">
-            <option value="NULL">Select one...</option>
+            <option value="">Select one...</option>
             {% for template in ['FHI-Covid19', 'MIK-Covid19'] %}
             <option value="{{ template }}"{{ ' selected="selected"' if preset_template == template }}>{{ template }}</option>
             {% endfor %}
