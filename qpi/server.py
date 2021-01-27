@@ -349,7 +349,7 @@ class UploadFile(Task):
         # Would use the upstream file API, but it only supports a real on-disk file!
         gls = lims.glsstorage(self.job.lims_project, self.job.sample_filename)
         f_obj = gls.post()
-        f_obj.upload(self.job.sample_file_data)
+        f_obj.upload(self.job.sample_file_object.getvalue())
 
 
 class CreatePlateAndSamples(Task):
@@ -358,15 +358,15 @@ class CreatePlateAndSamples(Task):
     def run(self):
         plate = lims.create_container(type=lims.get_container_types('96 well plate')[0])
         for sample in self.job.samples:
+            set_udfs = sample[2]
+            if 'sample_fields' in self.job.project_template_data and self.job.project_template_data['sample_fields']:
+                set_udfs.update(self.job.project_template_data['sample_fields'])
             lims_sample = lims.create_sample(
                     sample[0],
                     self.job.lims_project,
                     container=plate,
                     well=sample[1],
-                    udf=dict(
-                        self.job.project_template_data['sample_fields'].items() +
-                        sample[2]
-                        )
+                    udf=set_udfs
             )
             self.job.lims_samples.append(lims_sample)
             
