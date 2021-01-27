@@ -1,4 +1,4 @@
-# Project importer 2
+# Quick Project Importer
 
 This is a copy of the original proj-imp, with a different purpose.
 

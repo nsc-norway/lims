@@ -6,11 +6,13 @@ import io
 import threading
 import yaml
 import json
+import sys
+import string
 import Queue as Mod_Queue # Due to name conflict with genologics
 from flask import Flask, url_for, abort, jsonify, Response, request,\
         render_template, redirect
 from werkzeug.utils import secure_filename
-
+from openpyxl import load_workbook
 import requests
 
 from genologics.lims import *
@@ -78,8 +80,8 @@ def submit_project():
     
     try:
         f = request.files['sample_file']
-        file_data = io.BytesIO()
-        f.save(file_data)
+        file_object = io.BytesIO()
+        f.save(file_object)
         file_name = secure_filename(f.filename)
         if file_name == "":
             raise ValueError("No file provided")
@@ -95,7 +97,7 @@ def submit_project():
         if not worker.active:
             try:
                 worker.start_job(username, password, projectname,
-                        file_name, file_data.getvalue())
+                        file_name, file_object)
             except LimsCredentialsError:
                 # Why abort() here, not render_template?: We can't put the
                 # file back into the response, so better encourage the user
@@ -210,7 +212,9 @@ class Task(object):
         except Exception as e:
             self.running = False
             self.error = True
-            self.status = str(e)
+            # Remove non-ascii characters in exception message (this can happen)
+            printable = set(string.printable)
+            self.status = ''.join(filter(lambda x: x in printable, str(e)))
             return False
         else:
             self.completed = True
@@ -233,26 +237,24 @@ class Task(object):
 
 class Job(object):
     def __init__(self, worker, username, projectname, sample_filename,
-            sample_file_data):
+            sample_file_object):
         self.worker = worker
         self.project_template_data = worker.project_template_data
         self.projectname = projectname
+        # Get user object used as owner of objects created in LIMS. This also
+        # checks that the username is valid in LIMS.
         self.user = lims.get_researchers(username=username)[0]
         self.sample_filename = sample_filename
-        self.sample_file_data = sample_file_data
+        self.sample_file_object = sample_file_object
         self.samples = []
         self.lims_project = None
         self.lims_samples = []
         self.step_url = None    # Not used; may use in the future.
         self.queue = Mod_Queue.Queue()
         self.tasks = [
-                ReadSampleFile(self),
-                CheckExistingProjects(self),
-                CreateProject(self),
-                UploadFile(self),
-                CreatePlateAndSamples(self),
-                AssignWorkflow(self)
-            ]
+            getattr(sys.modules[__name__], task)(self)
+            for task in self.project_template_data['tasks']
+        ]
 
     def run(self):
         for task in self.tasks:
@@ -272,55 +274,50 @@ class Job(object):
     def completed(self):
         return all(task.completed for task in self.tasks)
 
-    
 
-class ReadSampleFile(Task):
+
+class ReadFHISampleFile(Task):
     """Read the sample file input."""
 
     NAME = "Read sample file"
 
     def run(self):
-        # Parse the file
-        sample_table_data = self.job.sample_file_data.decode('utf-8').splitlines()
-        sample_table_rows = self.parse_2col_file(sample_table_data)
-        # Convert column IDs
+        wb = load_workbook(self.job.sample_file_object)
+        sheet = next(iter(wb))
+        for coord, expect in zip(['A1','B1','C1'],
+            ['Well', 'Sample No.', 'Org. Ct-value']):
+            if sheet[coord].value != expect:
+                raise ValueError("FHI file error: expected '{}' at {}, found '{}' instead.".format(
+                            expect, coord, sheet[coord].value
+                        ))
         self.job.samples = []
-        for name, pos in sample_table_rows:
+        for row in sheet.iter_rows(min_row=2, max_col=3):
+            pos, name, ct = [c.value for c in row]
+            name = str(name)
+            try:
+                ctval = float(ct)
+            except ValueError:
+                raise ValueError("Invalid Ct value {} at {}.".format(ct, c[2].pos))
             m = re.match(r"([A-H])(\d+)$", pos)
             if m and 1 <= int(m.group(2)) <= 12:
-                self.job.samples.append((name, "{}:{}".format(m.group(1), m.group(2))))
+                self.job.samples.append((
+                            name,
+                            "{}:{}".format(m.group(1), m.group(2)),
+                            {'Org. Ct value': ct}
+                            ))
             else:
                 raise ValueError("Invalid well position '{}'".format(pos))
         # Check it
         if not self.job.samples: raise ValueError("No samples found in sample file. Check the format.")
-        if len(set(name for name, _ in self.job.samples)) != len(self.job.samples):
+        if len(set(name for name, _, _ in self.job.samples)) != len(self.job.samples):
             raise ValueError("Non-unique sample name")
-        if len(set(pos for _, pos in self.job.samples)) != len(self.job.samples):
+        if len(set(pos for _, pos, _ in self.job.samples)) != len(self.job.samples):
             raise ValueError("Duplicate well position(s) detected")
         if not all(c.isalnum() or c == "-"
-                for name, _ in self.job.samples
+                for name, _, _ in self.job.samples
                 for c in name):
             raise ValueError("Invalid characters in sample name, A-Z, 0-9 and - allowed.")
         
-    def parse_2col_file(self, sample_table):
-        """Parse a text file with sample name and index"""
-
-        if len(sample_table[0].split(",")) > 1:
-            sep = ","
-        elif len(sample_table[0].split(";")) > 1:
-            sep = ";"
-        else:
-            raise ValueError("Invalid csv sample file format.")
-
-        cells = [line.strip().split(sep) for line in sample_table]
-        if [v.lower() for v in cells[0]] == ["name", "pos"]:
-            type = 1
-        else:
-            raise ValueError("Headers must be Name and Index, or Name, Index1 and Index2.")
-        
-        if type == 1:
-            return [c for c in cells[1:] if c and len(c) == 2]
-
 
 class CheckExistingProjects(Task):
     """Refuse to create project if one with the same name exists."""
@@ -361,9 +358,16 @@ class CreatePlateAndSamples(Task):
     def run(self):
         plate = lims.create_container(type=lims.get_container_types('96 well plate')[0])
         for sample in self.job.samples:
-            lims_sample = lims.create_sample(sample[0], self.job.lims_project,
-                    container=plate, well=sample[1],
-                    udf=self.job.project_template_data['sample_fields'])
+            lims_sample = lims.create_sample(
+                    sample[0],
+                    self.job.lims_project,
+                    container=plate,
+                    well=sample[1],
+                    udf=dict(
+                        self.job.project_template_data['sample_fields'].items() +
+                        sample[2]
+                        )
+            )
             self.job.lims_samples.append(lims_sample)
             
 
@@ -392,7 +396,7 @@ class ProjectWorker(object):
         self.active = False
 
     def start_job(self, username, password, project_title, sample_filename,
-            sample_file_data):
+            sample_file_object):
         """Start an import task with the specified parameters.
         
         This function is not thread safe! Syncrhonization must be handled
@@ -402,7 +406,7 @@ class ProjectWorker(object):
 
         self.check_lims_credentials(username, password)
         self.job = Job(self, username, project_title, sample_filename,
-                sample_file_data)
+                sample_file_object)
         thread = threading.Thread(target=self.run_job)
         self.active = True
         self.rundate = None

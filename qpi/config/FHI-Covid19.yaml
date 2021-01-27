@@ -13,3 +13,10 @@ sample_fields:
 
 workflow: "NSC 16S 8.0"
 
+tasks:
+  - "ReadFHISampleFile"
+  - "CheckExistingProjects"
+  - "CreateProject"
+  - "UploadFile"
+  - "CreatePlateAndSamples"
+  - "AssignWorkflow"
