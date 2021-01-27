@@ -9,7 +9,6 @@ project_fields:
   "Delivery method": "FHI-Covid19"
 
 sample_fields: 
-  "Sample prep NSC": "Swift SNAP"
 
 workflow: "NSC 16S 8.0"
 
