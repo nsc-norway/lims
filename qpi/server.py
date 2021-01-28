@@ -295,9 +295,12 @@ class ReadFHISampleFile(Task):
             pos, name, ct = [c.value for c in row]
             name = str(name)
             try:
-                ctval = float(ct)
+                if ct == "":
+                    ctval = 0.0
+                else:
+                    ctval = float(ct)
             except ValueError:
-                raise ValueError("Invalid Ct value {} at {}.".format(ct, c[2].pos))
+                raise ValueError("Invalid Ct value '{}' at {}.".format(ct, row[2].coordinate))
             m = re.match(r"([A-H])(\d+)$", pos)
             if m and 1 <= int(m.group(2)) <= 12:
                 self.job.samples.append((
