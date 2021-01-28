@@ -1,0 +1,13 @@
+project_fields:
+  "Project type": "MIK-Covid19"
+  "Sample type": "TODO"
+  "Evaluation type": "Prep"
+  "Sample prep requested": "Swift SNAP"
+  "Contact email": "TODO"
+  "Contact person":  "MIK"
+  "Contact institution": "OUS"
+  "Delivery method": "MIK-Covid19"
+
+sample_fields: 
+
+workflow: "NSC 16S 8.0"
