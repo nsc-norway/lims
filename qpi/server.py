@@ -71,19 +71,22 @@ def submit_project():
 
     if '' in [username, password, template, projectname]:
         return render_template("index.html", username=username, password=password,
-                preset_template=template, projectname=projectname,
+                preset_project_type=template, projectname=projectname,
+                project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
                 error_message= "Please specify username, password, project name and template.")
 
     if not projectname.replace("-", "").isalnum():
         return render_template("index.html", username=username, password=password,
-                preset_template=template, projectname=projectname,
+                preset_project_type=template, projectname=projectname,
+                project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
                 error_message= "Project name should only contain alphanumerics and hyphen (-).")
 
     project_template_data = get_project_def(template)
     
     if projectname == project_template_data.get('project_name_placeholder'):
         return render_template("index.html", username=username, password=password,
-                preset_template=template, projectname=projectname,
+                preset_project_type=template, projectname=projectname,
+                project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
                 error_message= "Please change the project name from the placeholder.")
 
     
@@ -96,7 +99,8 @@ def submit_project():
             raise ValueError("No file provided")
     except (KeyError, ValueError):
         return render_template("index.html", username=username, password=password, 
-                preset_template=template, projectname=projectname,
+                preset_project_type=template, projectname=projectname,
+                project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
                 error_message="Sample file upload failed. Make sure sample file is specified.")
 
     with workers_lock:
