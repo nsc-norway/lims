@@ -20,6 +20,8 @@ from genologics import config
 
 # External project creation backend server
 
+PROJECT_TYPES = ['FHI-Swift', 'MIK-Swift', 'FHI-NimaGen', 'MIK-NimaGen']
+
 # This will be registered as a WSGI application under a path, 
 # PATH.
 
@@ -34,7 +36,8 @@ workers_lock = threading.Lock()
 # Return 404 for root path and subpaths not ending with /
 @app.route("/")
 def get_project_start_page():
-    return render_template("index.html")
+    project_name_presets = {pt: get_project_def(pt).get('project_name_placeholder', '') for pt in PROJECT_TYPES}
+    return render_template("index.html", project_types=PROJECT_TYPES, project_name_presets=project_name_presets)
 
 
 def get_project_def(project_type):
@@ -77,6 +80,12 @@ def submit_project():
                 error_message= "Project name should only contain alphanumerics and hyphen (-).")
 
     project_template_data = get_project_def(template)
+    
+    if projectname == project_template_data.get('project_name_placeholder'):
+        return render_template("index.html", username=username, password=password,
+                preset_template=template, projectname=projectname,
+                error_message= "Please change the project name from the placeholder.")
+
     
     try:
         f = request.files['sample_file']

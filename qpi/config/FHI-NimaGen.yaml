@@ -19,3 +19,5 @@ tasks:
   - "UploadFile"
   - "CreatePlateAndSamples"
   - "AssignWorkflow"
+
+project_name_placeholder: "Covid-xx-NimaGen-FHI"

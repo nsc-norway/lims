@@ -10,4 +10,14 @@ project_fields:
 
 sample_fields: 
 
-workflow: "NSC 16S 8.0"
+workflow: "Covid Swift SNAP"
+
+tasks:
+  - "ReadMIKSampleFile"
+  - "CheckExistingProjects"
+  - "CreateProject"
+  - "UploadFile"
+  - "CreatePlateAndSamples"
+  - "AssignWorkflow"
+
+project_name_placeholder: "Covid-xx-Swift-MIK"
