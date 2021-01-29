@@ -19,4 +19,4 @@ tasks:
   - "CreatePlateAndSamples"
   - "AssignWorkflow"
 
-project_name_placeholder: "Covid-xx-Swift-FHI"
+project_name_placeholder: "{:%Y%m%d}-S"

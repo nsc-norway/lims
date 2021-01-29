@@ -36,7 +36,9 @@ workers_lock = threading.Lock()
 # Return 404 for root path and subpaths not ending with /
 @app.route("/")
 def get_project_start_page():
-    project_name_presets = {pt: get_project_def(pt).get('project_name_placeholder', '') for pt in PROJECT_TYPES}
+    project_name_presets = {
+        pt: get_project_def(pt).get('project_name_placeholder', '{}').format(datetime.date.today())
+        for pt in PROJECT_TYPES}
     return render_template("index.html", project_types=PROJECT_TYPES, project_name_presets=project_name_presets)
 
 
@@ -310,7 +312,7 @@ class ReadFHISampleFile(Task):
             pos, name, ct = [c.value for c in row]
             name = str(name)
             try:
-                if ct == "":
+                if not ct:
                     ctval = 0.0
                 else:
                     ctval = float(ct)
