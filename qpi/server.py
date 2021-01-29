@@ -69,13 +69,15 @@ def submit_project():
     password = request.form.get('password', '')
     projectname = request.form.get('projectname', '')
 
+    project_name_presets = {pt: get_project_def(pt).get('project_name_placeholder', '') for pt in PROJECT_TYPES}
+
     if '' in [username, password, template, projectname]:
         return render_template("index.html", username=username, password=password,
                 preset_project_type=template, projectname=projectname,
                 project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
                 error_message= "Please specify username, password, project name and template.")
 
-    if not projectname.replace("-", "").isalnum():
+    if not projectname.replace("-", "").replace("_", "").isalnum():
         return render_template("index.html", username=username, password=password,
                 preset_project_type=template, projectname=projectname,
                 project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
