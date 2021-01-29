@@ -321,7 +321,7 @@ class ReadFHISampleFile(Task):
                 self.job.samples.append((
                             name,
                             "{}:{}".format(m.group(1), m.group(2)),
-                            {'Org. Ct value': ct}
+                            {'Org. Ct value': ctval}
                             ))
             else:
                 raise ValueError("Invalid well position '{}'".format(pos))
