@@ -292,6 +292,59 @@ class Job(object):
         return all(task.completed for task in self.tasks)
 
 
+def check_sample_list(samples):
+    """Check sample list"""
+    if not samples: raise ValueError("No samples found in sample file. Check the format.")
+    names = [name for name, _, _ in samples]
+    if len(set(names)) != len(samples):
+        raise ValueError("Non-unique sample name(s): {}".format(
+            names #list(set(name for name in names if names.count(name) > 1))
+        ))
+    if len(set(pos for _, pos, _ in samples)) != len(samples):
+        raise ValueError("Duplicate well position(s) detected")
+    if not all(c.isalnum() or c == "-"
+            for name, _, _ in samples
+            for c in name):
+        raise ValueError("Invalid characters in sample name, A-Z, 0-9 and - allowed.")
+
+
+class ReadMIKSampleFile(Task):
+    """Read the sample file input (MIK)."""
+
+    NAME = "Read sample file"
+
+    def run(self):
+        wb = load_workbook(self.job.sample_file_object)
+        sheet = next(iter(wb))
+        for coord, expect in zip(['A1','B1','C1'],
+            ['Well', 'Well Name', 'E-gen']):
+            if sheet[coord].value != expect:
+                raise ValueError("MIK file error: expected '{}' at {}, found '{}' instead.".format(
+                            expect, coord, sheet[coord].value
+                        ))
+        self.job.samples = []
+        for row in sheet.iter_rows(min_row=2, max_col=3):
+            pos, name, ct = [c.value for c in row]
+            name = str(name)
+            if name == "---": continue # Skip blank cells
+            name = re.sub(r"[^A-Za-z0-9-]", "-", name)
+            udf_dict = {}
+            try:
+                if ct and ct != "No Cq":
+                    udf_dict = {'Org. Ct value': float(ct)}
+            except ValueError:
+                raise ValueError("Invalid Ct value '{}' at {}.".format(ct, row[2].coordinate))
+            m = re.match(r"([A-H])(\d+)$", pos)
+            if m and 1 <= int(m.group(2)) <= 12:
+                self.job.samples.append((
+                            name,
+                            "{}:{}".format(m.group(1), m.group(2)),
+                            udf_dict
+                            ))
+            else:
+                raise ValueError("Invalid well position '{}'".format(pos))
+        check_sample_list(self.job.samples)
+
 
 class ReadFHISampleFile(Task):
     """Read the sample file input."""
@@ -311,11 +364,10 @@ class ReadFHISampleFile(Task):
         for row in sheet.iter_rows(min_row=2, max_col=3):
             pos, name, ct = [c.value for c in row]
             name = str(name)
+            udf_dict = {}
             try:
-                if not ct:
-                    ctval = 0.0
-                else:
-                    ctval = float(ct)
+                if ct:
+                    udf_dict = {'Org. Ct value': float(ct)}
             except ValueError:
                 raise ValueError("Invalid Ct value '{}' at {}.".format(ct, row[2].coordinate))
             m = re.match(r"([A-H])(\d+)$", pos)
@@ -323,20 +375,11 @@ class ReadFHISampleFile(Task):
                 self.job.samples.append((
                             name,
                             "{}:{}".format(m.group(1), m.group(2)),
-                            {'Org. Ct value': ctval}
+                            udf_dict
                             ))
             else:
                 raise ValueError("Invalid well position '{}'".format(pos))
-        # Check it
-        if not self.job.samples: raise ValueError("No samples found in sample file. Check the format.")
-        if len(set(name for name, _, _ in self.job.samples)) != len(self.job.samples):
-            raise ValueError("Non-unique sample name")
-        if len(set(pos for _, pos, _ in self.job.samples)) != len(self.job.samples):
-            raise ValueError("Duplicate well position(s) detected")
-        if not all(c.isalnum() or c == "-"
-                for name, _, _ in self.job.samples
-                for c in name):
-            raise ValueError("Invalid characters in sample name, A-Z, 0-9 and - allowed.")
+        check_sample_list(self.job.samples)
         
 
 class CheckExistingProjects(Task):
