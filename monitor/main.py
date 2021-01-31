@@ -194,7 +194,9 @@ def read_project(server, lims_project):
             'Non-Sensitive': 'N',
             'Diagnostics': 'E',
             'Immunology': 'E',
-            'Microbiology': 'E'
+            'Microbiology': 'E',
+            'FHI-Covid19': 'C',
+            'MIK-Covid19': 'C',
             }
     tag = project_type_tag.get(lims_project.udf.get('Project type'), '?!')
     delivery_method_tag = {
@@ -203,7 +205,9 @@ def read_project(server, lims_project):
             'TSD project': 'S',
             'NeLS project': 'N',
             'Norstore': 'N',
-            'Transfer to diagnostics': ''
+            'Transfer to diagnostics': '',
+            'FHI-Covid19': '',
+            'MIK-Covid19': '',
             }
     if tag != "E":
         tag += delivery_method_tag.get(lims_project.udf.get('Delivery method'), '?!')
