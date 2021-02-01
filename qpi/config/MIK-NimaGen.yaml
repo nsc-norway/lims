@@ -1,13 +1,21 @@
 project_fields:
   "Project type": "MIK-Covid19"
-  "Sample type": "TODO"
   "Evaluation type": "Prep"
-  "Sample prep requested": "Swift SNAP"
-  "Contact email": "TODO"
+  "Contact email": "UXMOLB@ous-hf.no; fmuller@ous-hf.no; regbar@ous-hf.no; cflad@ous-hf.no; nimari@ous-hf.no; UXISES@ous-hf.no; UXLNDR@ous-hf.no"
   "Contact person":  "MIK"
   "Contact institution": "OUS"
   "Delivery method": "MIK-Covid19"
 
 sample_fields: 
 
-workflow: "NSC 16S 8.0"
+workflow: "Covid NimaGen EasySeq"
+
+tasks:
+  - "ReadMIKSampleFile"
+  - "CheckExistingProjects"
+  - "CreateProject"
+  - "UploadFile"
+  - "CreatePlateAndSamples"
+  - "AssignWorkflow"
+
+project_name_placeholder: "{:%Y%m%d}-N"
