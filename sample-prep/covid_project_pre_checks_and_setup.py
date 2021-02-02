@@ -14,14 +14,14 @@ def main(process_id):
     inputs = process.all_inputs(resolve=True)
     samples = lims.get_batch([s for input in inputs for s in input.samples])
     projects = set([s.project for s in samples])
-    project_index_plates = set()
-    for p in projects:
-        m = re.match(r"\d+-([NS]\d)-.*", p.name)
+    if len(projects) == 1:
+        project = next(iter(projects))
+        m = re.match(r"\d+-([NS]\d)-.*", project.name)
         if m:
-            project_index_plates.add(m.group(1))
-
-    if len(project_index_plates) == 1:
-        plate_string = next(iter(project_index_plates))
+            plate_string = m.group(1)
+        else:
+            print("Project name should contain a date in format YYYYMMDD and then -N- or -S-.")
+            sys.exit(1)
         correct_answer = {
             "S1": "SwiftUDI Plate 1",
             "S2": "SwiftUDI Plate 2",
@@ -40,9 +40,13 @@ def main(process_id):
             print("Selected index plate '{}' does not match project name '{}'.".format(
                 step.reagents.reagent_category, plate_string))
             sys.exit(1)
-    elif len(project_index_plates) > 1:
-        print("Error: Mutliple projects selected, with different index plate numbers. Only add one project to this step.")
+    else:
+        print("Error: Mutliple projects selected. Only add one project to this step.")
         sys.exit(1)
+
+    output_plate = process.all_outputs()[0].location[0]
+    output_plate.name = project.name + " Prep"
+    output_plate.put()
 
 if __name__ == "__main__":
     main(sys.argv[1])
