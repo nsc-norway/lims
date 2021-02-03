@@ -127,8 +127,7 @@ def generate_sample_sheet(process, i_os, include_lane, use_sampleid=False):
     # Sort by output well (lane)
     sorted_i_os = sorted(i_os, key=lambda i_o: (i_o[1].location[1], i_o[0].name))
 
-    sample_index_lists = [deduplicate_artifacts(get_samples_and_indexes(i))
-                                        for i, o in sorted_i_os]
+    sample_index_lists = [get_samples_and_indexes(i) for i, o in sorted_i_os]
     lims.get_batch(sample
                 for sample_index_list in sample_index_lists
                 for sample, artifact, index in sample_index_list
@@ -247,18 +246,6 @@ def get_samples_and_indexes(artifact):
                 for i, o in parent.input_output_maps
                     if o['uri'].id == artifact.id ]
         return sum((get_samples_and_indexes(i) for i in inputs), [])
-
-
-def deduplicate_artifacts(tuple_list):
-    """Takes as argument the output of get_samples_and_indexes(), and
-    removes duplicate elements. Removes entries that originate from the
-    same artifact. These necessarily also have the same sample and index
-    seq."""
-    elements_dict = {
-        artifact.id: (sample, artifact, index_seq)
-        for sample, artifact, index_seq in tuple_list
-    }
-    return [elements_dict[artifact_id] for artifact_id in sorted(elements_dict)]
 
 
 def reverse_complement(sequence):
