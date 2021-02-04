@@ -9,6 +9,13 @@ def main(process_id, name_mode, pool_suffix=""):
     poolable = step.pools.available_inputs
     if name_mode == "project":
         pool_name = poolable[0].samples[0].project.name + pool_suffix
+    elif name_mode == "project_part":
+        parts = poolable[0].samples[0].project.name.split("-")
+        if len(parts) >= 3:
+            mid_part = "-".join(parts[1:3])
+        else:
+            mid_part = poolable[0].samples[0].project.name
+        pool_name = mid_part + pool_suffix
     elif name_mode == "run":
         try:
             with open("/var/lims-scripts/covid-run-count.txt") as f:
