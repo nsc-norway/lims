@@ -8,6 +8,7 @@ import yaml
 import json
 import sys
 import string
+import base64
 import Queue as Mod_Queue # Due to name conflict with genologics
 from flask import Flask, url_for, abort, jsonify, Response, request,\
         render_template, redirect
@@ -123,7 +124,7 @@ def submit_project():
                 # file back into the response, so better encourage the user
                 # to press back and try again (with the file).
                 abort(403, "Incorrect username or password, please go back "
-                        "and try again.")
+                        "and try again.".format(username, password))
             except Exception as e:
                 abort(500, "LIMS seems to be unreachable, or bug in job creation: {0}".format(e))
         
@@ -485,7 +486,10 @@ class ProjectWorker(object):
         LIMS fails."""
 
         uri = config.BASEURI.rstrip("/") +  '/api/'
-        r = requests.get(uri, auth=(username, password))
+        # Building header manually because of problem with unicode encoding
+        bb = base64.b64encode(u"{}:{}".format(username,password).encode('utf-8'))
+        encoded_auth = 'Basic ' + str(bb)
+        r = requests.get(uri, headers={'Authorization': encoded_auth})
         if r.status_code not in [403, 200]:
             if r.status_code in [500]:
                 raise RuntimeError("Internal server error")
@@ -493,7 +497,7 @@ class ProjectWorker(object):
                 # Note: 403 is OK! It indicates that we have a valid password, but
                 # are a Researcher user and thus not allowed to access the API. 
                 # If the password is wrong, we will get a 401.
-                raise LimsCredentialsError("Error code: {}.")
+                raise LimsCredentialsError()
 
     def run_job(self):
         try:
