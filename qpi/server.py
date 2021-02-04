@@ -71,7 +71,10 @@ def submit_project():
     password = request.form.get('password', '')
     projectname = request.form.get('projectname', '')
 
-    project_name_presets = {pt: get_project_def(pt).get('project_name_placeholder', '') for pt in PROJECT_TYPES}
+    project_name_presets = {
+        pt: get_project_def(pt).get('project_name_placeholder', '').format(datetime.date.today())
+        for pt in PROJECT_TYPES
+    }
 
     if '' in [username, password, template, projectname]:
         return render_template("index.html", username=username, password=password,
@@ -457,6 +460,7 @@ class ProjectWorker(object):
         self.project_template_data = project_template_data
         self.job = None
         self.active = False
+        self.rundate = None
 
     def start_job(self, username, password, project_title, sample_filename,
             sample_file_object):
@@ -489,7 +493,7 @@ class ProjectWorker(object):
                 # Note: 403 is OK! It indicates that we have a valid password, but
                 # are a Researcher user and thus not allowed to access the API. 
                 # If the password is wrong, we will get a 401.
-                raise LimsCredentialsError()
+                raise LimsCredentialsError("Error code: {}.")
 
     def run_job(self):
         try:
