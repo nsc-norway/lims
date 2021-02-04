@@ -480,7 +480,7 @@ class ProjectWorker(object):
         exception if they are incorrect, or if connection to
         LIMS fails."""
 
-        uri = config.BASEURI.rstrip("/") +  '/api'
+        uri = config.BASEURI.rstrip("/") +  '/api/'
         r = requests.get(uri, auth=(username, password))
         if r.status_code not in [403, 200]:
             if r.status_code in [500]:
