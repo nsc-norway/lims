@@ -318,7 +318,7 @@ class ReadMIKSampleFile(Task):
     NAME = "Read sample file"
 
     def run(self):
-        wb = load_workbook(self.job.sample_file_object)
+        wb = load_workbook(self.job.sample_file_object, data_only=True)
         sheet = next(iter(wb))
         for coord, expect in zip(['A1','B1','C1'],
             ['Well', 'Well Name', 'E-gen']):
@@ -356,16 +356,23 @@ class ReadFHISampleFile(Task):
     NAME = "Read sample file"
 
     def run(self):
-        wb = load_workbook(self.job.sample_file_object)
+        wb = load_workbook(self.job.sample_file_object, data_only=True)
         sheet = next(iter(wb))
-        for coord, expect in zip(['A1','B1','C1'],
-            ['Well', 'Sample No.', 'Org. Ct-value']):
-            if sheet[coord].value != expect:
-                raise ValueError("FHI file error: expected '{}' at {}, found '{}' instead.".format(
-                            expect, coord, sheet[coord].value
-                        ))
+        expected_headers = ['Position on plate', 'SampleID', 'Original ct-value']
+        for header_row in range(1,6):
+            if all(
+                str(sheet[coord.format(header_row)].value).strip().lower() == expect.lower()
+                for coord, expect in zip(['A{}','B{}','C{}'], expected_headers)
+            ):
+                break # Found it
+        else: # This is if we didn't find the header column
+            raise ValueError(
+                "FHI file error: the expected headers {} were not found in the first {} lines{}.".format(
+                            expected_headers, header_row
+                            ))
+
         self.job.samples = []
-        for row in sheet.iter_rows(min_row=2, max_col=3):
+        for row in sheet.iter_rows(min_row=header_row+1, max_col=3):
             pos, name, ct = [c.value for c in row]
             name = str(name)
             udf_dict = {}
