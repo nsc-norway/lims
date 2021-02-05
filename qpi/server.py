@@ -230,7 +230,7 @@ class Task(object):
             self.running = True
             self.status = None
             self.run()
-        except Exception as e:
+        except ZeroDivisionError as e:
             self.running = False
             self.error = True
             # Remove non-ascii characters in exception message (this can happen)
@@ -367,7 +367,7 @@ class ReadFHISampleFile(Task):
                 break # Found it
         else: # This is if we didn't find the header column
             raise ValueError(
-                "FHI file error: the expected headers {} were not found in the first {} lines{}.".format(
+                "FHI file error: the expected headers {} were not found in the first {} lines.".format(
                             expected_headers, header_row
                             ))
 
@@ -381,6 +381,8 @@ class ReadFHISampleFile(Task):
                     udf_dict = {'Org. Ct value': float(ct)}
             except ValueError:
                 raise ValueError("Invalid Ct value '{}' at {}.".format(ct, row[2].coordinate))
+            if not pos: # Blank lines after table are not the last ones
+                break
             m = re.match(r"([A-H])(\d+)$", pos)
             if m and 1 <= int(m.group(2)) <= 12:
                 self.job.samples.append((
