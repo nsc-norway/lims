@@ -230,7 +230,7 @@ class Task(object):
             self.running = True
             self.status = None
             self.run()
-        except ZeroDivisionError as e:
+        except Exception as e:
             self.running = False
             self.error = True
             # Remove non-ascii characters in exception message (this can happen)
