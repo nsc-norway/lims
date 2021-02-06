@@ -18,7 +18,7 @@ def main(process_id, key_value_pairs):
     inputs = []
     outputs = []
     for i,o in process.input_output_maps:
-        if o and o['output-type'] == 'Analyte' and o['output-generation-type'] == 'PerInput':
+        if o and o['output-type'] == 'Analyte':
             output = o['uri']
             outputs.append(output)
 
