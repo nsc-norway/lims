@@ -321,21 +321,36 @@ class ReadMIKSampleFile(Task):
         wb = load_workbook(self.job.sample_file_object, data_only=True)
         sheet = next(iter(wb))
         for coord, expect in zip(['A1','B1','C1'],
-            ['Well', 'Well Name', 'E-gen']):
-            if sheet[coord].value != expect:
+            [['Well'], ['Well Name'], ['E-gen', 'N-gen']]):
+            if sheet[coord].value not in expect:
                 raise ValueError("MIK file error: expected '{}' at {}, found '{}' instead.".format(
-                            expect, coord, sheet[coord].value
+                            " or ".join(expect), coord, sheet[coord].value
                         ))
+        additional_headers = []
+        for acol in "DEFGHIJK":
+            h = sheet["{}1".format(acol)].value
+            if h:
+                additional_headers.append(str(h))
+            else:
+                break
         self.job.samples = []
-        for row in sheet.iter_rows(min_row=2, max_col=3):
-            pos, name, ct = [c.value for c in row]
+        for row in sheet.iter_rows(min_row=2, max_col=3+len(additional_headers)):
+            pos, name, ct = [c.value for c in row[0:3]]
+            if not name: continue
             name = str(name)
             if name == "---": continue # Skip blank cells
             name = re.sub(r"[^A-Za-z0-9-]", "-", name)
-            udf_dict = {}
+            if additional_headers:
+                ac = ";".join(
+                    "{}={}".format(h, cell.value or '')
+                    for h, cell in zip(additional_headers, row[3:])
+                )
+                udf_dict = {"Additional columns (MIK)": ac}
+            else:
+                udf_dict = {}
             try:
                 if ct and ct != "No Cq":
-                    udf_dict = {'Org. Ct value': float(ct)}
+                    udf_dict['Org. Ct value'] = float(ct)
             except ValueError:
                 raise ValueError("Invalid Ct value '{}' at {}.".format(ct, row[2].coordinate))
             m = re.match(r"([A-H])(\d+)$", pos)
