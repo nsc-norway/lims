@@ -23,8 +23,7 @@ from genologics import config
 
 PROJECT_TYPES = ['FHI-Swift', 'MIK-Swift', 'FHI-NimaGen', 'MIK-NimaGen']
 
-# This will be registered as a WSGI application under a path, 
-# PATH.
+# This will be registered as a WSGI application under a path.
 
 app = Flask(__name__)
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
@@ -34,7 +33,6 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 workers = {}
 workers_lock = threading.Lock()
 
-# Return 404 for root path and subpaths not ending with /
 @app.route("/")
 def get_project_start_page():
     project_name_presets = {
