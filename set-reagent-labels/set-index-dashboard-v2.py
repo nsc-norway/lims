@@ -28,7 +28,7 @@ def main(analyte_ids):
     index_analyte = [(a.samples[0].udf[SAMPLE_INDEX_UDF].strip(" \t"), a.name) for a in analytes]
 
     try:
-        category, result = indexes.get_reagents_auto_category(reagents, index_analyte)
+        category, result = indexes.get_reagents_auto_category(reagents, index_analyte, allow_multi_match=True)
     except indexes.ReagentError as e:
         print str(e)
         sys.exit(1)
