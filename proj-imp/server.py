@@ -671,7 +671,11 @@ class RunDenatureStep(Task):
                 self.status = "Generating sample sheet..."
                 continue
             if step.current_state == "Assign Next Steps":
-                lims.set_default_next_step(step)
+                try: # It tends to fail here, despite my best efforts to sync the state before...
+                    lims.set_default_next_step(step)
+                except requests.exceptions.HTTPError: # ...so we just sleep and retry
+                    time.sleep(5)
+                    timeout -= 1
             try:
                 step.advance()
                 time.sleep(5)
