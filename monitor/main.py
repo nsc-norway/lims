@@ -571,7 +571,7 @@ def prepare_page():
 
         variables = {
                 'updated': datetime.datetime.now(),
-                'static': static_url,
+                'static': 'STATIC_URL_PLACEHOLDER!',
                 'sequencing': sequencing,
                 'post_sequencing': post_sequencing,
                 'recently_completed': recently_completed,
@@ -597,10 +597,11 @@ def process_type_to_instrument(server, process_type):
 def get_main():
     global page
     global eval_url_base
-    global static_url
     global template_loc
 
     eval_url_base = url_for('go_eval')
+    # The URL may vary from request to request, so we can't put it in the "page" string. Instead use a
+    # placeholder.
     static_url = request.url + "static"
     template_loc = os.path.join(app.root_path, app.template_folder)
 
@@ -609,7 +610,7 @@ def get_main():
 
     if not page:
         prepare_page()
-    return (page, 200, {'Refresh': '60'})
+    return (page.replace('STATIC_URL_PLACEHOLDER!', static_url), 200, {'Refresh': '60'})
 
 
 @app.route('/go-eval')
