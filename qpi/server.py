@@ -234,6 +234,7 @@ class Task(object):
             # Remove non-ascii characters in exception message (this can happen)
             printable = set(string.printable)
             self.status = ''.join(filter(lambda x: x in printable, str(e)))
+            app.logger.error("Failed in task {}.".format(self.__class__.__name__), exc_info=e)
             return False
         else:
             self.completed = True
@@ -328,7 +329,7 @@ class ReadMIKSampleFile(Task):
         for acol in "DEFGHIJK":
             h = sheet["{}1".format(acol)].value
             if h:
-                additional_headers.append(str(h))
+                additional_headers.append(h.encode('ascii', errors='ignore'))
             else:
                 break
         self.job.samples = []
