@@ -23,7 +23,7 @@ def main(process_id, key_value_pairs):
             outputs.append(output)
 
     lims.get_batch(outputs)
-    samples = sum((output.samples for output in outputs), [])
+    samples = set(sum((output.samples for output in outputs), []))
     lims.get_batch(samples)
     for sample in samples:
         for key,value in zip(key_value_pairs[::2], key_value_pairs[1::2]):
