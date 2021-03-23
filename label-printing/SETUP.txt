@@ -1,13 +1,39 @@
-#### Label printing action on dashboard
+# Label printing scripts
 
-Need pip package dependencies:
- - appy
- - hubarcode
-Yum package dependency:
- - python-imaging
+The script can print labels using an OpenOffice template file. It requires the label printer's driver to
+be installed locally, and will call the LibreOffice executable to start printing.
 
-Add in web interface, Configure, Automation, Add action:
 
-Action name: Print tube label
-Channel name: limsserver
-Command line: /usr/bin/python /opt/gls/clarity/customextensions/lims/label-printing/label-print.py tube {derivedSampleLuids}
+## Setup
+
+The scripts are now run on LIMS-PC6 because it has a direct connection to the label printer.
+It has an automation worker node in the channel limspc6, that will execute commands directly on the LIMS PC.
+
+Python is installed in C:\Python27. Many of the dependencies are however installed directly in C:\AiScripts.
+The script is also installed in C:\AiScripts. Any changes to the script here in git or in C:\AiScripts need to
+be synced manually.
+
+Dependencies installed locally in C:\AiScripts (top level):
+
+* appy
+* genologics
+* hubarcode
+* oopy
+
+Required by genologics / requests:
+
+* requests
+* idna
+* chardet
+* certifi
+* urllib3
+
+
+The dependencies don't require any native code, so they can be installed simply by unzipping the python .whl files,
+and copying the module's directory.
+
+----
+
+Action name: Print labels
+Channel name: limspc6
+Command line: C:\Python27\python.exe C:\AiScripts\print-labels.py {processURI:v2:http} {username} {password} qc {processLuid}
