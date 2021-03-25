@@ -80,6 +80,13 @@ def main(process_id, test=False):
             for i, l in enumerate(lines)
             if re.match(r" .*[^ ].*", l)
             ]
+    if len(answer_first_line_numbers) < 3:
+        # We have too few answers. The format can be something different, 
+        answer_first_line_numbers = [
+                i
+                for i, l in enumerate(lines)
+                if re.match(r"\*[ \t]+[^\t ]", l)
+                ]
     
     # This preliminary stage just gets the full question and answer
     # texts
@@ -102,6 +109,8 @@ def main(process_id, test=False):
             answer = "\n".join(k.strip() for k in lines[ans_start_line:ans_end_line+1])
             # Remove hyperlink annotations made by docx2txt
             answer = re.sub(r" \[HYPERLINK: [^\]]+\]", "", answer)
+            # Remove leading asterisk and tab/space -- asterisk plain text format
+            answer = re.sub(r"^\*[ \t]+", "", answer)
             qas.append((question, answer))
 
     udfs_to_set = {}
