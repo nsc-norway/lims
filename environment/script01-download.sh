@@ -8,7 +8,7 @@ chmod a+rx packages
 chmod a+r requirements-py*-origin.txt
 
 docker run -v $PWD:/mnt --rm centos/python-27-centos7 \
-        bash -c "pip install --upgrade pip && \
+        bash -c "pip install --upgrade pip==20.2.3 && \
         pip download \
         -d /mnt/packages/nsc-python27 \
         -r /mnt/requirements-py27-origin.txt"
