@@ -31,6 +31,8 @@ DNA_PREPS = [
         ("TruSeq.*PCR-free prep", "TruSeq PCR-free"),
         (".*ThruPLEX.*", "ThruPLEX"),
         ("16S library prep", "16S prep"),
+        ("Swift 2S Turbo", "Swift 2S Turbo"),
+        ("Swift 2S Sonic", "Swift 2S Sonic"),
         (".* unsure, please advise", "User unsure"),
         ]
 RNA_PREPS = [
