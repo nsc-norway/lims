@@ -37,13 +37,21 @@ except KeyError:
     # Something wrong with seq. step -- can't do anything
     sys.exit(0)
 
+using_xp_workflow = len(seq_proc.all_inputs(unique=True)) > 1
 
 lane_artifacts = {}
 outs = seq_proc.all_outputs(unique=True, resolve=True)
-for out in outs:
-    laneid_re = re.match(r"Lane (\d):\d$", out.name)
-    if laneid_re:
-        lane_artifacts[int(laneid_re.group(1))] = out
+if using_xp_workflow:
+    for out in outs:
+        laneid_re = re.match(r"Lane (\d):\d$", out.name)
+        if laneid_re:
+            lane_artifacts[int(laneid_re.group(1))] = out
+else: # Standard loading workflow
+    # Assign lane artifacts in order of outputs (as we get them from LIMS),
+    # and also rename the artifacts
+    for laneno, art in zip(range(1,5), outs):
+        lane_artifacts[laneno] = art
+        art.name = "Lane {}:1".format(laneno)
 
 run_dir = "/data/runScratch.boston/{}".format(run_id)
 #DEBUG:
@@ -71,16 +79,15 @@ if lane_count != len(lane_artifacts):
     sys.exit(1)
 
 result = {}
-raw_density, pf_density, occu_pct_sum = 0, 0, 0
 phix_pct = [] # We report PhiX % per read R1 / R2 (non-index)
-for lane in range(lane_count):
+for lane_number, artifact in lane_artifacts.items():
     nonindex_read_count = 0
     raw_density, pf_density, occu_pct_sum = 0, 0, 0
     phix_pct = []
     for read in range(read_count):
         read_data = summary.at(read)
         if not read_data.read().is_index():
-            data = read_data.at(lane)
+            data = read_data.at(lane_number)
             raw_density += data.density().mean()
             pf_density += data.density_pf().mean()
             if nonindex_read_count >= len(phix_pct):
@@ -109,3 +116,5 @@ if merge_lanes:
                 [phix_r / lane_count for phix_r in phix_pct],
                 occu_pct_sum / lane_count
                 )
+
+lims.put_batch(lane_artifacts.values())
