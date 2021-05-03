@@ -46,7 +46,6 @@ else: # Standard loading workflow
         art.name = "Lane {}:1".format(laneno)
 
 run_dir = "/data/runScratch.boston/{}".format(run_id)
-print(os.listdir(run_dir))
 if not os.path.exists(run_dir):
     print("Run folder {} not found, can't get the InterOp files.".format(run_dir))
     sys.exit(1)
