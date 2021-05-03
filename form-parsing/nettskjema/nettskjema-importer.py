@@ -75,13 +75,18 @@ def main(process_id, test=False):
 
     # First line of answers have a leading space with something
     # non-spacey after it
+    plain_text_format = False
     answer_first_line_numbers = [
             i
             for i, l in enumerate(lines)
             if re.match(r" .*[^ ].*", l)
             ]
     if len(answer_first_line_numbers) < 3:
-        # We have too few answers. The format can be something different, 
+        # We have too few answers. The format can be something different, using asterisks
+        # and not space at the start of the line. This results from copying and pasting the
+        # contents from MS-Outlook's simple view: without enabling the full graphical view of
+        # the message.
+        plain_text_format = True
         answer_first_line_numbers = [
                 i
                 for i, l in enumerate(lines)
@@ -96,8 +101,12 @@ def main(process_id, test=False):
 
             # Look behind for question text up to blank line
             q_start_line = ans_start_line - 1
-            while q_start_line - 1 > 0 and lines[q_start_line - 1] != '':
-                    q_start_line -= 1
+            if plain_text_format:
+                while q_start_line - 1 > 0 and not lines[q_start_line - 1].startswith('*'):
+                        q_start_line -= 1
+            else:
+                while q_start_line - 1 > 0 and lines[q_start_line - 1] != '':
+                        q_start_line -= 1
             # Get question
             question = "\n".join(k.strip() for k in lines[q_start_line:ans_start_line])
 
@@ -112,7 +121,7 @@ def main(process_id, test=False):
             # Remove leading asterisk and tab/space -- asterisk plain text format
             answer = re.sub(r"^\*[ \t]+", "", answer)
             qas.append((question, answer))
-
+    print(qas)
     udfs_to_set = {}
     for question in conf['questions']:
         value = None
