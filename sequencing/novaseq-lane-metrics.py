@@ -15,6 +15,7 @@ from interop import py_interop_run_metrics, py_interop_run, py_interop_summary
 import sys
 import re
 import os
+import math
 import traceback
 from genologics.lims import *
 from genologics import config
@@ -49,6 +50,10 @@ run_dir = "/data/runScratch.boston/{}".format(run_id)
 if not os.path.exists(run_dir):
     print("Run folder {} not found, can't get the InterOp files.".format(run_dir))
     sys.exit(1)
+
+def nan_to_zero(val):
+    if math.isnan(val): return 0.0
+    else: return val
 
 try: # Ignore parsing error, to not disturb the sequencer integrations
 
@@ -85,11 +90,11 @@ try: # Ignore parsing error, to not disturb the sequencer integrations
                 artifact.udf['Reads PF (M) R{}'.format(read_label)] = lane_summary.reads_pf() / 1.0e6
                 artifact.udf['%PF R{}'.format(read_label)] = lane_summary.percent_pf().mean()
                 artifact.udf['Intensity Cycle 1 R{}'.format(read_label)] = lane_summary.first_cycle_intensity().mean()
-                artifact.udf['% Error Rate R{}'.format(read_label)] = lane_summary.error_rate().mean()
-                artifact.udf['% Phasing R{}'.format(read_label)] = lane_summary.phasing().mean()
-                artifact.udf['% Prephasing R{}'.format(read_label)] = lane_summary.prephasing().mean()
-                artifact.udf['% Aligned R{}'.format(read_label)] = lane_summary.percent_aligned().mean()
-                artifact.udf['% Occupied Wells'] = lane_summary.percent_occupied().mean()
+                artifact.udf['% Error Rate R{}'.format(read_label)] = nan_to_zero(lane_summary.error_rate().mean())
+                artifact.udf['% Phasing R{}'.format(read_label)] = nan_to_zero(lane_summary.phasing().mean())
+                artifact.udf['% Prephasing R{}'.format(read_label)] = nan_to_zero(lane_summary.prephasing().mean())
+                artifact.udf['% Aligned R{}'.format(read_label)] = nan_to_zero(lane_summary.percent_aligned().mean())
+                artifact.udf['% Occupied Wells'] = nan_to_zero(lane_summary.percent_occupied().mean())
                 nonindex_read_count += 1
 
     lims.put_batch(lane_artifacts.values())

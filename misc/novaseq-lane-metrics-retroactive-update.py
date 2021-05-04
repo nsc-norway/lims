@@ -9,6 +9,7 @@ import sys
 import re
 import os
 import traceback
+import math
 from genologics.lims import *
 from genologics import config
 
@@ -17,6 +18,10 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
 processes = lims.get_processes(type=["AUTOMATED - NovaSeq Run (NovaSeq 6000 v3.0)","AUTOMATED - NovaSeq Run NSC 3.0"])
 #processes = lims.get_processes(type=["AUTOMATED - NovaSeq Run NSC 3.0"])
+
+def nan_to_zero(val):
+    if math.isnan(val): return 0.0
+    else: return val
 
 for seq_process in processes:
     try:
@@ -42,7 +47,8 @@ for seq_process in processes:
             lane_artifacts[laneno] = art
             art.name = "Lane {}:1".format(laneno)
 
-    run_dir_all = glob.glob("/data/runScratch.boston/demultiplexed/*/*/{}".format(run_id))
+#    run_dir_all = glob.glob("/data/runScratch.boston/demultiplexed/*/*/{}".format(run_id))
+    run_dir_all = glob.glob("/data/runScratch.boston/nova-interop-temp-marius/{}".format(run_id))
     if not run_dir_all:
         print("No run folder for", run_id)
     else:
@@ -82,11 +88,11 @@ for seq_process in processes:
                         artifact.udf['Reads PF (M) R{}'.format(read_label)] = lane_summary.reads_pf() / 1.0e6
                         artifact.udf['%PF R{}'.format(read_label)] = lane_summary.percent_pf().mean()
                         artifact.udf['Intensity Cycle 1 R{}'.format(read_label)] = lane_summary.first_cycle_intensity().mean()
-                        artifact.udf['% Error Rate R{}'.format(read_label)] = lane_summary.error_rate().mean()
-                        artifact.udf['% Phasing R{}'.format(read_label)] = lane_summary.phasing().mean()
-                        artifact.udf['% Prephasing R{}'.format(read_label)] = lane_summary.prephasing().mean()
-                        artifact.udf['% Aligned R{}'.format(read_label)] = lane_summary.percent_aligned().mean()
-                        artifact.udf['% Occupied Wells'] = lane_summary.percent_occupied().mean()
+                        artifact.udf['% Error Rate R{}'.format(read_label)] = nan_to_zero(lane_summary.error_rate().mean())
+                        artifact.udf['% Phasing R{}'.format(read_label)] = nan_to_zero(lane_summary.phasing().mean())
+                        artifact.udf['% Prephasing R{}'.format(read_label)] = nan_to_zero(lane_summary.prephasing().mean())
+                        artifact.udf['% Aligned R{}'.format(read_label)] = nan_to_zero(lane_summary.percent_aligned().mean())
+                        artifact.udf['% Occupied Wells'] = nan_to_zero(lane_summary.percent_occupied().mean())
                         nonindex_read_count += 1
 
             lims.put_batch(lane_artifacts.values())
