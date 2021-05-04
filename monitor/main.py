@@ -12,6 +12,7 @@ import threading
 import jinja2
 import json
 from functools import partial
+from functools32 import lru_cache # Backport from Python 3.2
 from collections import defaultdict
 
 # Dependencies:
@@ -90,6 +91,7 @@ def get_run_id(process):
     except KeyError:
         return process.udf.get('RunID', '')
 
+@lru_cache(maxsize=30) # Relevant for monitored processes (open runs)
 def get_sequencing_process(server, process):
     """Gets the sequencing process from a process object corresponing to a process
     which is run after sequencing, such as demultiplexing. This function looks up
@@ -99,10 +101,20 @@ def get_sequencing_process(server, process):
     # Each entry in input_output_maps is an input/output specification with a single
     # input and any number of outputs. This gets the first input.
     first_io = process.input_output_maps[0]
-    first_in_artifact = first_io[0]['uri']
+    first_in_artifact_id = first_io[0]['limsid']
 
-    processes = server.lims.get_processes(inputartifactlimsid=first_in_artifact.id)
-    seq_processes = [proc for proc in processes if any(proc.type_name in sq for sq in server.SEQUENCING)]
+    # It seems like the LIMS can return bogus data, so we verify the result, and try multiple times
+    for attempt in range(1):
+        processes = server.lims.get_processes(inputartifactlimsid=first_in_artifact_id)
+        seq_processes = [proc for proc in processes if any(proc.type_name in sq for sq in server.SEQUENCING)]
+        if all(first_in_artifact_id in [i['limsid'] for i, o in p.input_output_maps]
+                    for p in seq_processes):
+            break
+        else:
+            raise RuntimeError("Invalid data returned from API when finding seq process "
+                    "for process {}: artifact {} is not an input of process {}.".format(
+                    process.id, first_in_artifact_id, seq_processes[-1].id
+            ))
     # Use the last sequencing process. In case of crashed runs, this will be the right one.
     try:
         return seq_processes[-1]
@@ -216,10 +228,13 @@ def read_project(server, lims_project):
     return Project(url, lims_project.name, eval_url, tag)
 
 
+@lru_cache(maxsize=20*31) # Relevant for all processes, including "recently completed", 1 month of runs
 def get_projects(server, process):
     lims_projects = set(
-            art.samples[0].project
-            for art in process.all_inputs()
+            sample.project
+            for art in process.all_inputs(unique=True)
+            for sample in server.lims.get_batch(art.samples)
+            if sample.project
             )
     return [read_project(server, p) for p in lims_projects if not p is None]
 
@@ -409,7 +424,7 @@ def get_recent_run(server, fc):
 
     sequencing_process = next(iter(server.lims.get_processes(
             type=sum(server.SEQUENCING, []),
-            inputartifactlimsid=fc.placements.values()[0].id
+            inputartifactlimsid=next(iter(fc.placements.values())).id
             )))
 
     instrument_index = get_instrument_index_for_processtype(server, sequencing_process.type_name)
@@ -418,7 +433,7 @@ def get_recent_run(server, fc):
     try:
         demux_process = next(iter(fc.lims.get_processes(
                 type=server.DATA_PROCESSING,
-                inputartifactlimsid=fc.placements.values()[0].id
+                inputartifactlimsid=next(iter(fc.placements.values())).id
                 )))
         demultiplexing_url = proc_url(demux_process)
     except StopIteration:
@@ -551,10 +566,11 @@ def prepare_page():
             ]
 
 
-        # List of the sequencer types (containing lists within them)
+        # This list contains one item for each sequencer type, and each item is a list of processses
+        # These are the Demultiplexing and QC processes.
         post_sequencing = []
 
-        # Find sequencing process for each post process
+        # Find sequencing process for each post-sequencing process
         sequencing_processes = [get_sequencing_process(server, process) for server, process in post_processes]
 
         # One workflow for each sequencer type

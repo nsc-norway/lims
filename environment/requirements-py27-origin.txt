@@ -1,6 +1,7 @@
 blinker
 cycler
 flask
+functools32
 illuminate
 interop
 jinja2
