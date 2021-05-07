@@ -230,9 +230,19 @@ def read_project(server, lims_project):
 
 @lru_cache(maxsize=20*31) # Relevant for all processes, including "recently completed", 1 month of runs
 def get_projects(server, process):
+    lims_projects = []
+    for attempt in range(1): 
+        if len(set(i['parent-process'] for i, o in process.input_output_maps)) == 1:
+            # Valid single parent process
+            break
+        else:
+            process.get(force=True)
+    else: # for..else branch taken if didn't break
+        raise RuntimeError("Invalid list of input artifacts to process {}.".format(process.id))
+    unique_inputs = set(i['uri'] for i,o in process.input_output_maps)
     lims_projects = set(
             sample.project
-            for art in process.all_inputs(unique=True)
+            for art in unique_inputs
             for sample in server.lims.get_batch(art.samples)
             if sample.project
             )
@@ -318,10 +328,6 @@ def read_sequencing(server, process):
     flowcell_id = flowcell.name
     instrument = server.INSTRUMENTS[get_instrument_index_for_processtype(server, process.type_name)]
     run_type = get_run_type(instrument, process)
-    lims_projects = set(
-            art.samples[0].project
-            for art in process.all_inputs()
-            )
     projects = get_projects(server, process)
     eta = None
     try:
