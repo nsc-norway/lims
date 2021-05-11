@@ -301,7 +301,7 @@ def check_sample_list(samples):
     names = [name for name, _, _ in samples]
     if len(set(names)) != len(samples):
         raise ValueError("Non-unique sample name(s): {}".format(
-            names #list(set(name for name in names if names.count(name) > 1))
+            list(set(name for name in names if names.count(name) > 1))
         ))
     if len(set(pos for _, pos, _ in samples)) != len(samples):
         raise ValueError("Duplicate well position(s) detected")
