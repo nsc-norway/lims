@@ -227,8 +227,15 @@ def read_project(server, lims_project):
             tag += "B"
     return Project(url, lims_project.name, eval_url, tag)
 
+@lru_cache(maxsize=30*4) # Relevant for all processes x lanes, but "recently completed" is already cached
+def get_projects_for_artifacts(server, artifacts):
+    return set(
+        sample.project
+        for art in artifacts
+        for sample in server.lims.get_batch(art.samples)
+        if sample.project
+        )
 
-@lru_cache(maxsize=20*31) # Relevant for all processes, including "recently completed", 1 month of runs
 def get_projects(server, process):
     lims_projects = []
     for attempt in range(1): 
@@ -239,14 +246,9 @@ def get_projects(server, process):
             process.get(force=True)
     else: # for..else branch taken if didn't break
         raise RuntimeError("Invalid list of input artifacts to process {}.".format(process.id))
-    unique_inputs = set(i['uri'] for i,o in process.input_output_maps)
-    lims_projects = set(
-            sample.project
-            for art in unique_inputs
-            for sample in server.lims.get_batch(art.samples)
-            if sample.project
-            )
-    return [read_project(server, p) for p in lims_projects if not p is None]
+    unique_inputs = frozenset(i['uri'].stateless for i,o in process.input_output_maps)
+    lims_projects = get_projects_for_artifacts(server, unique_inputs)
+    return [read_project(server, p) for p in lims_projects]
 
 
 def estimated_time_completion(process, instrument, rapid, done_cycles, total_cycles):
