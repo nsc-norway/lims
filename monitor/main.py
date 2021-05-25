@@ -236,9 +236,10 @@ def get_projects_for_artifacts(server, artifacts):
         if sample.project
         )
 
+@lru_cache(maxsize=15) # Cache project lists, because it's prone to getting invalid results
 def get_projects(server, process):
     lims_projects = []
-    for attempt in range(1): 
+    for attempt in range(3): 
         if len(set(i['parent-process'] for i, o in process.input_output_maps)) == 1:
             # Valid single parent process
             break
