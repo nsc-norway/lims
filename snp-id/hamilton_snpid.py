@@ -40,9 +40,18 @@ for row_index in range(96):
     value = location_io.get(well)
     if value:
         input, output = value
+
+        # Different handling of tube and 96 plate (2D Barcodes tube rack)
+        if input.location[0].type_name == '96 well plate':
+            labware = "Rack2DTubes"
+            position_id = input.location[1].replace(":", "")
+        else:
+            labware = "Rack%d" % ((row_index // 32) + 1)
+            position_id = str((row_index % 32) + 1)
+
         ws.write(row_index+1, 0, input.name)
-        ws.write(row_index+1, 1, "Rack{}".format(1 + row_index // 32))
-        ws.write(row_index+1, 2, 1 + row_index % 32 )
+        ws.write(row_index+1, 1, labware)
+        ws.write(row_index+1, 2, position_id)
         try:
             conc = input.samples[0].udf['Sample conc. (ng/ul)']
         except KeyError:

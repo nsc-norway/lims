@@ -81,13 +81,21 @@ def main(process_id, concentration_source, file_id, default_vol):
             sample_volume = vol
             warning.append(output.name)
 
+        # Different handling of tube and 96 plate
+        if input.location[0].type_name == '96 well plate':
+            labware = "Rack2DTubes"
+            position_id = input.location[1].replace(":", "")
+        else:
+            labware = "Rack%d" % ((index // 32) + 1)
+            position_id = str((index % 32) + 1)
+
         columns = [
                 ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
                 ("Archive pos.", sample.udf.get('Archive position Diag', '')),
                 ("Alt sample ID", sample.udf.get('Alternative sample ID Diag', '')),
                 ("Sample conc.", round(input_conc, 2)),
-                ("Labware", "Rack%d" % ((index // 32) + 1)),
-                ("Position_ID", str((index % 32) + 1)),
+                ("Labware", labware),
+                ("Position_ID", position_id),
                 ("Volume_DNA", round(sample_volume, 1)),
                 ("Volume_EB", round(buffer_volume, 1)),
                 ("Destination_Well_ID", well),
