@@ -11,6 +11,7 @@ import traceback
 import threading
 import jinja2
 import json
+import time
 from functools import partial
 from functools32 import lru_cache # Backport from Python 3.2
 from collections import defaultdict
@@ -115,6 +116,7 @@ def get_sequencing_process(server, process):
                     "for process {}: artifact {} is not an input of process {}.".format(
                     process.id, first_in_artifact_id, seq_processes[-1].id
             ))
+        time.sleep(0.1)
     # Use the last sequencing process. In case of crashed runs, this will be the right one.
     try:
         return seq_processes[-1]
@@ -245,6 +247,7 @@ def get_projects(server, process):
             break
         else:
             process.get(force=True)
+        time.sleep(0.1)
     else: # for..else branch taken if didn't break
         raise RuntimeError("Invalid list of input artifacts to process {}.".format(process.id))
     unique_inputs = frozenset(i['uri'].stateless for i,o in process.input_output_maps)
