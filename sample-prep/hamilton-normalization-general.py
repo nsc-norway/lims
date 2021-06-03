@@ -54,6 +54,7 @@ def main(process_id, concentration_source, file_id, default_vol):
     warning = []
     headers = []
     i_o_s = zip(inputs, outputs, samples, concentrations)
+    tube_counter = 0
     for index, (input, output, sample, input_conc) in enumerate(sorted(i_o_s, key=sort_key)):
         
         sample_name = input.name.encode('utf-8')
@@ -86,8 +87,9 @@ def main(process_id, concentration_source, file_id, default_vol):
             labware = "Rack2DTubes"
             position_id = input.location[1].replace(":", "")
         else:
-            labware = "Rack%d" % ((index // 32) + 1)
-            position_id = str((index % 32) + 1)
+            labware = "Rack%d" % ((tube_counter // 32) + 1)
+            position_id = str((tube_counter % 32) + 1)
+            tube_counter += 1
 
         columns = [
                 ("Sample_Number", sample_no.group(1) if sample_no else sample_name),
