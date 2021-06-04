@@ -35,6 +35,7 @@ location_io = dict(
         )
 lims.get_batch([i for i,o in location_io.values()] + [o for i,o in location_io.values()])
 lims.get_batch(i.samples[0] for i, o in location_io.values())
+tube_counter = 0
 for row_index in range(96):
     well = "ABCDEFGH"[row_index % 8] + ":" + str((row_index // 8) + 1)
     value = location_io.get(well)
@@ -46,8 +47,9 @@ for row_index in range(96):
             labware = "Rack2DTubes"
             position_id = input.location[1].replace(":", "")
         else:
-            labware = "Rack%d" % ((row_index // 32) + 1)
-            position_id = str((row_index % 32) + 1)
+            labware = "Rack%d" % ((tube_counter // 32) + 1)
+            position_id = str((tube_counter % 32) + 1)
+            tube_counter += 1
 
         ws.write(row_index+1, 0, input.name)
         ws.write(row_index+1, 1, labware)
