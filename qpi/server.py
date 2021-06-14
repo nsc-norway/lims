@@ -395,7 +395,7 @@ class ReadFHISampleFile(Task):
                     udf_dict = {'Org. Ct value': float(ct)}
             except ValueError:
                 raise ValueError("Invalid Ct value '{}' at {}.".format(ct, row[2].coordinate))
-            if not pos or not name: # Abort when we encounter blank lines
+            if not pos: # Blank lines after table are not the last ones
                 break
             m = re.match(r"([A-H])(\d+)$", pos)
             if m and 1 <= int(m.group(2)) <= 12:
