@@ -387,15 +387,15 @@ class ReadFHISampleFile(Task):
 
         self.job.samples = []
         for row in sheet.iter_rows(min_row=header_row+1, max_col=3):
-            pos, name, ct = [c.value for c in row]
-            name = str(name)
+            pos, name_val, ct = [c.value for c in row]
+            name = str(name_val)
             udf_dict = {}
             try:
                 if ct:
                     udf_dict = {'Org. Ct value': float(ct)}
             except ValueError:
                 raise ValueError("Invalid Ct value '{}' at {}.".format(ct, row[2].coordinate))
-            if not pos: # Blank lines after table are not the last ones
+            if not pos or not name_val: # Blank lines after table are not the last ones
                 break
             m = re.match(r"([A-H])(\d+)$", pos)
             if m and 1 <= int(m.group(2)) <= 12:
