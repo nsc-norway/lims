@@ -79,6 +79,7 @@ def get_lims_kit(name, group=None):
             raise KitDoesNotExistError("Kit " + str(kitname) + " does not exist in LIMS")
     return lims_kits[kitname]
 
+
 @app.route('/kits/<ref>')
 def get_kit(ref):
     try:
@@ -167,7 +168,6 @@ def get_lot(ref, lotnumber, group):
 		"ref": ref
     	})
     else:
-
         return jsonify({
 		"expiryDate": None,
 		"assignedUniqueId": next_lot_name,
@@ -176,6 +176,7 @@ def get_lot(ref, lotnumber, group):
 		"lotnumber": lotnumber,
 		"ref": ref
     	})
+
 
 @app.route('/lots/<ref>/<lotnumber>/<group>', methods=['POST'])
 def create_lot(ref, lotnumber, group):
@@ -196,18 +197,21 @@ def create_lot(ref, lotnumber, group):
                     unique_id = "{0}-{1}".format(data['uniqueId'], kit['lotcode'])
                 else:
                     unique_id = data['uniqueId']
+
+            lims_kit = get_lims_kit(kit['name'], group)
+            dup_lots = lims.get_reagent_lots(kitname=lims_kit.name, name=unique_id, number=lotnumber)
+            if dup_lots:
+                return ("Error: The lot already exists, with status {}.".format(dup_lots[0].status), 500)
+
             lot = lims.create_lot(
-                get_lims_kit(kit['name'], group),
+                lims_kit,
                 unique_id,
                 lotnumber,
                 data['expiryDate'].replace("/", "-"),
                 status='ACTIVE' if kit['setActive'] else 'PENDING'
             )
         except requests.HTTPError as e:
-            if 'Duplicate lot' in str(e):
-                return ("Lot with same name and number already exists", 400)
-            else:
-                return ("There was a protocol error between the backend and the LIMS server.", 500)
+            return ("There was a protocol error between the backend and the LIMS server. '{}'".format(e), 500)
         except KitDoesNotExistError as e:
             return (str(e), 500)
     except KeyError, e:
