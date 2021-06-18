@@ -61,7 +61,8 @@ PROCESS_TYPES = [
 
 
 RUN_STORAGES=[
-    "/data/runScratch.boston"
+    "/data/runScratch.boston",
+    "/boston/diag/runs"
     ]
 
 # This RUN ID match string does intentionally not match NovaSeq, which is 111111_A0....
