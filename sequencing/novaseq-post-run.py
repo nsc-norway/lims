@@ -15,6 +15,7 @@ from interop import py_interop_run_metrics, py_interop_run, py_interop_summary
 import sys
 import re
 import os
+import yaml
 import math
 import traceback
 from genologics.lims import *
@@ -98,6 +99,17 @@ try: # Ignore parsing error, to not disturb the sequencer integrations
                 nonindex_read_count += 1
 
     lims.put_batch(lane_artifacts.values())
+
+    # Set the instrument name
+    with open(os.path.join(os.path.dirname(__file__), "sequencers.yaml")) as f:
+        sequencers = yaml.safe_load(f)
+        for seq in sequencers:
+            if seq['id'] == seq_process.udf.get('Instrument ID'):
+                seq_process.udf['Instrument Name'] = seq['name']
+                seq_process.put()
+
+
 except Exception as e:
-    print("Exception encountered in novaseq-lane-metrics.py, and ignored:")
+    print("Exception encountered in novaseq-post-run.py, and ignored:")
     traceback.print_exc()
+
