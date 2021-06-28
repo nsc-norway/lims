@@ -1,0 +1,1 @@
+../../sequencing/novaseq-post-run.py
