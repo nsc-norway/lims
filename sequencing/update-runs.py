@@ -7,6 +7,7 @@ import glob
 import os
 import re
 import sys
+import yaml
 import datetime
 from xml.etree.ElementTree import ElementTree
 import xml.parsers.expat
@@ -36,21 +37,9 @@ DB_FILE = "/var/db/rundb/runs.db"
 # COMPLETED means that the run has completed, LIMS status no longer relevant. Run is ignored, removed 
 #  from DB once removed from the filesystem.
 
-INSTRUMENT_NAME_MAP = {
-            'NS500336': 'Nemo',
-            'NB501273': 'Nelson',
-
-            'M07166': 'Missy',
-            'M01334': 'Mina',
-            'M02980': 'Mike',
-
-            'J00146': 'Hiawatha',
-            'E00401': 'Hippo',
-
-            'E00426': 'Pixie',
-            'E00423': 'Roxanne',
+INSTRUMENT_NAME_MAP = {seq['id']: seq['name']
+            for seq in yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "sequencers.yaml")))
             }
-
 
 PROCESS_TYPES = [
             "Illumina Sequencing (HiSeq X) 1.0",

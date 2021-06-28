@@ -1,0 +1,22 @@
+- type: novaseq
+  name: Nordis
+  id: A00943
+- type: novaseq
+  name: Nobel
+  id: A01447
+- type: nextseq
+  name: Nemo
+  id: NS500336
+- type: nextseq
+  name: Nelson
+  id: NB501273
+- type: miseq
+  name: Missy
+  id: M07166
+- type: miseq
+  name: Mina
+  id: M01334
+- type: miseq
+  name: Mike
+  id: M02980
+  
