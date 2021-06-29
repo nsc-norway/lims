@@ -7,6 +7,7 @@ import os
 import threading
 import glob
 import re
+import yaml
 import math
 import blinker
 import Queue
@@ -25,23 +26,9 @@ from flask import Flask, url_for, redirect, jsonify, Response, request
 
 RUN_STORAGE = "/data/runScratch.boston"
 
-SEQUENCER_LIST = [
-    ('A00943', ('novaseq', 'Nordis')),
-    ('A01447', ('novaseq', 'Nobel')),
-
-    ('M07166', ('miseq', 'Missy')),
-    ('M01334', ('miseq', 'Mina')),
-    ('M02980', ('miseq', 'Mike')),
-
-    ('NS500336', ('nextseq', 'Nemo')),
-    ('NB501273', ('nextseq', 'Nelson')),
-
-    ('J00146', ('hiseq3k', 'Hiawatha')),
-    ('E00401', ('hiseq4k', 'Hippo')),
-
-    ('E00426', ('hiseqx', 'Pixie')),
-    ('E00423', ('hiseqx', 'Roxanne')),
-    ]
+SEQUENCER_LIST = [(seq['id'], (seq['type'], seq['name']))
+            for seq in yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "sequencers.yaml")))
+            ]
 
 SEQUENCERS = dict(SEQUENCER_LIST)
 # Mark as cancelled if waiting for N times the measured cycle time
