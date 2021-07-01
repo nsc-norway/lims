@@ -12,10 +12,10 @@ import glob
 
 app = Flask(__name__)
 
-CURRENT_RUN_DIR = "/data/runScratch.boston"
-CURRENT_RUN_GLOB = "{0}/[0-9]*_*_*/".format(CURRENT_RUN_DIR)
-ARCHIVE_RUN_DIR = "/data/runScratch.boston/processed"
-ARCHIVE_RUN_GLOB = "{0}/[0-9]*_*_*/".format(ARCHIVE_RUN_DIR)
+CURRENT_RUN_DIRS = ["/data/runScratch.boston", "/boston/diag/runs"]
+CURRENT_RUN_GLOBS = ["{0}/[0-9]*_*_*/".format(crd) for crd in CURRENT_RUN_DIRS]
+ARCHIVE_RUN_DIRS = ["/data/runScratch.boston/processed"]
+ARCHIVE_RUN_GLOBS = ["{0}/[0-9]*_*_*/".format(ard) for ard in ARCHIVE_RUN_DIRS]
 
 
 @app.route('/')
@@ -26,9 +26,9 @@ def get_main():
 @app.route('/runs/<collection>')
 def get_runs(collection):
     if collection == "current":
-        run_paths = glob.glob(CURRENT_RUN_GLOB)
+        run_paths = sum((glob.glob(x) for x in CURRENT_RUN_GLOBS), [])
     elif collection == "archive":
-        run_paths = glob.glob(ARCHIVE_RUN_GLOB)
+        run_paths = sum((glob.glob(x) for x in ARCHIVE_RUN_GLOB), [])
     else:
         return "Error: Invalid collection", 400
     run_ids = [os.path.basename(r.rstrip("/")) for r in run_paths]
@@ -60,15 +60,20 @@ def rangeexpand(txt):
 @app.route('/dl/<collection>/<run_id>.zip')
 def get_zip_file(collection, run_id):
     try:
-        base_dir = {
-                "current": CURRENT_RUN_DIR,
-                "archive": ARCHIVE_RUN_DIR
+        base_dirs = {
+                "current": CURRENT_RUN_DIRS,
+                "archive": ARCHIVE_RUN_DIRS
                 }[collection]
     except KeyError:
         return "Error: Invalid collection specified", 400
     if not re.match(r"[0-9]+_[0-9a-zA-Z-_]+$", run_id):
         return "Error: Invalid run-id specified", 400
-    run_path = os.path.join(base_dir, run_id)
+    for base_dir in base_dirs:
+    	run_path = os.path.join(base_dir, run_id)
+        if os.path.isdir(run_path):
+            break
+    else:
+        return "Error: Run doesn't exist", 400
     outputbuffer = io.BytesIO()
     zfile = zipfile.ZipFile(outputbuffer, 'w', allowZip64=True)
     for file in request.args.get('files', '').split(','):
