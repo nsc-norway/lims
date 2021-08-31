@@ -24,7 +24,7 @@ import illuminate
 from flask import Flask, url_for, redirect, jsonify, Response, request
 
 
-RUN_STORAGE = "/data/runScratch.boston"
+RUN_STORAGES = ["/data/runScratch.boston", "/boston/diag/runs/veriseq"]
 
 SEQUENCER_LIST = [(seq['id'], (seq['type'], seq['name']))
             for seq in yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "sequencers.yaml")))
@@ -85,16 +85,21 @@ class Database(object):
         with open(self.COUNT_FILE) as f:
             self.count = int(f.read())
 
-        runs_on_storage = [
-                os.path.basename(os.path.dirname(rpath)) for rpath in
-                glob.glob(os.path.join(RUN_STORAGE, "??????_*_*", "*"))
+        run_dirs_and_ids = [
+                (rpath, os.path.basename(os.path.dirname(rpath)))
+                for run_storage in RUN_STORAGES
+                for rpath in glob.glob(os.path.join(run_storage, "??????_*_*", "*"))
             ]
-        runs_on_storage = set(r for r in runs_on_storage
-                            if re.match(r"[0-9]{6}_[A-Z0-9]+_[_A-Z0-9-]+$", r))
-        new = runs_on_storage - set(self.status.keys())
+        runs_on_storage = {
+            run_id: os.path.dirname(rpath)
+            for (rpath, run_id) in run_dirs_and_ids
+            if re.match(r"[0-9]{6}_[A-Z0-9]+_[_A-Z0-9-]+$", run_id)
+            }
+                            
+        new = set(runs_on_storage) - set(self.status.keys())
 
         for r_id in new:
-            new_run = RunStatus(r_id, start_cancelled=r_id in self.cancelled_runs)
+            new_run = RunStatus(r_id, runs_on_storage[r_id], start_cancelled=r_id in self.cancelled_runs)
             self.status[r_id] = new_run
 
         modified = False
@@ -111,7 +116,7 @@ class Database(object):
                     r.committed = True
                 modified = True
 
-        missing = set(self.status.keys()) - runs_on_storage
+        missing = set(self.status.keys()) - set(runs_on_storage)
         for r_id in missing:
             if not self.status[r_id].is_fake:
                 del self.status[r_id]
@@ -195,10 +200,10 @@ class RunStatus(object):
     public = ['machine_id', 'run_id', 'run_dir', 'read_config', 'current_cycle',
             'total_cycles', 'basecount', 'rate', 'finished', 'cancelled']
 
-    def __init__(self, run_id, start_cancelled=False):
+    def __init__(self, run_id, run_dir, start_cancelled=False):
         self.machine_id = machine_id(run_id)
         self.run_id = run_id
-        self.run_dir = os.path.join(RUN_STORAGE, run_id)
+        self.run_dir = run_dir
         self.read_config = []
         self.current_cycle = 0
         self.total_cycles = 0
