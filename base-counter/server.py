@@ -19,12 +19,16 @@ import _strptime # Prevent import in thread
 
 from functools import partial
 from operator import itemgetter
+from collections import defaultdict
 
 import illuminate
 from flask import Flask, url_for, redirect, jsonify, Response, request
 
+# Limit number of completed runs to show, because the folders are not moved
+MAX_NIPT_RUN_SHOW = 2
 
-RUN_STORAGES = ["/data/runScratch.boston", "/boston/diag/runs/veriseq"]
+# Storage for run folders: (path, type of run)
+RUN_STORAGES = [("/data/runScratch.boston", "general"), ("/boston/diag/runs/veriseq", "nipt")]
 
 SEQUENCER_LIST = [(seq['id'], (seq['type'], seq['name']))
             for seq in yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "sequencers.yaml")))
@@ -86,20 +90,20 @@ class Database(object):
             self.count = int(f.read())
 
         run_dirs_and_ids = [
-                (rpath, os.path.basename(os.path.dirname(rpath)))
-                for run_storage in RUN_STORAGES
+                (rpath, os.path.basename(os.path.dirname(rpath)), run_type)
+                for (run_storage, run_type) in RUN_STORAGES
                 for rpath in glob.glob(os.path.join(run_storage, "??????_*_*", "*"))
             ]
         runs_on_storage = {
-            run_id: os.path.dirname(rpath)
-            for (rpath, run_id) in run_dirs_and_ids
+            run_id: (os.path.dirname(rpath), run_type)
+            for (rpath, run_id, run_type) in run_dirs_and_ids
             if re.match(r"[0-9]{6}_[A-Z0-9]+_[_A-Z0-9-]+$", run_id)
             }
-                            
+
         new = set(runs_on_storage) - set(self.status.keys())
 
         for r_id in new:
-            new_run = RunStatus(r_id, runs_on_storage[r_id], start_cancelled=r_id in self.cancelled_runs)
+            new_run = RunStatus(r_id, *runs_on_storage[r_id], start_cancelled=r_id in self.cancelled_runs)
             self.status[r_id] = new_run
 
         modified = False
@@ -130,6 +134,15 @@ class Database(object):
 
         if modified:
             self.save()
+
+        # Limit the number of NIPT runs shown per instrument
+        per_instrument_counts = defaultdict(int)
+        for run_id in sorted(self.status, reverse=True):
+            run = self.status[run_id]
+            if run.run_type == "nipt":
+                per_instrument_counts[run.machine_id] += 1
+                if per_instrument_counts[run.machine_id] > MAX_NIPT_RUN_SHOW:
+                    run.hidden = True
 
         if new or missing:
             self.machine_list_signal.send(self, data=self.machine_list)
@@ -163,7 +176,7 @@ class Database(object):
         for m_id, (m_type, m_name) in SEQUENCER_LIST:
             run_ids = [
                 run_id for run_id in sorted(self.status.keys())[::-1]
-                if re.match("\\d{6}_%s_.*" % (m_id), run_id)
+                if re.match("\\d{6}_%s_.*" % (m_id), run_id) and not self.status[run_id].hidden
                 ]
             machines[m_id] = {
                 'id': m_id,
@@ -197,13 +210,15 @@ def instrument_rate(m_id):
 
 class RunStatus(object):
 
-    public = ['machine_id', 'run_id', 'run_dir', 'read_config', 'current_cycle',
+    public = ['machine_id', 'run_id', 'run_dir', 'run_type', 'read_config', 'current_cycle',
             'total_cycles', 'basecount', 'rate', 'finished', 'cancelled']
 
-    def __init__(self, run_id, run_dir, start_cancelled=False):
+    def __init__(self, run_id, run_dir, run_type, start_cancelled=False):
         self.machine_id = machine_id(run_id)
         self.run_id = run_id
         self.run_dir = run_dir
+        self.run_type = run_type
+        self.hidden = False
         self.read_config = []
         self.current_cycle = 0
         self.total_cycles = 0
@@ -389,7 +404,7 @@ class FakeRun(RunStatus):
 
     def __init__(self, machine_id, num_cycles, start_cycle=0):
         run_id = datetime.datetime.now().strftime("%y%m%d_" + machine_id + "_FAKE_%f")
-        super(FakeRun, self).__init__(run_id)
+        super(FakeRun, self).__init__(run_id, run_id, 'general')
         self.num_cycles = num_cycles
         self.start_time = time.time()
         self.start_cycle = start_cycle
@@ -506,7 +521,8 @@ def status():
     stream.update("basecount", data=db.global_base_count)
     stream.update("machine_list", data=db.machine_list)
     for r in db.status.values():
-        stream.update("run_status", data=r.data_package)
+        if not r.hidden:
+            stream.update("run_status", data=r.data_package)
     active_streams.append(weakref.ref(stream))
     return Response(stream, mimetype="text/event-stream")
 
