@@ -254,7 +254,10 @@ def set_initial_fields(process, run_dir, run_id):
 
     if process.type_name.startswith("MiSeq Run"):
         rp_tree = ElementTree()
-        rp_tree.parse(os.path.join(run_dir, "runParameters.xml"))
+        try:
+            rp_tree.parse(os.path.join(run_dir, "RunParameters.xml"))
+        except IOError: # Fallback to previous version MiSeq software
+            rp_tree.parse(os.path.join(run_dir, "runParameters.xml"))
         process.udf['Chemistry Version'] = rp_tree.find("ReagentKitVersion").text.replace("Version", "")
         ri_tree = ElementTree()
         ri_tree.parse(os.path.join(run_dir, "RunInfo.xml"))
