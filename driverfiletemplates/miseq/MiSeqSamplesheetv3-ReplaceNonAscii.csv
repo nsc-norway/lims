@@ -1,0 +1,219 @@
+SORT.BY.${OUTPUT.CONTAINER.ROW}
+OUTPUT.FILE.NAME,${OUTPUT.CONTAINER.NAME}.csv
+PROCESS.POOLED.ARTIFACTS
+HIDE, ${INPUT.REAGENT.SEQUENCE##Dual}, IF, NODATA
+HIDE, ${INPUT.REAGENT.NAME##Dual}, IF, NODATA
+HIDE, ${PROCESS.UDF.Read 2 Cycles}, IF, NODATA
+HIDE, ${PROCESS.UDF.Flag PCR Duplicates##ReName}, IF, NODATA
+HIDE, ${PROCESS.UDF.Export to gVCF##Value}, IF, NODATA
+HIDE, ${PROCESS.UDF.Custom Primers##Read1}, IF, NODATA
+HIDE, ${PROCESS.UDF.Custom Primers##Index}, IF, NODATA
+HIDE, ${PROCESS.UDF.Custom Primers##Read2}, IF, NODATA
+HIDE, ${PROCESS.UDF.Adapter Read 1}, IF, NODATA
+HIDE, ${PROCESS.UDF.Adapter Read 2}, IF, NODATA
+HIDE, ${PROCESS.UDF.UMI - Read 1 Length}, IF, NODATA
+HIDE, ${PROCESS.UDF.UMI - Read 2 Length}, IF, NODATA
+HIDE, ${PROCESS.UDF.UMI - Read 1 Start From Cycle}, IF, NODATA
+HIDE, ${PROCESS.UDF.UMI - Read 2 Start From Cycle}, IF, NODATA
+HIDE, ${PROCESS.UDF.Reverse Complement##Value}, IF, NODATA
+HIDE, ${PROCESS.UDF.Manifest-Section}, IF, NODATA
+HIDE, ${PROCESS.UDF.Manifest}, IF, NODATA
+HIDE, ${PROCESS.UDF.Indel-Realignment-Value}, IF, NODATA
+HIDE, ${PROCESS.UDF.Aligner-Value}, IF, NODATA
+HIDE, ${PROCESS.UDF.Variant-Caller-Value}, IF, NODATA
+HIDE, ${PROCESS.UDF.Variant Caller Depth Filter}, IF, NODATA
+HIDE, ${PROCESS.UDF.Annotation##Value}, IF, NODATA
+HIDE, ${PROCESS.UDF.Variant Quality Filter}, IF, NODATA
+HIDE, ${PROCESS.UDF.Read Stitching##Value}, IF, NODATA
+HIDE, ${PROCESS.UDF.Variant Frequency Percentage##Value}, IF, NODATA
+HIDE, ${PROCESS.UDF.Manifest Padding##Value}, IF, NODATA
+HIDE, ${PROCESS.UDF.Picard HS Metric Reporting##Value}, IF, NODATA
+HIDE, ${PROCESS.UDF.Indel Repeat Filter Cutoff##Value}, IF, NODATA
+EXCLUDE.CONTROL.TYPES.ALL
+<HEADER_BLOCK>
+[Header]
+Investigator Name,${PROCESS.TECHNICIAN##NoSpecialCharacters}
+Experiment Name,${PROCESS.UDF.Experiment Name}
+Date,${DATE}
+Workflow,${PROCESS.UDF.Workflow}
+
+[Reads]
+${PROCESS.UDF.Read 1 Cycles}
+${PROCESS.UDF.Read 2 Cycles}
+
+[Settings]
+FlagPCRDuplicates,${PROCESS.UDF.Flag PCR Duplicates##ReName}
+OutputGenomeVCF,${PROCESS.UDF.Export to gVCF##Value}
+customread1primermix,${PROCESS.UDF.Custom Primers##Read1}
+customindexprimermix,${PROCESS.UDF.Custom Primers##Index}
+customread2primermix,${PROCESS.UDF.Custom Primers##Read2}
+adapter,${PROCESS.UDF.Adapter Read 1}
+adapterRead2,${PROCESS.UDF.Adapter Read 2}
+Read1UMILength,${PROCESS.UDF.UMI - Read 1 Length}
+Read2UMILength,${PROCESS.UDF.UMI - Read 2 Length}
+Read1StartFromCycle,${PROCESS.UDF.UMI - Read 1 Start From Cycle}
+Read2StartFromCycle,${PROCESS.UDF.UMI - Read 2 Start From Cycle}
+ReverseComplement,${PROCESS.UDF.Reverse Complement##Value}
+${PROCESS.UDF.Indel-Realignment-Key},${PROCESS.UDF.Indel-Realignment-Value}
+${PROCESS.UDF.Aligner-Key},${PROCESS.UDF.Aligner-Value}
+variantcaller,${PROCESS.UDF.Variant-Caller-Value}
+minimumcoveragedepth, ${PROCESS.UDF.Variant Caller Depth Filter}
+transcriptsource, ${PROCESS.UDF.Annotation##Value}
+variantfilterqualitycutoff, ${PROCESS.UDF.Variant Quality Filter}
+stitchreads, ${PROCESS.UDF.Read Stitching##Value}
+variantfrequencyfiltercutoff, ${PROCESS.UDF.Variant Frequency Percentage##Value}
+manifestpaddingsize, ${PROCESS.UDF.Manifest Padding##Value}
+picardhsmetrics, ${PROCESS.UDF.Picard HS Metric Reporting##Value}
+indelrepeatfiltercutoff, ${PROCESS.UDF.Indel Repeat Filter Cutoff##Value}
+
+${PROCESS.UDF.Manifest-Section}
+manifest0,${PROCESS.UDF.Manifest}
+
+[Data]
+</HEADER_BLOCK>
+<HEADER>
+Sample_ID,Sample_Name,Sample_Plate,Sample_Well,Sample_Project,index,index2,Manifest,GenomeFolder
+</HEADER>
+
+<DATA>
+${INPUT.LIMSID},${INPUT.NAME##NoSpecialCharacters},${INPUT.CONTAINER.NAME},${INPUT.CONTAINER.PLACEMENT},${SAMPLE.PROJECT.NAME##NoSpecialCharacters},${INPUT.REAGENT.SEQUENCE##Single},${INPUT.REAGENT.SEQUENCE##Dual},manifest0,${PROCESS.UDF.Genome Folder}
+</DATA>
+<TOKEN_FORMAT>
+
+${INPUT.REAGENT.NAME##Single}
+def index = token.indexOf("-")
+if (index > 0) {
+    return token.substring(0,index)
+}
+return token
+
+${INPUT.REAGENT.NAME##Dual}
+def index = token.indexOf("-")
+if (index >= 0) {
+    def afterDash = token.substring(index + 1)
+    def spaceIndex = afterDash.indexOf(" ")
+    if (spaceIndex >= 0) {
+        return afterDash.substring(0, spaceIndex)
+    }
+}
+return null
+
+
+${INPUT.REAGENT.SEQUENCE##Single}
+def index = token.indexOf("-")
+if (index > 0) {
+    return token.substring(0,index)
+}
+return token
+
+${INPUT.REAGENT.SEQUENCE##Dual}
+def index = token.indexOf("-")
+if (index >= 0) {
+    return token.substring(index + 1, 2*index +1)
+}
+return null
+
+${PROCESS.UDF.Flag PCR Duplicates##ReName}
+if (token == 'No') {
+    return '0'
+} else if (token == 'Yes') {
+    return '1'
+}
+return null
+
+
+${INPUT.NAME##NoSpecialCharacters}
+return token.replaceAll(\"[^a-zA-Z0-9_]\", \"_\").replaceAll(\"_+\", \"_\")
+
+${SAMPLE.PROJECT.NAME##NoSpecialCharacters}
+return token.replaceAll(\"[^a-zA-Z0-9_]\", \"_\").replaceAll(\"_+\", \"_\")
+
+${PROCESS.UDF.Custom Primers##Read1}
+if (token.contains('Read 1')) {
+    return 'C1'
+}
+return null
+
+${PROCESS.UDF.Custom Primers##Index}
+if (token.contains('Index')) {
+    return 'C2'
+}
+return null
+
+${PROCESS.UDF.Custom Primers##Read2}
+if (token.contains('Read 2')) {
+    return 'C3'
+}
+return null
+
+
+${PROCESS.UDF.Export to gVCF##Value}
+if (token == 'No') {
+    return '0'
+} else if (token == 'Yes') {
+    return '1'
+}
+return null
+
+${PROCESS.UDF.Reverse Complement##Value}
+if (token == 'No') {
+    return '0'
+} else if (token == 'Yes') {
+    return '1'
+}
+return null
+
+${PROCESS.UDF.Annotation##Value}
+if (token == 'None') {
+    return ''
+} 
+return token
+
+${PROCESS.UDF.Read Stitching##Value}
+if (token == 'None') {
+    return ''
+} else if (token == 'Yes') {
+    return '1'
+} else if (token == 'No') {
+    return '0'
+}
+return null
+
+${PROCESS.UDF.Variant Frequency Percentage##Value}
+if (token != null) {
+    def tokenDouble = token.toDouble() / 100;
+    return String.format(\"%.4f\",tokenDouble).replaceAll(\"0*\\$\", \"\").replaceAll(\"[.]\\$\", \"\");
+}
+return null
+
+${PROCESS.UDF.Manifest Padding##Value}
+if (token == 'None') {
+    return ''
+} else {
+    return token
+}
+
+${PROCESS.UDF.Picard HS Metric Reporting##Value}
+if (token == 'None') {
+    return ''
+} else if (token == 'Yes') {
+    return '1'
+} else if (token == 'No') {
+    return '0'
+}
+return null
+
+${PROCESS.UDF.Indel Repeat Filter Cutoff##Value}
+if (token == 'None') {
+    return ''
+} else if (token == 'Yes') {
+    return '8'
+} else if (token == 'No') {
+    return '0'
+}
+return null
+
+${PROCESS.TECHNICIAN##NoSpecialCharacters}
+return token.replaceAll(\"[^a-zA-Z0-9_ ]\", \"_\")
+
+</TOKEN_FORMAT>
