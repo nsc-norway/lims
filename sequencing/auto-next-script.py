@@ -21,11 +21,6 @@ from genologics.lims import *
 from genologics import config
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
-try:
-    lims.check_version()
-except requests.exceptions.ConnectionError:
-    # Don't spam with errors if we can't reach LIMS
-    sys.exit(0)
 
 # Local copies of variables from the pipeline config package
 TAG="prod"
@@ -231,11 +226,28 @@ def start_programs():
                         step.program_status.status + ", requires manual action")
 
 
+def reset_error_counter():
+    open('/var/lims-scripts/sequencing-auto-next-script-error-count.txt', 'w').write('0')
+
+
+def increment_error_counter():
+    try:
+        with open('/var/lims-scripts/sequencing-auto-next-script-error-count.txt', 'r') as error_file:
+            content = int(error_file.read())
+    except IOError:
+        content = 0
+    newcount = content + 1
+    with open('/var/lims-scripts/sequencing-auto-next-script-error-count.txt', 'w') as error_file:
+        error_file.write(str(newcount))
+    return newcount
+
+
 if __name__ == "__main__":
     if TAG == "dev":
         logging.basicConfig(level=logging.DEBUG)
     logging.debug("auto.py Workflow management script")
-    # Require that only one instance is running
+
+    # Prevent multiple instances from running at the same time
     pid_file = "/tmp/auto-next-script.pid"
     fp = open(pid_file, "w")
     try:
@@ -243,7 +255,13 @@ if __name__ == "__main__":
     except IOError:
         sys.exit(0)
     try:
+        # Main code here
         start_programs()
+        reset_error_counter()
+    except Exception as e:
+        # Report errors conditionally, but don't report too many consecutive errors
+        if increment_error_counter() < 3:
+            raise
     finally:
         try: 
             os.unlink(pid_file)
