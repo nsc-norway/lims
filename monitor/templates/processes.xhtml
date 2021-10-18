@@ -99,9 +99,11 @@
 	</h4>
 	<ul class="info fa-ul">	
 	<li><i class="fa-li fa fa-group"></i>
+		{% if item.projects %}
 			<a href="{{ item.projects[0].url }}">
 			{{ item.projects[0].name }}</a> 
 			<a href="{{ item.projects[0].eval_url }}">[{{ item.projects[0].info_tags }}]</a>
+		{% endif %}
 	</li>
 	{% for proj in item.projects[1:] %}
 	<li>
