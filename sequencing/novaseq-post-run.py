@@ -100,14 +100,6 @@ try: # Ignore parsing error, to not disturb the sequencer integrations
 
     lims.put_batch(lane_artifacts.values())
 
-    # Set the instrument name
-    with open(os.path.join(os.path.dirname(__file__), "sequencers.yaml")) as f:
-        sequencers = yaml.safe_load(f)
-        for seq in sequencers:
-            if seq['id'] == seq_process.udf.get('Instrument ID'):
-                seq_process.udf['Instrument Name'] = seq['name']
-                seq_process.put()
-
 
 except Exception as e:
     print("Exception encountered in novaseq-post-run.py, and ignored:")
