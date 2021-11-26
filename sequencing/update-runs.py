@@ -43,7 +43,7 @@ INSTRUMENT_NAME_MAP = {seq['id']: seq['name']
 
 PROCESS_TYPES = [
             "NextSeq 500/550 Run NSC 3.0",
-            "MiSeq Run (MiSeq) NSC 5.1"
+            "MiSeq Run NSC 3.0"
         ]
 
 
