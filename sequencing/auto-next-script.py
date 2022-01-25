@@ -233,7 +233,7 @@ def reset_error_counter():
 def increment_error_counter():
     try:
         with open('/var/lims-scripts/sequencing-auto-next-script-error-count.txt', 'r') as error_file:
-            content = int(error_file.read())
+            content = int(error_file.read().strip())
     except IOError:
         content = 0
     newcount = content + 1
