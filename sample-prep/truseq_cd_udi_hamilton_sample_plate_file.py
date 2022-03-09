@@ -29,14 +29,15 @@ def main(process_id, file_id):
                     except:
                         print("Missing index information for", output.name, ", aborting.")
                         sys.exit(1)
-                    try:
-                        match = re.match(r"(.7\d\d)-(.5\d\d) .*", index_name)
+
+                    match = re.match(r"(.7\d\d)-(.5\d\d) .*", index_name)
+                    if match:
                         i7, i5 = match.group(1), match.group(2)
-                    except:
+                    else:
                         try:
                             # Convert UDI plate to TruSeq HT plate
-                            match = re.match(r"(24)?UD[PI](\d{4}) .*", index_name)
-                            udi_nr = int(match.group(2))
+                            match = re.match(r"(24)?UD[PI](v2_)?(\d{4}) .*", index_name)
+                            udi_nr = int(match.group(3))
                             colnr = (udi_nr - 1) // 8
                             rownr = (udi_nr - 1) % 8
                             i7 = "D7{0:02}".format(colnr + 1)
