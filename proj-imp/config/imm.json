@@ -12,7 +12,8 @@
       "Contact institution": "Seksjon for transplantasjonsimmunologi, OUS",
       "Delivery method": "User HDD",
       "Number of lanes": 1,
-      "Reference genome": "Human"
+      "Reference genome": "Human",
+      "Demultiplexing options": "--barcode-mismatches 0"
   },
   "sample_fields": {
   },
