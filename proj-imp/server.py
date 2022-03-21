@@ -372,17 +372,17 @@ class ReadSampleFile(Task):
             sep = ";"
         else:
             raise ValueError("Invalid csv sample file format.")
-        cells = [line.split(sep) for line in sample_table]
-        if [v.lower() for v in cells[0]] == ["name", "index"]:
+        cells = [line.split(sep) for line in sample_table if line.strip()]
+        if [v.lower() for v in cells[0][:2]] == ["name", "index"]:
             type = 1
-        elif [v.lower() for v in cells[0]] == ["name", "index1", "index2"]:
+        elif [v.lower() for v in cells[0][:3]] == ["name", "index1", "index2"]:
             type = 2
         else:
             raise ValueError("Headers must be Name and Index, or Name, Index1 and Index2.")
         if type == 1:
-            self.job.samples = cells[1:]
+            self.job.samples = [row[:2] for row in cells[1:]]
         else:
-            usable_cells = [row for row in cells[1:] if len(row) == 3]
+            usable_cells = [row[:3] for row in cells[1:] if len(row) >= 3]
             self.job.samples = [
                     [name, "-".join([index1, index2])]
                     for name, index1, index2 in usable_cells
