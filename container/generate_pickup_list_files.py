@@ -2,20 +2,28 @@ import sys
 import re
 import csv
 import argparse
+import string
 from operator import itemgetter
 from genologics.lims import *
 from genologics import config
+from collections import namedtuple
 
 VERSO_PLACEHOLDER_NAME = "verso input file"
 TUBES_PLACEHOLDER_NAME = "normal tubes pickup list"
 
-VERSO_SUFFIX = '_verso_input_file.csv'
+VERSO_SUFFIX = '_verso_input_file.txt'
 TUBES_SUFFIX = '_tubes_pickup_list.csv'
 
-VERSO_COLUMNS = ["Sample_Number"]
+VERSO_COLUMNS = ["TubeId", "DestinationRack", "Row", "Column"]
 TUBES_COLUMNS = ["Sample_Number", "Archive pos.", "Alt sample ID"]
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
+
+Well = namedtuple('well_on_96', ['RC', 'Row', 'Column'])
+
+ORIENTATION = 'column'
+
+SAMPLE_ID_SEPARATOR = '-'
 
 
 def look_up_target_id(art_ids, art_name):
@@ -30,6 +38,35 @@ def look_up_target_id(art_ids, art_name):
     else:
         raise RuntimeError('No file placeholder named "{}" among ids: {}'
                            ''.format(art_name, ' '.join(art_ids)))
+
+
+def well_on_96_plate(tally, orientation='column'):
+    """
+    Placement of samples on a 96 well plate in
+    column order: A1, B1, ..., H1, B1, B2, ..., H2, ..., ..., A12, B12, ..., H12
+    row order: A1, A2, ..., A12, B1, B2, ..., B12, ..., ..., H1, H2, ..., H12
+
+    :tally: tally of sample, 1-based
+    :orientation: ['column', 'row']
+    :return: Well = namedtuple('well_on_96', ['RC', 'Row', 'Column'])
+    """
+    ROW_LETTERS = string.ascii_uppercase[:8]
+
+    exhaust = 8 if orientation == 'column' else 12
+    orient = (tally - 1) // exhaust + 1
+    perpend = (tally - 1) % exhaust + 1
+
+    def get_well(row, col):
+        RC = ROW_LETTERS[row - 1] + str(col)  # A1, A2, B1, B2
+        well = Well(RC, row, col)
+        return well
+
+    if orientation == 'column':
+        well = get_well(perpend, orient)
+    else:
+        well = get_well(orient, perpend)
+
+    return well
 
 
 def main():
@@ -62,17 +99,18 @@ def main():
         verso_writer = csv.DictWriter(verso_fd, VERSO_COLUMNS, delimiter=';', lineterminator='\n')
         tubes_writer = csv.DictWriter(tubes_fd, TUBES_COLUMNS, delimiter=';', lineterminator='\n')
 
-        # verso_writer.writeheader()
+        verso_writer.writeheader()
         tubes_writer.writeheader()
 
         verso_rows = []
+        verso_count = 0
         tubes_rows = []
 
-        for art, smp in zip(inputs, samples):
+        for smp, art in sorted(zip(samples, inputs), key=lambda x: getattr(x[0], 'name')):
+            assert smp.name == art.name
             sample_name = smp.name
 
-            sample_no = re.match(r"([0-9]+)-", sample_name)
-            sample_no = sample_no.group(1) if sample_no else sample_name
+            sample_no = sample_name.split(SAMPLE_ID_SEPARATOR)[0]
 
             archive_pos = smp.udf.get('Archive position Diag')
 
@@ -80,8 +118,13 @@ def main():
 
             # tube and 96 well plate
             if art.location[0].type_name == '96 well plate':
+                verso_count += 1
+                well = well_on_96_plate(verso_count, orientation=ORIENTATION)
                 row = {
-                    "Sample_Number": sample_no
+                    "TubeId": sample_no,
+                    "DestinationRack": 1,
+                    "Row": well.Row,
+                    "Column": well.Column
                 }
                 verso_rows.append(row)
             else:
@@ -93,8 +136,7 @@ def main():
                 tubes_rows.append(row)
 
         if verso_rows:
-            verso_rows = sorted(verso_rows, key=itemgetter('Sample_Number'))
-            for vr in verso_rows:
+            for vr in verso_rows:  # already sorted by sample name
                 verso_writer.writerow(vr)
 
         if tubes_rows:
