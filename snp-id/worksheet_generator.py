@@ -61,15 +61,22 @@ i_os = process.input_output_maps
 inputs_outputs = [(i['uri'], o['uri']) for i,o in i_os if o['output-generation-type'] == 'PerInput']
 lims.get_batch([i for i,o in inputs_outputs] + [o for i,o in inputs_outputs])
 lims.get_batch(i.samples[0] for i, o in inputs_outputs)
+tube_counter = 0
 for row_index, (input, output) in enumerate(sorted(inputs_outputs, key=sort_key), 2+START_SKIP_ROWS):
     for i in range(1, len(headers)+1):
         ws.cell(row=row_index, column=i).border = border_style
     col = iter(range(1, len(headers)+1))
-    well_row, well_col = output.location[1].split(":")
-    well_index = (int(well_col) - 1) * 8 + "ABCDEFGH".index(well_row)
+    # Different handling of tube and 96 plate (2D Barcodes tube rack)
+    if input.location[0].type_name == '96 well plate':
+        labware = "Rack2DTubes"
+        position_id = input.location[1].replace(":", "")
+    else:
+        labware = "Rack%d" % ((tube_counter // 32) + 1)
+        position_id = str((tube_counter % 32) + 1)
+        tube_counter += 1
     ws.cell(row=row_index, column=next(col)).value = row_index-1-START_SKIP_ROWS
-    ws.cell(row=row_index, column=next(col)).value = 1 + well_index % 32
-    ws.cell(row=row_index, column=next(col)).value = "Rack{0}".format(1 + well_index // 32)
+    ws.cell(row=row_index, column=next(col)).value = position_id 
+    ws.cell(row=row_index, column=next(col)).value = labware 
     ws.cell(row=row_index, column=next(col)).value = input.name
     ws.cell(row=row_index, column=next(col)).value = input.samples[0].udf.get('Archive position Diag', 'UKJENT')
     ws.cell(row=row_index, column=next(col)).value = input.samples[0].udf.get('Alternative sample ID Diag', 'UKJENT')
