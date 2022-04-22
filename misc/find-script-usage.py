@@ -33,5 +33,5 @@ for workflow in lims.get_workflows():
                     print "MATCH:", workflow.status, "workflow:", workflow.name
                     print "      step:         ", stage.step.name
                     print "      processtype:  ", processtype_xml.attrib['name']
-                    print "      automation(s):", ",".join(matches)
+                    print "      automation(s):", ", ".join(matches)
                     print ""
