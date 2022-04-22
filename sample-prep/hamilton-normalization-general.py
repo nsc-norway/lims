@@ -58,7 +58,7 @@ def main(process_id, concentration_source, file_id, default_vol):
     for index, (input, output, sample, input_conc) in enumerate(sorted(i_o_s, key=sort_key)):
         
         sample_name = input.name.encode('utf-8')
-        sample_no = re.match(r"([0-9]+)-", sample_name)
+        sample_no = re.match(r"([0-9A-Za-z]+)-", sample_name)
         well = output.location[1].replace(":","")
         try:
             norm_mass = output.udf['Amount of DNA per sample (ng)']
