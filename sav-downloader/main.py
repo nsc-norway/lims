@@ -12,9 +12,9 @@ import glob
 
 app = Flask(__name__)
 
-CURRENT_RUN_DIRS = ["/data/runScratch.boston", "/boston/diag/runs"]
+CURRENT_RUN_DIRS = ["/data/runScratch.boston", "/boston/diag/runs", "/boston/diag/runs/veriseq"]
 CURRENT_RUN_GLOBS = ["{0}/[0-9]*_*_*/".format(crd) for crd in CURRENT_RUN_DIRS]
-ARCHIVE_RUN_DIRS = ["/data/runScratch.boston/processed", "/boston/diag/runs/versieq"]
+ARCHIVE_RUN_DIRS = ["/data/runScratch.boston/processed"]
 ARCHIVE_RUN_GLOBS = ["{0}/[0-9]*_*_*/".format(ard) for ard in ARCHIVE_RUN_DIRS]
 
 
