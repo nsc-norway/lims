@@ -2,6 +2,7 @@ import sys
 import re
 from genologics.lims import *
 from genologics import config
+import requests
 
 def main(process_id):
     """Function to do some sanity checks on project entry. Verify that index
@@ -14,11 +15,13 @@ def main(process_id):
     inputs = process.all_inputs(resolve=True)
     samples = lims.get_batch([s for input in inputs for s in input.samples])
     projects = set([s.project for s in samples])
-    if len(projects) == 1:
-        project = next(iter(projects))
-        m = re.match(r"\d+-([NS]\d)-.*", project.name)
+    project_short_names = []
+
+    for project in projects:
+        m = re.match(r"\d+-([NS]\d)-([^-]+).*", project.name)
         if m:
             plate_string = m.group(1)
+            project_short_names.append(m.group(2))
         else:
             print("Project name should contain a date in format YYYYMMDD and then -N- or -S-.")
             sys.exit(1)
@@ -40,13 +43,22 @@ def main(process_id):
             print("Selected index plate '{}' does not match project name '{}'.".format(
                 step.reagents.reagent_category, plate_string))
             sys.exit(1)
-    else:
-        print("Error: Mutliple projects selected. Only add one project to this step.")
-        sys.exit(1)
 
-    output_plate = process.all_outputs()[0].location[0]
-    output_plate.name = project.name + " Prep"
-    output_plate.put()
+    # Auto-placement in same pattern as inputs (but possibly from multiple plates)
+    output_container = next(iter(step.placements.selected_containers))
+    output_container.name = "_".join(project_short_names) + " Prep"
+    output_container.put()
+
+    placements = []
+    for i, o in process.input_output_maps:
+        well = i['uri'].location[1]
+        placements.append((o['uri'].stateless, (output_container, well)))
+    step.placements.set_placement_list(placements)
+    try:
+        step.placements.post()
+    except requests.exceptions.HTTPError as e:
+        print("Sample placements are invalid. Verify that you selected the right projects. Error:", str(e))
+        sys.exit(1)
 
 if __name__ == "__main__":
     main(sys.argv[1])
