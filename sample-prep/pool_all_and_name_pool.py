@@ -10,12 +10,17 @@ def main(process_id, name_mode, pool_suffix=""):
     if name_mode == "project":
         pool_name = poolable[0].samples[0].project.name + pool_suffix
     elif name_mode == "project_part":
-        parts = poolable[0].samples[0].project.name.split("-")
-        if len(parts) >= 3:
-            mid_part = "-".join(parts[1:3])
-        else:
-            mid_part = poolable[0].samples[0].project.name
-        pool_name = mid_part + pool_suffix
+        projects = set(sample.project.name for inp in poolable for sample in inp.samples)
+        project_pool_names = []
+        s_bit = set()
+        for project in projects:
+            parts = project.split("-")
+            if len(parts) >= 3:
+                s_bit.add(parts[1])
+                project_pool_names.append(parts[2])
+            else:
+                project_pool_names.append(project)
+        pool_name = "x".join(s_bit) + "-" + "_".join(project_pool_names) + pool_suffix
     elif name_mode == "run":
         try:
             with open("/var/lims-scripts/covid-run-count.txt") as f:
