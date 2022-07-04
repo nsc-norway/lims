@@ -5,6 +5,7 @@ import os
 import io
 import threading
 import json
+import string
 import Queue as Mod_Queue # Due to name conflict with genologics
 from flask import Flask, url_for, abort, jsonify, Response, request,\
         render_template, redirect
@@ -217,7 +218,9 @@ class Task(object):
         except Exception as e:
             self.running = False
             self.error = True
-            self.status = str(e)
+            printable = set(string.printable)
+            self.status = ''.join(filter(lambda x: x in printable, str(e)))
+            app.logger.error("Failed in task {}.".format(self.__class__.__name__), exc_info=e)
             return False
         else:
             self.completed = True
@@ -534,16 +537,11 @@ class SetIndexes(Task):
         if not ProjectTypeWorker.all_reagent_types:
             ProjectTypeWorker.all_reagent_types = indexes.get_all_reagent_types()
         errors = []
-        for category in self.job.project_type['reagent_category']:
-            try:
-                result = indexes.get_reagents_for_category(ProjectTypeWorker.all_reagent_types,
-                        (reversed(s) for s in self.job.samples), category)
-                break
-            except indexes.ReagentError as e:
-                errors.append(str(e))
-        else:
-            raise RuntimeError("Index error(s): " + " | ".join(errors))
-
+        category, result = indexes.get_reagents_auto_category(
+                ProjectTypeWorker.all_reagent_types,
+                [tuple(reversed(s)) for s in self.job.samples],
+                allow_multi_match=True
+        )
         artifacts = [sample.artifact for sample in self.job.lims_samples]
         lims.get_batch(artifacts)
         for artifact, rgt in zip(artifacts, result):
