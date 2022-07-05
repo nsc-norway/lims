@@ -103,8 +103,9 @@ class Database(object):
         new = set(runs_on_storage) - set(self.status.keys())
 
         for r_id in new:
-            new_run = RunStatus(r_id, *runs_on_storage[r_id], start_cancelled=r_id in self.cancelled_runs)
-            self.status[r_id] = new_run
+            if machine_id(r_id) in SEQUENCERS:
+                new_run = RunStatus(r_id, *runs_on_storage[r_id], start_cancelled=r_id in self.cancelled_runs)
+                self.status[r_id] = new_run
 
         modified = False
         updated = []
