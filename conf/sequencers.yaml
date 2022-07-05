@@ -10,9 +10,6 @@
 - type: nextseq
   name: Nelson
   id: NB501273
-- type: nextseq
-  name: Netflix
-  id: NB552565
 - type: miseq
   name: Missy
   id: M07166
