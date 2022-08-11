@@ -14,6 +14,11 @@
 # Specify the old process type dir to replace on the command line, and this script 
 # will prompt for the new version number, and which files to replace with content.
 
+
+# Caveat: This script doesn't work well if multiple older versions are in use.
+# If you for instance freeze version 4.2, but 4.1 is also in use, then you may
+# end up that the content of 4.1 are not actually frozen.
+
 import os
 import sys
 import re
