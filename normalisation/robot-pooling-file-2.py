@@ -49,17 +49,15 @@ def main(process_id, output_file_id):
     row = sheet1.row(row_index)
     for i, header in enumerate(headers):
         row.write(i, header)
-    try:
-        norm_conc = process.udf['Pool molarity']
-        pool_volume = process.udf['Pool volume']
-    except KeyError as e:
-        print("Error: option for default",  str(e), "not specified.")
-        sys.exit(1)
 
     for pool in step.pools.pooled_inputs:
         output = pool.output
-        pool_norm_conc = output.udf.get('Normalized conc. (nM)', norm_conc)
-        pool_pool_volume = output.udf.get('Volume (uL)', pool_volume)
+        try:
+            pool_norm_conc = output.udf['Normalized conc. (nM)']
+            pool_pool_volume = output.udf['Volume (uL)']
+        except KeyError as e:
+            print("Missing field {} on pool {}.".format(e, pool.name))
+            sys.exit(1)
 
         target_sample_conc = pool_norm_conc * 1.0 / len(pool.inputs)
 
@@ -67,7 +65,6 @@ def main(process_id, output_file_id):
             dest_well = output_tubes.index(int(output.location[0].id.partition("-")[2])) + 1
         else:
             dest_well = display_well(output.location[1])
-        first_in_pool = True
         for input in sorted(pool.inputs, key=get_well_key):
             try:
                 sample_volume = pool_pool_volume * target_sample_conc / max(input.udf['Molarity'], 0.0000001)
@@ -84,9 +81,7 @@ def main(process_id, output_file_id):
             row.write(0, source_well)
             row.write(1, dest_well)
             row.write(2, round(sample_volume, 1))
-            if first_in_pool:
-                row.write(3, round(pool_pool_volume, 1))
-                first_in_pool = False
+            row.write(3, round(pool_pool_volume, 1))
 
     book.save(output_file_id)
     return 0

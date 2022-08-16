@@ -14,13 +14,6 @@ def get_tuple_key(tupl):
     return (container, int(col), row)
     
 
-def get_or_set(entity, udf, default_value):
-    try:
-        return entity.udf[udf]
-    except KeyError:
-        entity.udf[udf] = default_value
-        return default_value
-
 def main(process_id, output_file_id):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
@@ -54,14 +47,6 @@ def main(process_id, output_file_id):
     lims.get_batch(process.all_inputs(unique=True) + process.all_outputs(unique=True))
     lims.get_batch(input.samples[0] for input in process.all_inputs(unique=True))
 
-    try:
-        norm_conc = process.udf['Pool molarity']
-        pool_volume = process.udf['Pool volume']
-    except KeyError, e:
-        print "Global option for",  str(e), "not specified"
-        print "This is used in case the per-pool value is not given for some pools"
-        sys.exit(1)
-
     input_tubes = sorted(set(
         int(inp.location[0].id.partition("-")[2]) for inp in process.all_inputs()
         if inp.location[0].type_name == TUBE
@@ -76,8 +61,12 @@ def main(process_id, output_file_id):
     rows = []
     for pool in step.pools.pooled_inputs:
         output = pool.output # output already fetched in batch, as process input
-        pool_norm_conc = get_or_set(output, 'Normalized conc. (nM)', norm_conc)
-        pool_pool_volume = get_or_set(output, 'Volume (uL)', pool_volume)
+        try:
+            pool_norm_conc = output.udf['Normalized conc. (nM)']
+            pool_pool_volume = output.udf['Volume (uL)']
+        except KeyError as e:
+            print("Missing field {} on pool {}.".format(e, pool.name))
+            sys.exit(1)
 
         target_sample_conc = pool_norm_conc * 1.0 / len(pool.inputs)
         target_sample_conc_str = "%4.2f" % target_sample_conc
