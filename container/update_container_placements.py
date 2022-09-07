@@ -14,8 +14,10 @@ from genologics.config import USERNAME, PASSWORD, BASEURI
 
 DEFAULT_CONTAINER = '96 well plate'
 SCANNER_FILE_DELIMITER = ','
-FILE_PLACEHOLDER_NAME = 'plate scanner output file (optional)'
-SAMPLE_ID_SEPERATOR = '-'
+FILE_PLACEHOLDER_NAME = 'plate scanner output file'
+
+SAMPLE_ID_SEPARATOR = '-'
+SAMPLE_ID_MATCHER = re.compile(r'^(\d{11}|[A-Z]{2}\d{8})')
 
 lims = Lims(BASEURI, USERNAME, PASSWORD)
 
@@ -119,6 +121,18 @@ def download_file(art_id):
     return fd.name
 
 
+def id_from_name(name):
+    """get sample ID from sample name"""
+    id_matching = SAMPLE_ID_MATCHER.match(name)
+    # starts with 11 digits or 2 letter and 8 digits
+    if id_matching:
+        sample_id = id_matching.group()
+    else:
+        sample_id = name.split(SAMPLE_ID_SEPARATOR)[0]
+
+    return sample_id
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--pid", required=True)
@@ -137,8 +151,9 @@ def main():
     layout_file_path = download_file(target_id)
 
     if not layout_file_path:  # no file was attached
-        print("no scanner file attached", file=sys.stderr)
-        return
+        # print("no scanner file attached", file=sys.stderr)
+        # return
+        raise RuntimeError("Plate scanner file not uploaded!")
 
     new_container_name, layout = read_layout(layout_file_path)
 
@@ -158,10 +173,10 @@ def main():
 
     for pl in placements:
         art = pl[0]
-        art_name = art.name
-        sample_id = art_name.split(SAMPLE_ID_SEPERATOR)[0]
+        sample_id = id_from_name(art.name)
         if sample_id in layout:
-            payload_placements.append([art, (new_container, layout[sample_id])])
+            placement = [art, (new_container, layout[sample_id])]
+            payload_placements.append(placement)
 
     # if no sample in scanner file, exit explicitly, otherwise placement screen is gone in Clarity
     if not payload_placements:

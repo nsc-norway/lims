@@ -15,6 +15,7 @@ from genologics.config import USERNAME, PASSWORD, BASEURI
 DEFAULT_CONTAINER = '96 well plate'
 SCANNER_FILE_DELIMITER = ','
 FILE_PLACEHOLDER_NAME = 'plate scanner output file (optional)'
+SAMPLE_ID_SEPERATOR = '-'
 
 lims = Lims(BASEURI, USERNAME, PASSWORD)
 
@@ -60,22 +61,23 @@ def read_layout(layout_file):
                 "Bad format of well position '{}' in the scanner output file!".format(well))
 
     with open(layout_file) as lf:
-        line = lf.readline()
+        line = lf.readline()  # header line
         total_columns = len(line.strip().split(SCANNER_FILE_DELIMITER))
-
-    with open(layout_file) as f:
-        for l in f:
+        for l in lf:
             parts = l.strip().split(SCANNER_FILE_DELIMITER)
             if total_columns >= 3:
                 plate_id = parts[0]
-                well = format_well(parts[1])
+                well = parts[1]
                 sample = parts[2]
             else:
                 plate_id = None
-                well = format_well(parts[0])
+                well = parts[0]
                 sample = parts[1]
 
-            layout[sample] = well
+            # if not 2D tube, sample(TubeID) is empty
+            if sample:
+                well = format_well(well)
+                layout[sample] = well
 
     return plate_id, layout
 
@@ -157,8 +159,9 @@ def main():
     for pl in placements:
         art = pl[0]
         art_name = art.name
-        if art_name in layout:
-            payload_placements.append([art, (new_container, layout[art_name])])
+        sample_id = art_name.split(SAMPLE_ID_SEPERATOR)[0]
+        if sample_id in layout:
+            payload_placements.append([art, (new_container, layout[sample_id])])
 
     # if no sample in scanner file, exit explicitly, otherwise placement screen is gone in Clarity
     if not payload_placements:
