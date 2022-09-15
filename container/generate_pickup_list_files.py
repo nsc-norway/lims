@@ -238,7 +238,7 @@ def main():
                 verso_writer.writerow(vr)
 
         if tubes_rows:
-            tubes_rows = sorted(tubes_rows, key=itemgetter('Arkivposisjon'))
+            tubes_rows = sorted(tubes_rows, key=itemgetter('Prøvenummer'))
             for tr in tubes_rows:
                 tubes_writer.writerow(tr)
 
