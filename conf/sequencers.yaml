@@ -10,6 +10,12 @@
 - type: nextseq
   name: Nelson
   id: NB501273
+- type: nextseq
+  name: Nelly
+  id: NDX551166
+- type: nextseq
+  name: Newton
+  id: NDX551162
 - type: miseq
   name: Missy
   id: M07166
@@ -19,4 +25,3 @@
 - type: miseq
   name: Mike
   id: M02980
-  
