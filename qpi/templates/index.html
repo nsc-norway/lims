@@ -17,12 +17,12 @@
 <table>
   <tr>
     <td>Clarity Username:</td>
-    <td><input type="text" name="username" value="{{ username }}"></td>
+    <td><input type="text" size="15" name="username" value="{{ username }}"></td>
   </tr>
 
   <tr>
     <td>Password:</td>
-    <td><input type="password" name="password" value="{{ password }}"></td>
+    <td><input type="password" size="15" name="password" value="{{ password }}"></td>
   </tr>
 
   <tr>
@@ -43,7 +43,7 @@
 
   <tr>
     <td>Project name:</td>
-    <td><input type="text" name="projectname" id="projectname" value="{{ projectname }}"></td>
+    <td><input type="text" size="35" name="projectname" id="projectname" value="{{ projectname }}"></td>
   </tr>
 
 </table>
@@ -51,14 +51,16 @@
 
 function setPresetProjectName(value) {
 {% for project_type in project_types %}
+{% if project_type not in project_types_for_filename %}
 if (value == "{{ project_type }}") { document.getElementById("projectname").value = "{{ project_name_presets[project_type] }}" }
+{% endif %}
 {% endfor %}
 }
 
 function selectFile(value) {
 {% for project_type in project_types_for_filename %}
 if (document.getElementById("template").value == "{{ project_type }}") {
-          document.getElementById("projectname").value += "-" + value.replace(/^.*[\\\/]/, "").replace(/\.csv$/, "");
+          document.getElementById("projectname").value = "{{ project_name_presets[project_type] }}-" + value.replace(/^.*[\\\/]/, "").replace(/\.csv$/, "");
 }
 {% endfor %}
 }
