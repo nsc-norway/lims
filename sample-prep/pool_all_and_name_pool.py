@@ -1,4 +1,5 @@
 import sys
+import re
 from genologics.lims import *
 from genologics import config
 import requests
@@ -14,12 +15,19 @@ def main(process_id, name_mode, pool_suffix=""):
         project_pool_names = []
         s_bit = set()
         for project in projects:
-            parts = project.split("-")
-            if len(parts) >= 3:
-                s_bit.add(parts[1])
-                project_pool_names.append(parts[2])
+            # The following regexs are the same as the ones used to check names, in
+            # covid_project_pre_checks_and_setup.py
+            m = re.match(r"\d+-([NS]\d)-([^-]+).*", project)
+            m_new_fhi_name = re.match(r"(FHI\d+)-(S\d)-([^-]+).*", project)
+            if m:
+                project_pool_names.append(m.group(2))
+                s_bit.add(m.group(1))
+            elif m_new_fhi_name:
+                project_pool_names.append(m_new_fhi_name.group(1))
+                s_bit.add(m_new_fhi_name.group(2))
             else:
-                project_pool_names.append(project)
+                project_pool_names.append("ERROR")
+                s_bit.add("?")
         pool_name = "x".join(s_bit) + "-" + "_".join(project_pool_names) + pool_suffix
     elif name_mode == "run":
         try:

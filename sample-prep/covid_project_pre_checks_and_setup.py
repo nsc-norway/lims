@@ -19,11 +19,17 @@ def main(process_id):
 
     for project in projects:
         m = re.match(r"\d+-([NS]\d)-([^-]+).*", project.name)
+        m_new_fhi_name = re.match(r"(FHI\d+)-(S\d)-([^-]+).*", project.name)
         if m:
             plate_string = m.group(1)
             project_short_names.append(m.group(2))
+        elif m_new_fhi_name:
+            plate_string = m_new_fhi_name.group(2)
+            project_short_names.append(m_new_fhi_name.group(1))
         else:
-            print("Project name should contain a date in format YYYYMMDD and then -N- or -S-.")
+            print("Project name should contain index plate number Sn and NSC project ID (FHIxxx). "
+                 "Valid formats: 20221214-S4-MIK411-221212 OR FHI333-S2-EXT-20230104-07. "
+                 "Failed to parse project: "  + project.name + ".")
             sys.exit(1)
         correct_answer = {
             "S1": "SwiftUDI Plate 1",
