@@ -8,14 +8,15 @@ project_fields:
 
 sample_fields: 
 
-workflow: "Covid NimaGen EasySeq"
+workflow: "Covid Swift SNAP"
 
 tasks:
-  - "ReadFHISampleFile"
+  - "ReadFHIv2SampleFile"
   - "CheckExistingProjects"
   - "CreateProject"
   - "UploadFile"
   - "CreatePlateAndSamples"
   - "AssignWorkflow"
 
-project_name_placeholder: "{:%Y%m%d}-N"
+project_name_placeholder: "FHIx-Sx"
+add_file_basename_to_project_name: true

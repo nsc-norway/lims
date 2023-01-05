@@ -9,6 +9,7 @@ import json
 import sys
 import string
 import base64
+import csv
 import Queue as Mod_Queue # Due to name conflict with genologics
 from flask import Flask, url_for, abort, jsonify, Response, request,\
         render_template, redirect
@@ -21,7 +22,7 @@ from genologics import config
 
 # External project creation backend server
 
-PROJECT_TYPES = ['FHI-Swift', 'MIK-Swift', 'FHI-NimaGen', 'MIK-NimaGen']
+PROJECT_TYPES = ['FHI-Swift-FileV2', 'MIK-Swift',  'FHI-Swift']
 
 # This will be registered as a WSGI application under a path.
 
@@ -33,12 +34,23 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 workers = {}
 workers_lock = threading.Lock()
 
+def render_index_page(**kwargs):
+
+    project_name_presets = {}
+    project_types_for_filename = []
+    for pt in PROJECT_TYPES:
+        project_def = get_project_def(pt)
+        project_name_presets[pt] = project_def.get('project_name_placeholder', '').format(datetime.date.today())
+        if project_def.get('add_file_basename_to_project_name'):
+            project_types_for_filename.append(pt)
+
+    return render_template("index.html", 
+                project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
+                project_types_for_filename=project_types_for_filename)
+
 @app.route("/")
 def get_project_start_page():
-    project_name_presets = {
-        pt: get_project_def(pt).get('project_name_placeholder', '{}').format(datetime.date.today())
-        for pt in PROJECT_TYPES}
-    return render_template("index.html", project_types=PROJECT_TYPES, project_name_presets=project_name_presets)
+    return render_index_page()
 
 
 def get_project_def(project_type):
@@ -56,8 +68,8 @@ def get_project_def(project_type):
                 ) as f:
             project_data = yaml.safe_load(f)
             return project_data
-    except IOError:
-        abort(500, "Error while getting project type data")
+    except IOError as e:
+        abort(500, "Error while getting project type data: " + str(e))
 
 
 @app.route("/submit", methods=["POST"])
@@ -70,29 +82,22 @@ def submit_project():
     password = request.form.get('password', '')
     projectname = request.form.get('projectname', '')
 
-    project_name_presets = {
-        pt: get_project_def(pt).get('project_name_placeholder', '').format(datetime.date.today())
-        for pt in PROJECT_TYPES
-    }
 
     if '' in [username, password, template, projectname]:
-        return render_template("index.html", username=username, password=password,
+        return render_index_page(username=username, password=password,
                 preset_project_type=template, projectname=projectname,
-                project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
                 error_message= "Please specify username, password, project name and template.")
 
     if not projectname.replace("-", "").replace("_", "").isalnum():
-        return render_template("index.html", username=username, password=password,
+        return render_index_page(username=username, password=password,
                 preset_project_type=template, projectname=projectname,
-                project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
                 error_message= "Project name should only contain alphanumerics and hyphen (-).")
 
     project_template_data = get_project_def(template)
     
     if projectname == project_template_data.get('project_name_placeholder'):
-        return render_template("index.html", username=username, password=password,
+        return render_index_page(username=username, password=password,
                 preset_project_type=template, projectname=projectname,
-                project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
                 error_message= "Please change the project name from the placeholder.")
 
     
@@ -104,9 +109,8 @@ def submit_project():
         if file_name == "":
             raise ValueError("No file provided")
     except (KeyError, ValueError):
-        return render_template("index.html", username=username, password=password, 
+        return render_index_page(username=username, password=password, 
                 preset_project_type=template, projectname=projectname,
-                project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
                 error_message="Sample file upload failed. Make sure sample file is specified.")
 
     with workers_lock:
@@ -408,6 +412,74 @@ class ReadFHISampleFile(Task):
                 raise ValueError("Invalid well position '{}'".format(pos))
         check_sample_list(self.job.samples)
         
+
+
+class ReadFHIv2SampleFile(Task):
+    """Read the sample file input."""
+
+    NAME = "Read sample file (v2 csv file)"
+
+    def run(self):
+        try:
+            # Note about BytesIO.getvalue(): In newer Python versions it is called getbuffer()
+            # instead. It would be nice to use read() - but that returns an empty array.
+            #text = self.job.sample_file_object.getbuffer().decode('utf-8').splitlines()
+            # Also - different semantics of decoding characters - we can only support ASCII
+            # but that's okay.
+            text = bytes(self.job.sample_file_object.getvalue()).decode('utf-8-sig').splitlines()
+        except UnicodeDecodeError as e:
+            raise ValueError(
+                "The file has incorrect format. Make sure to use a text-based format (CSV). "
+                "Remove any special characters in the file. [Detailed error:" + str(e) + "]"
+            )
+
+        reader = csv.reader(text, delimiter=';')
+        
+        required_columns = set(['position', 'sequence id', 'ct', 'control name'])
+        column_indices = {}
+
+        for row in reader:
+            is_blank_row = not any(row)
+            if not column_indices: # Look for header
+                if not is_blank_row:
+                    lowercase_headers = [header.lower() for header in row]
+                    column_indices = {header: i for i, header in enumerate(lowercase_headers)}
+                    missing_columns = required_columns - set(lowercase_headers)
+                    if missing_columns:
+                        raise ValueError("The file is missing the following required column(s) "
+                                        "(headers not found): " + ",".join(missing_columns))
+                else:
+                    continue # Keep skipping blank rows
+
+            elif not is_blank_row: # Already have headers - read samples here
+                udf_dict = {}
+                name = row[column_indices['sequence id']]
+                if not name: raise ValueError("Sample does not have a sequence ID")
+                ctrl_name = row[column_indices['control name']]
+                if ctrl_name:
+                    udf_dict['Control Name'] = ctrl_name
+                ct_str = row[column_indices['ct']]
+                if ct_str:
+                    try:
+                        udf_dict['Org. Ct value'] = float(ct_str.replace(",","."))
+                    except ValueError:
+                        raise ValueError("Invalid Ct value '" + str(ct_str) + "'.")
+
+                well_str = row[column_indices['position']]
+                m = re.match(r"([A-H])(\d+)$", well_str)
+                if m and 1 <= int(m.group(2)) <= 12:
+                    self.job.samples.append((
+                                name,
+                                "{}:{}".format(m.group(1), m.group(2)),
+                                udf_dict
+                                ))
+                else:
+                    raise ValueError("Invalid well position '{}'".format(pos))
+        
+        if not column_indices:
+            raise ValueError("Unable to find the column headers in the CSV file - invalid format. "
+                            "Make sure to use a CSV file.")
+
 
 class CheckExistingProjects(Task):
     """Refuse to create project if one with the same name exists."""

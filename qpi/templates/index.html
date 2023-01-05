@@ -27,7 +27,7 @@
 
   <tr>
     <td>Project type:</td>
-    <td><select name="template" onchange="setPresetProjectName(this.value)">
+    <td><select name="template" onchange="setPresetProjectName(this.value)" id="template">
             <option value="">Select one...</option>
             {% for project_type in project_types %}
             <option value="{{ project_type }}"{{ ' selected="selected"' if preset_project_type == project_type }}>{{ project_type }}</option>
@@ -37,19 +37,29 @@
   </tr>
 
   <tr>
+    <td>Sample table file:</td>
+    <td><input type="file" name="sample_file" onchange="selectFile(this.value)"></td>
+  </tr>
+
+  <tr>
     <td>Project name:</td>
     <td><input type="text" name="projectname" id="projectname" value="{{ projectname }}"></td>
   </tr>
 
-  <tr>
-    <td>Sample table file:</td>
-    <td><input type="file" name="sample_file"></td>
-  </tr>
 </table>
 <script>
+
 function setPresetProjectName(value) {
 {% for project_type in project_types %}
 if (value == "{{ project_type }}") { document.getElementById("projectname").value = "{{ project_name_presets[project_type] }}" }
+{% endfor %}
+}
+
+function selectFile(value) {
+{% for project_type in project_types_for_filename %}
+if (document.getElementById("template").value == "{{ project_type }}") {
+          document.getElementById("projectname").value += "-" + value.replace(/^.*[\\\/]/, "").replace(/\.csv$/, "");
+}
 {% endfor %}
 }
 </script>
