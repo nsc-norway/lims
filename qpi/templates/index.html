@@ -59,7 +59,7 @@ if (value == "{{ project_type }}") { document.getElementById("projectname").valu
 
 function selectFile(value) {
 {% for project_type in project_types_for_filename %}
-if (document.getElementById("template").value == "{{ project_type }}") {
+if (document.getElementById("projectname").value  == "" && document.getElementById("template").value == "{{ project_type }}") {
           document.getElementById("projectname").value = "{{ project_name_presets[project_type] }}-" + value.replace(/^.*[\\\/]/, "").replace(/\.csv$/, "");
 }
 {% endfor %}
