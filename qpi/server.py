@@ -46,7 +46,7 @@ def render_index_page(**kwargs):
 
     return render_template("index.html", 
                 project_types=PROJECT_TYPES, project_name_presets=project_name_presets,
-                project_types_for_filename=project_types_for_filename)
+                project_types_for_filename=project_types_for_filename, **kwargs)
 
 @app.route("/")
 def get_project_start_page():
@@ -95,12 +95,13 @@ def submit_project():
 
     project_template_data = get_project_def(template)
     
-    if projectname == project_template_data.get('project_name_placeholder'):
+    if projectname == project_template_data.get('project_name_placeholder') or \
+            (project_template_data.get('add_file_basename_to_project_name') and \
+                     projectname.startswith(project_template_data.get('project_name_placeholder'))):
         return render_index_page(username=username, password=password,
                 preset_project_type=template, projectname=projectname,
                 error_message= "Please change the project name from the placeholder.")
 
-    
     try:
         f = request.files['sample_file']
         file_object = io.BytesIO()

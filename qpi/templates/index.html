@@ -51,15 +51,13 @@
 
 function setPresetProjectName(value) {
 {% for project_type in project_types %}
-{% if project_type not in project_types_for_filename %}
 if (value == "{{ project_type }}") { document.getElementById("projectname").value = "{{ project_name_presets[project_type] }}" }
-{% endif %}
 {% endfor %}
 }
 
 function selectFile(value) {
 {% for project_type in project_types_for_filename %}
-if (document.getElementById("projectname").value  == "" && document.getElementById("template").value == "{{ project_type }}") {
+if (document.getElementById("template").value == "{{ project_type }}") {
           document.getElementById("projectname").value = "{{ project_name_presets[project_type] }}-" + value.replace(/^.*[\\\/]/, "").replace(/\.csv$/, "");
 }
 {% endfor %}
