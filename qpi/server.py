@@ -479,7 +479,7 @@ class ReadFHIv2SampleFile(Task):
         
         if not column_indices:
             raise ValueError("Unable to find the column headers in the CSV file - invalid format. "
-                            "Make sure to use a CSV file.")
+                            "Make sure to use a semicolon-delimited (;) CSV file.")
 
 
 class CheckExistingProjects(Task):
