@@ -22,7 +22,8 @@ def is_special_ekg_pool(artifact):
     are not part of the target molarity calculation for normal samples."""
 
     return artifact.parent_process and \
-        artifact.parent_process.type_name.startswith("Pooling and normalization EKG Diag ")
+        (artifact.parent_process.type_name.startswith("Pooling and normalization EKG Diag ") or \
+        artifact.parent_process.type_name=="Pooling and normalization Diag 4.4")
 
 
 def get_sample_details(pool_input_samples, pool_pool_volume, target_sample_conc, input_tubes,
