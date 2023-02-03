@@ -158,7 +158,7 @@ seqStatusApp.controller('SeqStatusController', function($scope, statusEventSourc
 	// Initialise gauge
 	var target = document.getElementById("gauge");
 	$scope.gauge = new Gauge(target);
-	$scope.gauge.maxValue = 37;
+	$scope.gauge.maxValue = 300;
 
 	$scope.globalBaseCounter = GlobalBaseCounter();
 
