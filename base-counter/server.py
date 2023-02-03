@@ -24,9 +24,6 @@ from collections import defaultdict
 import illuminate
 from flask import Flask, url_for, redirect, jsonify, Response, request
 
-# Limit number of completed runs to show, because the folders are not moved
-MAX_NIPT_RUN_SHOW = 2
-
 # Storage for run folders: (path, type of run)
 RUN_STORAGES = [("/data/runScratch.boston", "general"), ("/boston/diag/runs/veriseq", "nipt")]
 
@@ -140,10 +137,8 @@ class Database(object):
         per_instrument_counts = defaultdict(int)
         for run_id in sorted(self.status, reverse=True):
             run = self.status[run_id]
-            if run.run_type == "nipt":
-                per_instrument_counts[run.machine_id] += 1
-                if per_instrument_counts[run.machine_id] > MAX_NIPT_RUN_SHOW:
-                    run.hidden = True
+            if run.finished and run.run_type == "nipt":
+                run.hidden = True
 
         if new or missing:
             self.machine_list_signal.send(self, data=self.machine_list)

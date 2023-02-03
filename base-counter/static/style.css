@@ -57,6 +57,11 @@ div.seq-box {
 	height: 200px;
 }
 
+div.seq-row {
+	display: block;
+}
+
+
 div.sequencer {
 	padding: 15px;
 }
@@ -90,13 +95,17 @@ div.running {
 	border-color: blue;
 }
 
+div.nipt {
+	border-color: chocolate;
+}
+
 div.run-completed {
 	border-color: green;
 }
 
 div.total-count-box {
 	position: fixed;
-	width: 550px;
+	/*width: 550px;*/
 	height: 300px;
 	bottom: 3px;
 	right: 3px;
@@ -123,11 +132,8 @@ div.grandtotal {
 	font-size: 1.8em;
 }
 
-canvas.gauge {
-	width: 100px;
-	height: 100px;
-	margin-left: auto;
-	margin-right: auto;
+.hidden {
+	display: none;
 }
 
 div.progress-wrapper {

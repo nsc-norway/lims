@@ -10,19 +10,21 @@
 </head>
 <body ng-controller="SeqStatusController">
 
-<div class="seq-box" ng-repeat="machine in machineOrderedList">
-  <div class="sequencer" ng-class="{'seq-running': machine.running, 'seq-not-installed': !machine.installed}">
-    <img class="seq-icon" ng-src="{{ machine.icon }}">
-    <h2 class="seq-name">{{machine.name}}</h2>
-    <h2 class="seq-type">{{machine.typeName}}</h2>
-    <div class="clear"></div>
-    <div class="run-list">
-      <div ng-repeat="run in machine.runs" class="run" ng-class="{'run-failed': run.data.cancelled, 'run-completed': run.data.finished, 'running': !(run.data.finished || run.data.cancelled)}">
-  			<div class="progress-wrapper">
-  				<div ng-class="{'progress-indicator': !(run.data.cancelled), 'progress-indicator-done': run.data.finished}" ng-style="{width: run.completionPct + '%'}">
-              <span class="run-counter">{{run.basecount | number}}</span>
+<div class="seq-row clear" ng-repeat="machineOrderedList in machineTypeOrderedList">
+  <div class="seq-box" ng-repeat="machine in machineOrderedList">
+    <div class="sequencer" ng-class="{'seq-running': machine.running, 'seq-not-installed': !machine.installed}">
+      <img class="seq-icon" ng-src="{{ machine.icon }}">
+      <h2 class="seq-name">{{machine.name}}</h2>
+      <h2 class="seq-type">{{machine.typeName}}</h2>
+      <div class="clear"></div>
+      <div class="run-list">
+        <div ng-repeat="run in machine.runs" class="run {{ run.useClass }}">
+          <div class="progress-wrapper">
+            <div ng-class="{'progress-indicator': !(run.data.cancelled), 'progress-indicator-done': run.data.finished}" ng-style="{width: run.completionPct + '%'}">
+                <span class="run-counter">{{run.basecount | number}}</span>
+            </div>
           </div>
-  			</div>
+        </div>
       </div>
     </div>
   </div>
@@ -30,10 +32,11 @@
 
 <div class="total-count-box">
   <div class="total-count">
-  	<canvas id="gauge"></canvas>
-  	<div id="rate">{{xBaseRate | number:1}} {{baseRateUnit}}</div>
-  	<h2 class="total-count-header">Number of bases sequenced in 2023</h2>
-  	<div class="grandtotal">{{globalBaseCounter.basecount | number}}</div>
+    <img ng-show="xBaseRate == 0" src="graphics/counterZero_150px.png">
+    <canvas ng-show="xBaseRate > 0" id="gauge" ></canvas>
+  	<div id="rate">{{xBaseRate | number:1}} {{baseRateUnit}}</div>
+  	<h2 class="total-count-header">Number of bases<br>sequenced in 2023</h2>
+  	<div class="grandtotal">{{globalBaseCounter.basecount | number}}</div>
   </div>
 </div>
 

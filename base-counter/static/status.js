@@ -45,6 +45,9 @@ function Machine(dataObj) {
 		machine.type = machine.type.substring(1);
 	}
 	machine.typeName = TYPES[machine.type];
+	if ((machine.name == "Nelly") || (machine.name == "Newton")) {
+		machine.typeName = "NextSeq Dx";
+	}
 	machine.icon = ICONS[machine.type];
 	machine.runs = {};
 	return machine;
@@ -56,7 +59,7 @@ function Run(runId) {
 		'id': runId,
 		'updateTime': 0,
 		'basecount': 0,
-		'data': {'basecount': 0, 'rate': 0, 'finished': 0, 'cancelled': 0},
+		'data': {'basecount': 0, 'rate': 0, 'finished': 0, 'cancelled': 0, 'run_type': 'general'},
 		'completionPct': 0,
 		'update': function(data) {
 			this.data = data;
@@ -70,6 +73,7 @@ function Run(runId) {
 			else {
 				this.completionPct = 0;
 			}
+			this.useClass = getRunProgressCssClass(data);
 		},
 		'refresh': function(time) {
 			// Update handler
@@ -84,6 +88,14 @@ function Run(runId) {
 		}
 	};
 	return runObj;
+}
+
+
+function getRunProgressCssClass(run_data) {
+	if (run_data.cancelled) return 'run-failed';
+	if (run_data.finished) return 'run-completed';
+	if (run_data.run_type == "nipt") return 'nipt';
+	return 'running';
 }
 
 function GlobalBaseCounter() {
@@ -111,10 +123,18 @@ seqStatusApp.controller('SeqStatusController', function($scope, statusEventSourc
 
 	$scope.updateMachineList = function(event) {
 		var machineList = JSON.parse(event.data);
-		var newMachines = {}
-		var machineOrderedList = []
+		var newMachines = {};
+		var machineTypeOrderedList = [];
+		var machineListForType = [];
+		var prevType = null;
 		for (var i=0; i<machineList.length; ++i) {
 			var machine = Machine(machineList[i]);
+
+			if (prevType != null && machine.type != prevType) {
+				machineTypeOrderedList.push(machineListForType);
+				machineListForType = [];
+			}
+			prevType = machine.type;
 
 			for (var j=0; j<machine.run_ids.length; ++j) {
 				var runId = machine.run_ids[j];
@@ -127,10 +147,12 @@ seqStatusApp.controller('SeqStatusController', function($scope, statusEventSourc
 				}
 			}
 			newMachines[machine.id] = machine;
-			machineOrderedList.push(machine);
+			machineListForType.push(machine);
 		}
+		machineTypeOrderedList.push(machineListForType);
+
 		$scope.machines = newMachines;
-		$scope.machineOrderedList = machineOrderedList;
+		$scope.machineTypeOrderedList = machineTypeOrderedList;
 	};
 
 	// Initialise gauge
@@ -290,6 +312,5 @@ seqStatusApp.controller('SingleMachineController', function($scope, $location) {
 	$scope.refresh();
 
 });
-
 
 
