@@ -105,10 +105,9 @@ div.run-completed {
 
 div.total-count-box {
 	position: fixed;
-	/*width: 550px;*/
 	height: 300px;
-	bottom: 3px;
-	right: 3px;
+	bottom: 15px;
+	right: 20px;
 }
 
 div.total-count {
@@ -117,6 +116,7 @@ div.total-count {
 	text-align: center;
 	background-color: #FFF;
 	border: 1px solid black;
+	padding: 5px;
 }
 
 div#rate {
