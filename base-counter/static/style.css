@@ -116,7 +116,6 @@ div.total-count {
 	text-align: center;
 	background-color: #FFF;
 	border: 1px solid black;
-	padding: 5px;
 }
 
 div#rate {
@@ -130,6 +129,7 @@ div.grandtotal {
 	text-align: center;
 	font-family: monospace;
 	font-size: 1.8em;
+	margin: 5px;
 }
 
 .hidden {
