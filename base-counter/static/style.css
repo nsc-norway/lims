@@ -96,7 +96,7 @@ div.running {
 }
 
 div.nipt {
-	border-color: chocolate;
+	border-color: rgb(210, 168, 30);
 }
 
 div.run-completed {
@@ -146,6 +146,10 @@ div.progress-indicator {
 	text-align: right;
 	overflow: visible;
 	background-color: #DDF;
+}
+
+div.nipt > div.progress-wrapper > div.progress-indicator {
+	background-color: rgb(254, 255, 221);
 }
 
 div.progress-indicator-done {
