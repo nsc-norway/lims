@@ -28,7 +28,12 @@ def main(process_id):
         qc_fail = False
         if not all('Raw CP' in rep.udf for rep in replicates):
             for rep in replicates:
-                rep.udf['Exclude'] = True
+                if rep.control_type and rep.name.startswith("No Template Control ") and rep.udf.get('Raw CP', 0) == 0:
+                    # Special handling of NTC control. We should report a CP of 30 if the imported data value is
+                    # zero or missing. It is not an error if this has a missing value - that's the desired outcome.
+                    rep.udf['Raw CP'] = 30
+                else:
+                    rep.udf['Exclude'] = True
             qc_fail = True
         else:
             raw_cps = sorted(rep.udf['Raw CP'] for rep in replicates)
