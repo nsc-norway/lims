@@ -40,14 +40,14 @@ def main(process_id, file_name_prefix):
     rows = []
     for orow_index in range(16):
         for ocol_index in range(24):
-            sample_name = name_by_well.get("{}:{}".format(string.ascii_uppercase[orow_index], ocol_index), "0")
-            output_well_name = "{}{}".format(string.ascii_uppercase[orow_index], ocol_index)
+            sample_name = name_by_well.get("{}:{}".format(string.ascii_uppercase[orow_index], ocol_index+1), "0")
+            output_well_name = "{}{}".format(string.ascii_uppercase[orow_index], ocol_index+1)
             rows.append("{}\t{}".format(output_well_name, sample_name))
 
     with open(file_name_prefix + "_LightCycler.txt", "w") as of:
-        of.write("Pos\tSample Name\n")
+        of.write("Pos\tSample Name\r\n")
         for row in rows:
-            of.write(row + "\n")
+            of.write(row + "\r\n")
 
 main(sys.argv[1], sys.argv[2])
 
