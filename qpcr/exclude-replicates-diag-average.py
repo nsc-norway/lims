@@ -26,22 +26,24 @@ def main(process_id):
     
     for replicates in outputs_per_input.values():
         qc_fail = False
+
+        for rep in replicates:
+            if rep.control_type and rep.name.startswith("No Template Control ") and rep.udf.get('Raw CP', 0) == 0:
+                # Special handling of NTC control. We should report a CP of 30 if the imported data value is
+                # zero or missing. It is not an error if this has a missing value - that's the desired outcome.
+                rep.udf['Raw CP'] = 30
+
         if not all('Raw CP' in rep.udf for rep in replicates):
             for rep in replicates:
-                if rep.control_type and rep.name.startswith("No Template Control ") and rep.udf.get('Raw CP', 0) == 0:
-                    # Special handling of NTC control. We should report a CP of 30 if the imported data value is
-                    # zero or missing. It is not an error if this has a missing value - that's the desired outcome.
-                    rep.udf['Raw CP'] = 30
-                else:
                     rep.udf['Exclude'] = True
-                    qc_fail = True
+            qc_fail = True
+
         else:
-            raw_cps = sorted(rep.udf['Raw CP'] for rep in replicates)
-            mid = len(raw_cps) // 2
-            median_raw_cp = (raw_cps[mid] + raw_cps[~mid]) / 2
+            raw_cps = [rep.udf['Raw CP'] for rep in replicates]
+            mean_raw_cp = sum(raw_cps) / len(raw_cps)
             num_excluded = 0
             for rep in replicates:
-                if abs(rep.udf['Raw CP'] - median_raw_cp) > exclusion_threshold:
+                if abs(rep.udf['Raw CP'] - mean_raw_cp) > exclusion_threshold:
                     rep.udf['Exclude'] = True
                     num_excluded += 1
             if num_excluded == 2:
