@@ -24,7 +24,7 @@ for qc_fail_proc in qc_fail_processes:
                     if o['output-generation-type'] == 'PerInput' and i['limsid'] == artifact.id
             ]
             assert len(artifact_qc_out) == 1
-            texts.append(artifact_qc_out[0].udf.get('Bioinfo QC Failed Description Diag', "NULL"))
+            texts.append(artifact_qc_out[0].udf.get('Bioinfo QC Failed Description Diag', "NULL").replace('"', "'"))
         print("\t".join([str(fail_date), sample.project.name, sample.name, " | ".join(texts)]))
 
 
