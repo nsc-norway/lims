@@ -16,6 +16,15 @@ for qc_fail_proc in qc_fail_processes:
     for artifact in artifacts:
         assert len(artifact.samples) == 1
         sample = artifact.samples[0]
-        print("\t".join([str(fail_date), sample.project.name, sample.name, artifact.udf.get('Bioinfo QC Failed Description Diag', '')]))
+        bi_processes = lims.get_processes(inputartifactlimsid=artifact.id, type="Bioinformatic processing_diag 1.4")
+        texts = []
+        for bi_process in sorted(bi_processes, key=lambda proc: proc.date_run or ""):
+            artifact_qc_out = [
+                    o['uri'] for i, o in bi_process.input_output_maps
+                    if o['output-generation-type'] == 'PerInput' and i['limsid'] == artifact.id
+            ]
+            assert len(artifact_qc_out) == 1
+            texts.append(artifact_qc_out[0].udf.get('Bioinfo QC Failed Description Diag', "NULL"))
+        print("\t".join([str(fail_date), sample.project.name, sample.name, " | ".join(texts)]))
 
 
