@@ -57,3 +57,11 @@ take care to update `../../Project_Evaluation_Step/settings.py`, which defines
 a list of fields to copy between the Project Evaluation Step process and the
 project in LIMS.
 
+### Usage
+
+    nettskjema-importer.py LIMS_PROCESS_ID
+
+or, for testing
+
+    nettskjema-importer.py INPUT_FILE test
+

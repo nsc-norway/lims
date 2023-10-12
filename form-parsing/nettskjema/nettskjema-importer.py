@@ -121,7 +121,6 @@ def main(process_id, test=False):
             # Remove leading asterisk and tab/space -- asterisk plain text format
             answer = re.sub(r"^\*[ \t]+", "", answer)
             qas.append((question, answer))
-    print(qas)
     udfs_to_set = {}
     for question in conf['questions']:
         value = None
@@ -149,7 +148,7 @@ def main(process_id, test=False):
         if 'transform' in question and value is not None:
             value = transforms[question['transform']](value)
 
-        if value is not None:
+        if value is not None and value is not '':
             udfs_to_set[question['udf']] = value
     
     if test:
