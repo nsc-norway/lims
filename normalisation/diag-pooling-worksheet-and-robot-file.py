@@ -5,6 +5,17 @@ import xlwt
 from genologics.lims import *
 from genologics import config
 
+# Pooling script for the following scenario:
+#  * Equimolar pooling of WGS libraries ("normal" samples)
+#  * Optional addition (spike-in) of pool of targeted libraries into WGS pool ("special" samples)
+
+# The spike-in pool is referred to a "special" pool/sample below. The calculations are
+# based on requirements specified by the lab, and are somewhat complex. The spike-in
+# should not be counted in the final concentration. The relative spike-in amount should
+# be adjusted based on the final input concentration used for the sequencer, so the spike-in
+# pool is always loaded at the same input concentration - step UDF "EKG pool target molarity (nM)".
+
+
 TUBE = 'Tube'
 
 def get_tuple_key(input_artifact):
@@ -29,6 +40,13 @@ def is_special_ekg_pool(artifact):
 def get_sample_details(pool_input_samples, pool_pool_volume, target_sample_conc, input_tubes,
                         target_special_pool_molarity):
 
+    """
+    pool_input_samples:   List of Artifacts to be pooled
+    pool_pool_volume:     Desired pool volume of the pool to create
+    target_sample_conc:   The target molarity of the pool (normal samples only)
+    input_tubes:          List of input tubes used for special pools - used to count sequential well numbers
+    target_special_pool_molarity: Desired molarity of the special pool, after correcting for loading concentration
+    """
     target_sample_conc_str = "%4.2f" % target_sample_conc
 
     unknown_molarity = []
@@ -52,7 +70,8 @@ def get_sample_details(pool_input_samples, pool_pool_volume, target_sample_conc,
         special_type = is_special_ekg_pool(input)
         if special_type:
             # Compute volume for special library (sub-pool) using standard formula
-            sample_volume = pool_pool_volume * target_special_pool_molarity / sample_molarity
+            target_molarity = target_special_pool_molarity 
+            sample_volume = pool_pool_volume * target_molarity / sample_molarity
             all_special_samples = input.lims.get_batch(input.samples)
             all_special_projects = set(sam.project for sam in all_special_samples)
             sample_name = "|".join(project.name for project in all_special_projects if project)
@@ -72,6 +91,7 @@ def get_sample_details(pool_input_samples, pool_pool_volume, target_sample_conc,
                         target_sample_conc, ".")
                 error = True
                 
+            target_molarity = target_sample_conc 
             sample_volume = pool_pool_volume * target_sample_conc / sample_molarity
             sample_name = input.name
             # The location should be in a plate. If it's tubular instead, the source will be '11'
@@ -85,7 +105,8 @@ def get_sample_details(pool_input_samples, pool_pool_volume, target_sample_conc,
             'source_well': source_well,
             'sample_molarity': sample_molarity,
             'sample_volume': sample_volume,
-            'special_type': special_type
+            'special_type': special_type,
+            'target_molarity': target_molarity,
         })
 
     if unknown_molarity:
@@ -221,10 +242,20 @@ def main(process_id, robot_file_name, worksheet_file_name):
         )
         target_sample_conc = pool_norm_conc * 1.0 / num_normal_samples
 
+        # The UDF 'EKG pool target molarity (nM)' refers to the final input
+        # concentration on the NovaSeq, after potentially another dilution in the Dilute and 
+        # Denature step. We compute the molarity that the component pool has to have now.
+        base_special_molarity = process.udf.get('EKG inputkons. (nM)')
+        if base_special_molarity is None:
+            adjusted_special_molarity = None
+        else:
+            nov_input_conc = output.udf['Input Conc. (nM)']
+            adjusted_special_molarity = base_special_molarity * pool_norm_conc / nov_input_conc
+
         # Get a list of sample information dicts
         samples, error = \
             get_sample_details(pool.inputs, pool_pool_volume, target_sample_conc, input_tubes,
-                                target_special_pool_molarity=process.udf.get('EKG pool target molarity (nM)'))
+                                target_special_pool_molarity=adjusted_special_molarity)
 
         # Compute total sample volume, to determine amount of buffer
         total_sample_volume = sum(sample['sample_volume'] for sample in samples)
@@ -258,6 +289,15 @@ def main(process_id, robot_file_name, worksheet_file_name):
     #   [{pool2_sample1}, ...],
     #   ....   
     #]
+
+    special_sample_report = []
+    for pool in pool_list:
+         for sample in pool:
+             if sample["special_type"]:
+                 special_sample_report.append("{:10} {:10} {:7.4f} nM".format(sample['pool_name'], sample['sample_name'], sample['target_molarity']))
+    if special_sample_report:
+        process.udf['Normalization concs. (nM)'] = "\n".join(special_sample_report)
+        process.put()
 
     write_worklist_file(pool_list, worksheet_file_name)
     write_robot_file(pool_list, robot_file_name)
