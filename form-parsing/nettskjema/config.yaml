@@ -113,7 +113,6 @@ questions:
 
   - udf:        'Billing address'
     line:       'Billing institution and full billing address'
-    transform:  'skip_first_line'
 
   - udf:        'Purchase order number'
     line:       'Purchase Order Number'
