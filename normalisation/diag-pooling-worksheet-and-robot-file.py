@@ -298,7 +298,7 @@ def main(process_id, robot_file_name, worksheet_file_name):
              if sample["special_type"]:
                  special_sample_report.append("{:10} {:10} {:7.4f} nM".format(sample['pool_name'], sample['sample_name'], sample['target_molarity']))
     if special_sample_report:
-        process.udf['Normalization concs. (nM)'] = "\n".join(special_sample_report)
+        process.udf['EKG Normalization concs. (nM)'] = "\n".join(special_sample_report)
         process.put()
 
     write_worklist_file(pool_list, worksheet_file_name)
