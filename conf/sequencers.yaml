@@ -1,15 +1,3 @@
-- type: novaseq
-  name: Nordis
-  id: A00943
-- type: novaseq
-  name: Nobel
-  id: A01447
-- type: nextseq
-  name: Nessie
-  id: NDX551382
-- type: nextseq
-  name: Newton
-  id: NDX551162
 - type: miseq
   name: Missy
   id: M07166
@@ -19,3 +7,15 @@
 - type: miseq
   name: Mike
   id: M02980
+- type: nextseq
+  name: Nessie
+  id: NDX551382
+- type: nextseq
+  name: Newton
+  id: NDX551162
+- type: novaseq
+  name: Nordis
+  id: A00943
+- type: novaseq
+  name: Nobel
+  id: A01447
