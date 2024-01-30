@@ -21,7 +21,7 @@ def main(process_id, key_value_pairs):
     for project in projects:
         for key,value in zip(key_value_pairs[::2], key_value_pairs[1::2]):
             project.udf[key] = value
-            project.put()
+        project.put()
 
 main(sys.argv[1], sys.argv[2:])
 
