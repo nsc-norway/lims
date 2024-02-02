@@ -46,7 +46,7 @@ def main(process_id):
                 if abs(rep.udf['Raw CP'] - mean_raw_cp) > exclusion_threshold:
                     rep.udf['Exclude'] = True
                     num_excluded += 1
-            if num_excluded == 2:
+            if num_excluded >= 2:
                 qc_fail = True
         for rep in replicates:
             rep.qc_flag = "FAILED" if qc_fail else "PASSED"
