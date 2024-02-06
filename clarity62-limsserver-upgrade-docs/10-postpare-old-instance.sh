@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+echo "MAKE SURE YOU HAVE A BACKUP OR SNAPSHOT OF THE LIMS SERVER"
+
 # Run as the root user on the old clarity server before upgrade
 
 # -- 1. validation ---
@@ -21,8 +24,9 @@ mkdir -p /opt/tmp
 chown postgres:postgres /opt/tmp
 chmod 2700 /opt/tmp
 mount -o bind /opt/tmp /tmp
-sudo -u postgres bash -c 'pg_dump -b -O -Ft clarityDB' | gzip > /opt/clarity-5.1-`date +%Y%m%d%H%M`.tar
+sudo -u postgres bash -c 'pg_dump -b -O -Ft clarityDB' | gzip > /opt/clarity-5.2-`date +%Y%m%d%H%M`.tar
 umount /tmp
+
 
 cd /
 rpm -qa | grep "BaseSpace\|Clarity" > clarityrpms.txt
@@ -36,7 +40,6 @@ tar cfJ /opt/backups.tar.xz \
     /var/lib/pgsql/9.6/data/pg_hba.conf \
     /var/lib/pgsql/9.6/data/postgresql.conf \
     clarityrpms.txt \
-    /opt/clarity-5.1-*.tar
+    /root/ssl/$HOSTNAME.cnf
 
-# Backup the rabbitmq password
-sudo -u glsjboss java -jar /opt/gls/clarity/tools/secretutil/secretutil.jar "app.rabbitmq.password"
+echo "Todo: copy postgres backup and file backup."

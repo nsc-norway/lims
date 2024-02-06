@@ -1,0 +1,39 @@
+# New instance setup
+
+First install the OS using the GUI installer, according to the wiki.
+Select the first disk sda as the installation destination and choose to free all the space on it.
+Leave the other disks sdb and sdc alone.
+
+After install, BEFORE RUNNING ANSIBLE, set up /var and /opt:
+
+Make sure to have a backup.
+
+----
+wipefs -a /dev/sdb
+wipefs -a /dev/sdc
+
+# VAR
+mkdir /var/lib/pgsql
+mkfs -t xfs /dev/sdb
+
+# OPT  
+mkfs -t xfs /dev/sdc
+----
+
+
+Add to /etc/fstab. Use UUIDs from /dev/disk/by-uuid, NOT the device names given below.
+The device names sdb and sdc are not stable in all situations in OL8. See the other entries
+in fstab.
+
+    /dev/sdb	/var/lib/pgsql	xfs	defaults	0 0
+    /dev/sdc	/opt	xfs	defaults	0 0
+
+Reboot and confirm mounting.
+
+----
+
+* Delete the LIMS server from IPA.
+* RUN ANSIBLE CONFIGURATION ON THE NEW SERVER
+* yum update & reboot
+* Add the host to the group lims-servers in IPA.
+

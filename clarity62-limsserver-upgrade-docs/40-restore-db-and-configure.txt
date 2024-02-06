@@ -1,0 +1,98 @@
+# Install/Upgrade guide item
+
+
+
+# NOTE: Commands here require the root user unless otherwise stated.
+
+
+
+# Backup files: From 10-postpare-old-instance.sh
+# Set paths as appropriate
+export FS_BACKUP_FILE=/data/runScratch.boston/UserData/paalmbj/backups.tar.xz
+export DB_BACKUP_FILE=/data/runScratch.boston/UserData/paalmbj/clarity-5.2-202402051047.tar
+
+# Untar backupfile in /opt/restore
+mkdir -p /opt/restore && cd /opt/restore && tar xf $FS_BACKUP_FILE
+
+
+# Install Certificates
+/opt/gls/clarity/config/installCertificates.sh
+
+#Enter the full path to the SSL Private Key for your server:
+#/opt/restore/etc/httpd/sslcertificate/dev-lims.sequencing.uio.no.key
+#Enter the full path to the Apache Certificate for your server - This is the certificate signed by the SSL Vendor or Certificate Authority:
+#/opt/restore/etc/httpd/sslcertificate/dev-lims_sequencing_uio_no.crt
+#Do you have a SSL Vendor Chain File to use: [Y/N]
+#y
+#Enter the full path to the SSL Vendor Chain file:
+#/opt/restore/etc/httpd/sslcertificate/intermediate.crt
+
+# Start & stop clarity to confirm it works
+
+/opt/gls/clarity/bin/run_clarity.sh start
+
+# Confirm login as admin
+
+/opt/gls/clarity/bin/run_clarity.sh stop
+
+
+# 2. Restore database backup
+sudo -u postgres dropdb "clarityDB"
+sudo -u postgres createdb -O clarity "clarityDB"
+
+# Make sure the backup file is readable by the postgres user
+sudo -u postgres ls $DB_BACKUP_FILE
+
+# Importing it as tar fails, instead we extract it and then import it
+mkdir /opt/dbrestore
+cd /opt/dbrestore
+chmod a+rx .
+tar xf $DB_BACKUP_FILE
+sudo -u postgres pg_restore -Fd -d clarityDB .
+cd /
+rm -r /opt/dbrestore
+
+# Grant access on the public schema (new defaults in PG15 require this)
+sudo -u postgres psql clarityDB -c 'GRANT ALL ON SCHEMA public TO clarity;'
+
+# 3. Restore file store backups
+# Confirm that the owner of glsftp is glsftp:claritylims:
+ls -l /opt/restore/opt/gls/clarity/users
+
+rsync -a /opt/restore/opt/gls/clarity/users/glsftp/ /opt/gls/clarity/users/glsftp/
+
+# Restore custom scripts
+sudo rsync -a /opt/restore/opt/gls/clarity/customextensions/ /opt/gls/clarity/customextensions/
+
+# Restore SSL certificate config file
+mkdir /root/ssl
+cp /opt/restore/root/ssl/$HOSTNAME.cnf /root/ssl
+
+# Restore corntab if applicable
+cat /etc/crontab
+cp /opt/restore/etc/crontab /etc/crontab
+
+
+# 4. Migrate the database to new clarity version
+sudo -u glsjboss /opt/gls/clarity/config/migrate_claritylims_database.sh
+
+
+# 5. Rerun Ansible to make sure the DB permissions are correct
+# [RERUN ANSIBLE FROM ANSIBLE HOST]
+
+# 6. Delete ElasticSearch indices
+sudo service elasticsearch start
+for indexname in `curl -s 'http://localhost:9200/_cat/indices?
+         h=index'`; do echo "Delete index: $indexname"; curl -XDELETE
+         "http://localhost:9200/$indexname"; echo ""; done
+sudo /opt/gls/clarity/bin/run_clarity.sh stop
+sudo /opt/gls/clarity/bin/run_clarity.sh start
+
+# ?. Install NGS package and preconfigured workflow
+#sudo yum --enablerepo=GLS_clarity52 install ClarityLIMS-NGS-Package-v5 BaseSpaceLIMS-Pre-configured-Workflows-Package
+
+
+
+echo "After completing this procedure, perform the validation"
+echo "Sequencer integrations are not installed by commands in this script. Determine the"
+echo "appropriate sequencer integrations and install them manually."

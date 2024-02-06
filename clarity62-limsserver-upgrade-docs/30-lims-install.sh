@@ -10,14 +10,11 @@ sudo -u postgres psql -c '\password clarity'
 echo -n "## SELinux state: "
 getenforce
 
-# Find packages to install. ClarityLIMS-App will pull in the other ones as dependencies (check).
-# Need to disable EPEL, otherwise we get wrong erlang version and a conflict.
-cat /opt/backup/clarityrpms.txt
-sudo yum --enablerepo=GLS_clarity52 --disablerepo=epel install ClarityLIMS-App
+# Install main Clarity LIMS app.
+sudo yum --enablerepo=GLS_clarity62-onprem install ClarityLIMS-App
 
-# If you don't have EPEL, this will fail. Then remove "--disablerepo=epel".
 
-# OUTPUT
+# OUTPUT (no action needed here)
 
 ##         Please configure Clarity LIMS: As the glsjboss user, run the following configuration scripts found in /opt/gls/clarity/config/pending.
 ## 05_configure_claritylims_secretutil.sh
@@ -44,7 +41,6 @@ sudo passwd glsjboss
 # The database-related actions of these scripts will be eliminated when we restore the DBs
 # in the next installation step. However, we complete all the step to make sure the file-based
 # actions are completed.
-
 
 
 # 05_configure_claritylims_secretutil.sh
@@ -83,9 +79,9 @@ sudo -u glsjboss /opt/gls/clarity/config/pending/05_configure_claritylims_secret
 
 #20_configure_claritylims_platform.sh
 echo "## See the installation record for what to enter:"
-echo " - Use database type Postgres and database host: dev-lims.sequencing.uio.no (etc)."
-echo " - USE THESE VALUES: The DB username is always 'clarity' and the tenant lookup database"
-echo "   is always 'clarityTenantLookup' (regardless of the installation record)"
+echo " - Use database type Postgres and database host FQDN: dev-lims.sequencing.uio.no (etc)."
+echo " - USE THESE VALUES: The tenant lookup database is always 'clarityTenantLookup'"
+echo "   and the DB username is always 'clarity'  (regardless of the installation record)"
 sudo -u glsjboss /opt/gls/clarity/config/pending/20_configure_claritylims_platform.sh
 
 #26_initialize_claritylims_tenant.sh
@@ -108,8 +104,3 @@ echo "## Configure tomcat memory -- set JAVA_MAX_RAM to 8192. Pess Enter to open
 read
 sudo vim /opt/gls/clarity/tomcat/current/bin/setenv.sh
 
-## From KB article to set Elasticsearch memory. There is no line with ES_HEAP_SIZE, so skip
-## this part.
-#echo "## Configure elasticsearch memory -- set ES_HEAP_SIZE to 2g. Pess Enter to open vim."
-#read
-#sudo vim /etc/sysconfig/elasticsearch

@@ -1,4 +1,9 @@
+blinker
+cycler
+flask
+illuminate
 interop
+jinja2
 matplotlib
 numpy
 openpyxl
@@ -8,4 +13,3 @@ requests
 virtualenv
 xlrd
 xlwt
-jinja2
