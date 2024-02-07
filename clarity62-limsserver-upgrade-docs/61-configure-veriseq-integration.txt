@@ -1,0 +1,11 @@
+# Install VeriSeq NIPT integration
+
+
+yum install --enablerepo=GLS* BaseSpaceLIMS-veriseq-nipt-extensions BaseSpaceLIMS-veriseq-nipt-file-capture-service
+
+
+Create a new property in file /opt/gls/clarity/automation_worker/conf/api-access.properties, with the
+password of APIUser:
+
+api.password=APIUSER_PASSWORD
+

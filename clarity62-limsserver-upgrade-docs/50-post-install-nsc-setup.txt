@@ -1,0 +1,109 @@
+# Setup of custom LIMS features
+
+Post-install setup instructions: run commands as root.
+
+yum --enablerepo=GLS* install ClarityLIMS-NGS-Package-v5
+
+
+# Enable the API user password
+
+Enter glsais home dir and create a file for the genologics client library.
+
+cd /opt/gls/clarity/users/glsai
+
+vim .genologicsrc
+--------
+[genologics]
+BASEURI=https://dev-lims.sequencing.uio.no
+USERNAME=apiuser
+PASSWORD=(apiuser password)
+--------
+chown glsai:claritylims .genologicsrc
+
+
+# Install python environments & create nsc-pythonX links
+
+See ../environment/README.md.
+Outline: create packages.tar.gz on Internet-connected host, and then install it with
+sudo bash script02-limsserver-install.sh.
+
+
+
+# Web apps
+
+
+# Allow the web server to read the custom scripts locations in clarity
+setfacl -R -d -m u:apache:rx /opt/gls/clarity/customextensions
+setfacl -R -m u:apache:rx /opt/gls/clarity/customextensions
+setfacl -R -d -m g:claritylims:rx /opt/gls/clarity/customextensions
+# Also set permissions for group claritylims, used by wsgi
+chgrp -R claritylims /opt/gls/clarity/customextensions
+chmod g+s /opt/gls/clarity/customextensions
+chmod -R g+rwX /opt/gls/clarity/customextensions
+
+# Copy WSGI configuration files to httpd's configuration dir
+cp /opt/gls/clarity/customextensions/lims/monitor/sequencing-overview.conf /etc/httpd/conf.d/
+cp /opt/gls/clarity/customextensions/lims/sav-downloader/sav-downloader.conf /etc/httpd/conf.d/
+cp /opt/gls/clarity/customextensions/lims/reagents-ui/reagents.conf /etc/httpd/conf.d/
+cp /opt/gls/clarity/customextensions/lims/proj-imp/project-importer.conf /etc/httpd/conf.d/
+cp /opt/gls/clarity/customextensions/lims/base-counter/counter.conf /etc/httpd/conf.d/
+
+# Mini-databases
+# Reagent kit information
+sudo mkdir /var/db/kits
+sudo cp /opt/gls/clarity/customextensions/lims/reagents-ui/backend/kits.yml /var/db/kits
+sudo chown -R glsai:claritylims /var/db/kits
+
+sudo mkdir /var/db/rundb
+sudo chown -R glsai:claritylims /var/db/rundb
+
+sudo mkdir /var/db/nsc-status
+sudo chown -R glsai:claritylims /var/db/nsc-status
+
+
+# Set initial base counter count
+echo 0 > /var/db/nsc-status/count.txt
+
+
+
+# Allow access into the script locations by the lims-dev group:
+
+setfacl -R -d -m g:lims-dev:rwx /opt/gls/clarity/customextensions
+setfacl -R -m g:lims-dev:rwx /opt/gls/clarity/customextensions
+
+----
+
+# Configure access from primary storage
+
+1. Get UIDs by checking the local user ID (UID) on the Clarity server.
+
+id glsai; id glsjboss
+
+These are expected to be the same for a given install procedure (e.g. Clarity LIMS 6.2 on OL8), even
+on different hosts.
+
+3. Create local users on Isilon in the LOCAL: System provider for both these accounts.
+
+User name: glsai / glsjboss (or can be different, as long as used consistently in boston)
+Password: Generate a random PW, need not be saved
+UID: Set the **same UID as in the LIMS server**
+Groups: (blank)
+Enable this account: [ ] Unchecked
+
+
+2. Configure inheritable read prermission to the root of runScratch (running as root on the Isilon)
+
+    cd /ifs/data/runScratch
+    ls -led
+    chmod +a user glsjboss allow generic_read,dir_gen_execute,object_inherit,container_inherit .
+    chmod +a user glsai allow generic_read,dir_gen_execute,object_inherit,container_inherit .
+
+3. Configure permission to specific locations
+
+    cd /ifs/data/runScratch
+    chmod -R +a user glsjboss allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit gls_events_*
+    chmod -R +a user glsai allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit SampleSheets
+    chmod +a user glsai allow dir_gen_execute,generic_read,object_inherit,container_inherit processed
+    chmod -R +a user glsjboss allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit test
+    chmod -R +a user glsai allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit test
+

@@ -1,0 +1,1 @@
+yum --enablerepo=GLS* install ClarityLIMS-Illumina-MiSeq-Package-v8
