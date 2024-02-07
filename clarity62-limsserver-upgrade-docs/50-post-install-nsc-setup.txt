@@ -79,22 +79,31 @@ setfacl -R -m g:lims-dev:rwx /opt/gls/clarity/customextensions
 
 id glsai; id glsjboss
 
-3. Create local users on Isilon in the LOCAL: System provider with these UID, any names (example glsai-new glsjboss-new below)
+These are expected to be the same for a given install procedure (e.g. Clarity LIMS 6.2 on OL8), even
+on different hosts.
 
-TODO!
+3. Create local users on Isilon in the LOCAL: System provider for both these accounts.
+
+User name: glsai / glsjboss (or can be different, as long as used consistently in boston)
+Password: Generate a random PW, need not be saved
+UID: Set the **same UID as in the LIMS server**
+Groups: (blank)
+Enable this account: [ ] Unchecked
+
 
 2. Configure inheritable read prermission to the root of runScratch (running as root on the Isilon)
 
-    cd /ifs/dta
-    chmod +a user glsjboss-new allow generic_read,object_inherit,container_inherit runScratch
-    chmod +a user glsai-new allow generic_read,object_inherit,container_inherit runScratch
+    cd /ifs/data/runScratch
+    ls -led
+    chmod +a user glsjboss allow generic_read,dir_gen_execute,object_inherit,container_inherit .
+    chmod +a user glsai allow generic_read,dir_gen_execute,object_inherit,container_inherit .
 
 3. Configure permission to specific locations
 
-    chmod -R +a user glsjboss-new allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit gls_events_*
-    chmod +a user glsai-new allow dir_gen_execute,dir_gen_read SampleSheets
-    chmod +a user glsai-new allow dir_gen_execute,generic_read,object_inherit,container_inherit processed
-    chmod -R +a user glsai-new allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit SampleSheets/*
-    chmod +a user glsai-new allow dir_gen_execute,generic_write,generic_read,container_inherit,inherit_only SampleSheets
-
+    cd /ifs/data/runScratch
+    chmod -R +a user glsjboss allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit gls_events_*
+    chmod -R +a user glsai allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit SampleSheets
+    chmod +a user glsai allow dir_gen_execute,generic_read,object_inherit,container_inherit processed
+    chmod -R +a user glsjboss allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit test
+    chmod -R +a user glsai allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit test
 

@@ -27,10 +27,6 @@ Main Install procedure: https://support-docs.illumina.com/SW/ClarityCore_v6/Cont
 
 
 
-### Permissions on primary storage
-
-
-
 
 ### OUS node: Create principals view
 
