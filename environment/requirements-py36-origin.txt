@@ -1,3 +1,7 @@
+blinker
+cycler
+flask
+illuminate
 interop
 matplotlib
 numpy
