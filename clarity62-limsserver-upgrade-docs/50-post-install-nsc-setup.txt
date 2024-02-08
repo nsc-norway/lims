@@ -60,6 +60,9 @@ sudo chown -R glsai:claritylims /var/db/rundb
 sudo mkdir /var/db/nsc-status
 sudo chown -R glsai:claritylims /var/db/nsc-status
 
+sudo mkdir /var/lims-scripts
+sudo chown -R glsai:claritylims /var/lims-scripts
+
 
 # Set initial base counter count
 echo 0 > /var/db/nsc-status/count.txt
