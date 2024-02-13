@@ -107,6 +107,17 @@ Enable this account: [ ] Unchecked
     chmod -R +a user glsjboss allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit gls_events_*
     chmod -R +a user glsai allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit SampleSheets
     chmod +a user glsai allow dir_gen_execute,generic_read,object_inherit,container_inherit processed
+
+
+
+# Set diagprod password:
+# The diagprod password is shared with diagnostics. We don't keep a copy of it.
+
+sudo -u postgres psql -c '\password diagprod'
+
+
+
+
     chmod -R +a user glsjboss allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit test
     chmod -R +a user glsai allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit test
 
