@@ -7,6 +7,9 @@
 - type: miseq
   name: Mike
   id: M02980
+- type: miseq
+  id: M04064
+  name: Mimmi
 - type: nextseq
   name: Nessie
   id: NDX551382
