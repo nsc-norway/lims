@@ -7,6 +7,7 @@ import threading
 import json
 import string
 import Queue as Mod_Queue # Due to name conflict with genologics
+import yaml
 from flask import Flask, url_for, abort, jsonify, Response, request,\
         render_template, redirect
 from werkzeug.utils import secure_filename
@@ -36,6 +37,12 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 # (only one project may be created at a time)
 project_types = {}
 project_types_lock = threading.Lock()
+
+# Get MiSeqs
+miseqs = [seq['name']
+            for seq in yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "sequencers.yaml")))
+            if seq['type'] == 'miseq'
+            ]
 
 # Return 404 for root path and subpaths not ending with /
 @app.route("/")
@@ -67,7 +74,7 @@ def get_project_start_page(project_type):
     project_data = get_project_def(project_type)
     project_title = project_data['project_title_prefix'] +\
             "-" + datetime.date.today().isoformat()
-    return render_template("index.html", project_title=project_title, **project_data)
+    return render_template("index.html", project_title=project_title, miseqs=miseqs, **project_data)
 
 
 @app.route("/<project_type>/submit", methods=["POST"])
@@ -83,7 +90,7 @@ def submit_project(project_type):
 
     if '' in [username, password, project_title]:
         return render_template("index.html", username=username, password=password,
-                project_title=project_title,
+                project_title=project_title, miseqs=miseqs,
                 error_message= "Please specify username, password and project title",
                 **project_data)
 
@@ -96,7 +103,7 @@ def submit_project(project_type):
             raise ValueError("No file provided")
     except (KeyError, ValueError):
         return render_template("index.html", username=username, password=password, 
-                project_title=project_title,
+                project_title=project_title, miseqs=miseqs,
                 error_message="Sample file upload failed. Make sure sample file is specified.",
                 **project_data)
 

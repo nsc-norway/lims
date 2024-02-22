@@ -64,7 +64,7 @@
     <td>MiSeq Instrument:</td>
     <td><select name="param_miseq">
             <option value="NULL">Select one...</option>
-            {% for miseq in ['Missy', 'Mina', 'Mike'] %}
+            {% for miseq in miseqs %}
             <option value="{{ miseq }}"{{ ' selected="selected"' if param_miseq == miseq }}>{{ miseq }}</option>
             {% endfor %}
         </select>
