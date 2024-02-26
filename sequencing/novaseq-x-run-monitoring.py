@@ -135,6 +135,16 @@ def set_initial_fields(process, run_parameters, run_id):
     # Set run parameters
     #TODO set same parameters as on NovaSeq 6000
 
+    # Even though Flow Cell ID is recorded as a lot, we also record it as a UDF
+    # to enable quick searching for processes by Flow Cell ID.
+    for consumable_info in run_parameters.findall("RunParameters/ConsumableInfo/ConsumableInfo"):
+        if consumable_info.find("Type").text == "FlowCell":
+            process.udf['Flow Cell ID'] = consumable_info.find("SerialNumber").text
+            break
+    else:
+        logging.warning(f"Flow Cell ID not found in RunParameters.xml.")
+    
+
     process.put()
 
 
