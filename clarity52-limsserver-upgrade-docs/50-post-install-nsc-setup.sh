@@ -41,3 +41,41 @@ sudo chown -R glsai:claritylims /var/db/rundb
 
 sudo mkdir /var/db/nsc-status
 sudo chown -R glsai:claritylims /var/db/nsc-status
+
+# Automation worker on LIMS-PC6
+
+#1. Automation worker:
+
+#Install procedure here:
+# https://support-docs.illumina.com/SW/ClarityCore_v6/Content/SW/ClarityLIMS/AutomationWorkerNodes_swCL.htm
+
+
+# Copy the deployment file
+sudo cp /opt/gls/clarity/config/.templates/automation_worker/claritylims-aiinstaller-8.16.0.601-deployment-bundle.zip /data/runScratch.boston/
+# This file can be decompressed in C:\TEMP to use for installation
+# Run the SETUP_VISTA.bat as administrator.
+# Enter usernames for apiuser and glsftp. Channel is limspc6.
+# NOTE: The upper/lower case of apiuser must be the same as in the following secretutil command below.
+
+# SecretUtil is needed.
+# 1. Copy the secretutil jar file and config files
+sudo cp -r  /opt/gls/clarity/tools/secretutil /boston/runScratch/UserData/paalmbj/
+
+# 2. Remove the contents of secret.properties leaving an empty file
+
+# 3. Per the guide, copy the secretutil directory to C:\opt\gls\clarity\tools\secretutil
+
+# 4. Go to the system settings and set environment variabltes:
+
+CLARITYSECRET_HOME=C:\opt\gls\clarity\tools\secretutil
+CLARITYSECRET_ENCRYPTION_KEY= (generate a random password)
+
+# 5. On elevated command prompt enter these
+
+# REPLACE <secret> with the relevant passwords
+java -jar C:\opt\gls\clarity\tools\secretutil\secretutil.jar -u=<secret> app.ftp.password
+java -jar C:\opt\gls\clarity\tools\secretutil\secretutil.jar -u=<secret> -n=integration apiusers/apiuser
+
+
+# Restart the service / reboot
+

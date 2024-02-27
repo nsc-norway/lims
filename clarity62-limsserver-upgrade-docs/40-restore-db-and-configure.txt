@@ -89,7 +89,7 @@ sudo /opt/gls/clarity/bin/run_clarity.sh stop
 sudo /opt/gls/clarity/bin/run_clarity.sh start
 
 # ?. Install NGS package and preconfigured workflow
-#sudo yum --enablerepo=GLS_clarity52 install ClarityLIMS-NGS-Package-v5 BaseSpaceLIMS-Pre-configured-Workflows-Package
+#sudo yum --enablerepo=GLS_clarity52 install ClarityLIMS-NGS-Package-v5 BaseSpaceLIMS-Pre-configured-Workflows-Package ClarityLIMS-LabLink
 
 
 

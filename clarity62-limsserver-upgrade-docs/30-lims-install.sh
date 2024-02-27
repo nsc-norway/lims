@@ -100,7 +100,7 @@ echo "## The certificate config will fail, we fix later"
 sudo /opt/gls/clarity/config/pending/40_root_install_proxy.sh
 
 
-echo "## Configure tomcat memory -- set JAVA_MAX_RAM to 8192. Pess Enter to open vim."
+echo "## Configure tomcat memory -- set JAVA_MAX_RAM to 8192."
 read
 sudo vim /opt/gls/clarity/tomcat/current/bin/setenv.sh
 

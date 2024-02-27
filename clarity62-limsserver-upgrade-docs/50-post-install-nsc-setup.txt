@@ -60,6 +60,9 @@ sudo chown -R glsai:claritylims /var/db/rundb
 sudo mkdir /var/db/nsc-status
 sudo chown -R glsai:claritylims /var/db/nsc-status
 
+sudo mkdir /var/lims-scripts
+sudo chown -R glsai:claritylims /var/lims-scripts
+
 
 # Set initial base counter count
 echo 0 > /var/db/nsc-status/count.txt
@@ -104,6 +107,17 @@ Enable this account: [ ] Unchecked
     chmod -R +a user glsjboss allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit gls_events_*
     chmod -R +a user glsai allow dir_gen_execute,generic_write,generic_read,object_inherit,container_inherit SampleSheets
     chmod +a user glsai allow dir_gen_execute,generic_read,object_inherit,container_inherit processed
+
+
+
+# Set diagprod password:
+# The diagprod password is shared with diagnostics. We don't keep a copy of it.
+
+sudo -u postgres psql -c '\password diagprod'
+
+
+
+
     chmod -R +a user glsjboss allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit test
     chmod -R +a user glsai allow dir_gen_execute,generic_write,generic_read,std_delete,object_inherit,container_inherit test
 
