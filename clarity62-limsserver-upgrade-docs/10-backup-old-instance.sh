@@ -24,7 +24,7 @@ mkdir -p /opt/tmp
 chown postgres:postgres /opt/tmp
 chmod 2700 /opt/tmp
 mount -o bind /opt/tmp /tmp
-sudo -u postgres bash -c 'pg_dump -b -O -Ft clarityDB' | gzip > /opt/clarity-5.2-`date +%Y%m%d%H%M`.tar
+sudo -u postgres bash -c 'pg_dump -b -O -Ft clarityDB' | gzip > /opt/clarity-5.2-`date +%Y%m%d%H%M`.tar.gz
 umount /tmp
 
 
