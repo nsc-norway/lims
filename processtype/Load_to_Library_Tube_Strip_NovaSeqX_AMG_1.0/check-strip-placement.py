@@ -1,0 +1,1 @@
+../../novaseqx/check-strip-placement.py

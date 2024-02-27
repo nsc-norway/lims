@@ -1,0 +1,41 @@
+[Header],
+FileFormatVersion,2
+RunName,{{ process.udf.get('Run Name', '') }}
+InstrumentPlatform,NovaSeqXSeries
+InstrumentType,NovaSeqXPlus
+IndexOrientation,Forward
+
+[Reads]
+Read1Cycles,{{ process.udf['Read 1 Cycles'] }}
+Read2Cycles,{{ process.udf['Read 2 Cycles']  }}
+Index1Cycles,{{ process.udf['Index 1 Cycles'] }}
+Index2Cycles,{{ process.udf['Index 2 Cycles'] }}
+
+[Sequencing_Settings]
+InputContainerIdentifier,{{ library_tube_strip_id }}
+
+[BCLConvert_Settings]
+SoftwareVersion,{{ process.udf['DRAGEN BCLConvert SoftwareVersion'] }}
+FastqCompressionFormat,{{ fastq_compression_format }}
+
+[BCLConvert_Data]
+Lane,Sample_ID,Sample_Name,Sample_Project,index,index2,OverrideCycles,BarcodeMismatchIndex1,BarcodeMismatchIndex2
+{% for row in bclconvert_rows %}{{ row.lane }},{{ row.artifact.id }},{{ row.sample.name }},{{ row.sample.project.name }},{{ row.index1 }},{{ row.index2 }},{{ row.override_cycles }},{{ row.barcode_mismatches }},{{ row.barcode_mismatches }}
+{% endfor %}
+
+{% if dragen_rows %}
+[DragenGermline_Settings]
+SoftwareVersion,{{ process.udf['DragenGermline SoftwareVersion', ''] }}
+AppVersion,{{ process.udf.get('DRAGEN AppVersion DragenGermline') }}
+MapAlignOutFormat,cram
+KeepFastQ,true
+ReferenceGenomeDir,hs37d5-cnv.rna-8-1667497696-2
+VariantCallingMode,AllVariantCallers
+
+[DragenGermline_Data]
+Sample_ID
+{% for row in dragen_rows %}
+{{ row.artifact.id }}
+{% endfor %}
+{% endif %}
+

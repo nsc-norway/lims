@@ -1,0 +1,1 @@
+../../novaseqx/novaseq-denature-script.py
