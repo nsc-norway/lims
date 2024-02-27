@@ -30,7 +30,7 @@ umount /tmp
 
 cd /
 rpm -qa | grep "BaseSpace\|Clarity" > clarityrpms.txt
-tar cfJ /opt/backups.tar.xz \
+tar cf /opt/backups.tar \
     /opt/gls/clarity/users/glsftp \
     /opt/gls/clarity/customextensions \
     /opt/gls/clarity/glscontents \
