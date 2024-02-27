@@ -7,10 +7,12 @@
 
 import glob
 import os
+import sys
 import re
 import yaml
 import math
 import logging
+from dateutil import parser, tz
 import datetime
 import requests
 from xml.etree.ElementTree import ElementTree
@@ -27,22 +29,23 @@ INSTRUMENT_NAME_MAP = {seq['id']: seq['name']
 
 # This script can only handle a single process type and workflow at a time. If there is a
 # new version, the script should be updated at the time when the new version is activated.
-PROCESS_TYPE_NAME = "AUTOMATED - NovaSeq X Run AMG 1.0"
-WORKFLOW_NAME = "NovaSeq X AMG 1.0"
+PROCESS_TYPE_NAME = "AUTOMATED - Sequencing Run NovaSeqX AMG v1.0"
+WORKFLOW_NAME = "NovaSeq X AMG 1.0b"
+DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 1.0"
 
 RUN_STORAGES=[
     "/data/runScratch.boston/NovaSeqX"
     ]
 
 
-RUN_ID_MATCH = r"\d\d\d\d\d\d_[Q0-9\-_]+"
+RUN_FOLDER_MATCH = r"\d{8}_LH[0-9\-_]+"
 
 # The values should correspond to reagent kits in Clarity.
-REAGENT_TYPES = { #TODO check these
-    'Reagent':  'NovaSeq X Reagent',
+REAGENT_TYPES = {
+    'Reagent':  'NovaSeq X Reagent Cartridge',
     'FlowCell': 'NovaSeq X Flow Cell',
     'Buffer':   'NovaSeq X Buffer Cartridge',
-    'Lyo':      'NovaSeq X Lyo',
+    'Lyo':      'NovaSeq X Lyophilization Cartridge',
 }
 
 def get_library_tube_strip_id(run_parameters_xml):
@@ -52,10 +55,10 @@ def get_library_tube_strip_id(run_parameters_xml):
     
     Returns the library tube strip ID, or None if not found."""
 
-    consumable_infos = run_parameters_xml.findall("RunParameters/ConsumableInfo/ConsumableInfo")
+    consumable_infos = run_parameters_xml.findall("ConsumableInfo/ConsumableInfo")
     for consumable_info in consumable_infos:
         try:
-            if consumable_info.find("ConsumableType").text == "SampleTube":
+            if consumable_info.find("Type").text == "SampleTube":
                 return consumable_info.find("SerialNumber").text
         except AttributeError:
             pass
@@ -72,7 +75,9 @@ def get_stepconf_and_queue():
     assert len(workflows) == 1, f"Expected exactly one workflow with name {WORKFLOW_NAME}, got {len(workflows)}"
     for stepconf in workflows[0].protocols[0].steps:
         if stepconf.name == PROCESS_TYPE_NAME:
-            return stepconf.queue()
+            return stepconf, stepconf.queue()
+    else:
+        raise RuntimeError(f"Cannot find the queue for workflow '{WORKFLOW_NAME}', process type '{PROCESS_TYPE_NAME}'.")
 
 
 def get_cycle(total_cycles, run_dir, lower_bound_cycle):
@@ -88,10 +93,22 @@ def get_cycle(total_cycles, run_dir, lower_bound_cycle):
     for cycle in range(lower_bound_cycle, total_cycles):
         test_path = os.path.join(run_dir, "Data", "Intensities", "BaseCalls", "L001","C{0}.1".format(cycle+1))
         if not os.path.exists(test_path):
-            return cycle, total_cycles
+            return cycle
 
     # All cycles are complete
-    return total_cycles, total_cycles
+    return total_cycles
+
+
+# Helper functions
+def set_if_available(process, xml, path, udf):
+    node = xml.find(path)
+    if node is not None:
+         process.udf[udf] = node.text
+
+
+def set_if_not_nan(artifact, field, value):
+    if not math.isnan(value):
+        artifact.udf[field] = value
 
 
 def set_initial_fields(process, run_parameters, run_id):
@@ -99,18 +116,18 @@ def set_initial_fields(process, run_parameters, run_id):
     """
 
     for ide, name in INSTRUMENT_NAME_MAP.items():
-        if re.match("\\d{6}_%s_.*" % (ide), run_id):
+        if re.match(r"\d+_%s_.*" % (ide), run_id):
             process.udf['Instrument Name'] = name
             break
     else:
-        logging.warn("The run ID", run_id, "did not match any of the known instruments, "
+        logging.warn(f"The run ID {run_id} did not match any of the known instruments, "
                      " 'Instrument Name' not set.")
     
     # Set read lengths
     total_cycles = 0
     try:
-        for read in run_parameters.findall("RunParameters/PlannedReads/Read"):
-            read_name = read.attrib['Name']
+        for read in run_parameters.findall("PlannedReads/Read"):
+            read_name = read.attrib['ReadName']
             cycles = int(read.attrib['Cycles'])
             if read_name == "Read1":    process.udf['Read 1 Cycles'] = cycles
             elif read_name == "Read2":  process.udf['Read 2 Cycles'] = cycles
@@ -123,34 +140,49 @@ def set_initial_fields(process, run_parameters, run_id):
         logging.exception(f"Malformed PlannedRuns section for {run_id} in RunParameters.xml. "
                     "Unable to determine read lengths.")
         total_cycles = 0
-    process.udf['Status'] = f"Cycle 0 of {total_cycles}"
+    process.udf['Run Status'] = f"Cycle 0 of {total_cycles}"
+    process.udf['Current Cycle'] = 0
+    process.udf['Total Cycles'] = total_cycles
 
     # Set standard metadata
-    process.udf['Run started'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    process.udf['Instrument Run ID'] = run_id
     process.udf['Run ID'] = run_id
     if not 'Demultiplexing Process ID' in process.udf:
         process.udf['Demultiplexing Process ID'] = ""
     process.udf['Monitor'] = True # Flag for overview page
 
     # Set run parameters
-    #TODO set same parameters as on NovaSeq 6000
+    set_if_available(process, run_parameters, 'FlowCellType', 'Flow Cell Type')
+    set_if_available(process, run_parameters, 'SystemSuiteVersion', 'System Suite Version')
+    set_if_available(process, run_parameters, 'OutputFolder', 'Output Folder')
+    set_if_available(process, run_parameters, 'Side', 'Flow Cell Side')
+    set_if_available(process, run_parameters, 'InstrumentSerialNumber', 'Instrument ID')
+    set_if_available(process, run_parameters, 'InstrumentType', 'Instrument Type')
+    set_if_available(process, run_parameters, 'ExperimentName', 'Run Name')
+    set_if_available(process, run_parameters, 'Side', 'Flow Cell Side')
 
     # Even though Flow Cell ID is recorded as a lot, we also record it as a UDF
     # to enable quick searching for processes by Flow Cell ID.
-    for consumable_info in run_parameters.findall("RunParameters/ConsumableInfo/ConsumableInfo"):
+    for consumable_info in run_parameters.findall("ConsumableInfo/ConsumableInfo"):
         if consumable_info.find("Type").text == "FlowCell":
             process.udf['Flow Cell ID'] = consumable_info.find("SerialNumber").text
-            break
-    else:
-        logging.warning(f"Flow Cell ID not found in RunParameters.xml.")
-    
-
-    process.put()
+        elif consumable_info.find("Type").text == "SampleTube":
+            process.udf['Library Tube Barcode'] = consumable_info.find("SerialNumber").text
 
 
-def set_if_not_nan(artifact, field, value):
-    if not math.isnan(value):
-        artifact.udf[field] = value
+# Start time in RunInfo.xml seems wrong (too late) - we use the one in RunCompletionStatus.xml instead
+#def set_start_time(process, run_dir):
+#    """Set start time based on RunInfo.xml"""
+#
+#    try:
+#        runinfo_tree = ElementTree()
+#        runinfo_tree.parse(os.path.join(run_dir, "RunInfo.xml"))
+#        start_time = parser.parse(runinfo_tree.find("Run/Date").text)
+#        local_timezone = tz.tzlocal()
+#        process.udf['Run Start Time'] = start_time.astimezone(local_timezone).strftime("%Y-%m-%dT%H:%M:%S")
+#        logging.debug(f"Set the Run Start Time to {process.udf['Run Start Time']}.")
+#    except (IOError, AttributeError):
+#        logging.warning(f"Can't get the start time from RunInfo.xml.")
 
 
 def set_lane_qc(process, run_dir):
@@ -183,6 +215,7 @@ def set_lane_qc(process, run_dir):
         return
 
     for (lane_number, artifact) in lane_artifacts:
+        artifact.qc_flag = "PASSED"
         lane_index = lane_number - 1
         nonindex_read_count = 0
         for read in range(read_count):
@@ -210,16 +243,15 @@ def create_reagent_lots(run_parameters, run_id):
     reads the ConsumableInfo section of the RunParameters.xml file and creates
     reagent lots in Clarity for each reagent used in the run.
 
-    TODO determine reagent name in Clarity
-
     Returns the lot objects.
     """
     lots = []
-    for consumable_info in run_parameters.findall("RunParameters/ConsumableInfo/ConsumableInfo"):
+    for consumable_info in run_parameters.findall("ConsumableInfo/ConsumableInfo"):
         try:
             serial_number = consumable_info.find("SerialNumber").text
             lot_number = consumable_info.find("LotNumber").text
-            expiration_date = consumable_info.find("ExpirationDate").text
+            # Date format: 2024-09-25T00:00:00+02:00
+            expiration_date = parser.parse(consumable_info.find("ExpirationDate").text) # parser is from dateutil
             version = consumable_info.find("Version").text
             name = consumable_info.find("Name").text
             part_number = consumable_info.find("PartNumber").text
@@ -238,9 +270,9 @@ def create_reagent_lots(run_parameters, run_id):
                             if attempt > 0:
                                 serial_number += f"-{attempt}" # Change the serial number to avoid conflicts
                                 logging.info(f"Retrying creating reagent lot for {reagent_kit_name} "
-                                             "with serial number {serial_number}.")
+                                             f"with serial number {serial_number}.")
                             lot = lims.create_lot(reagent_kits[0], serial_number, lot_number, 
-                                                expiration_date, notes=note, status='ACTIVE')
+                                                str(expiration_date.date()), notes=note, status='ACTIVE')
                             logging.info(f"Created reagent lot for kit {reagent_kit_name} with "
                                          f"serial number {serial_number}, lot number {lot_number} "
                                          f"expiration date {expiration_date}, and note '{note}'.")
@@ -258,20 +290,64 @@ def create_reagent_lots(run_parameters, run_id):
 
 
 def set_final_fields(process, run_dir, run_id):
-    if process.udf.get('Run finished') is None:
-        process.udf['Run finished'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        process.put()
+    """Set fields on run completion from RunCompletionStatus.xml."""
+
+    # Set the Run End Time to now as a fallback, to avoid re-processing the run
+    process.udf['Run End Time'] = str(datetime.datetime.now())
+    process.put()
+
+    try:
+        rcs = ElementTree()
+        rcs.parse(os.path.join(run_dir, "RunCompletionStatus.xml"))
+
+        # Update Current Cycle
+        cycles = 0
+        for read in rcs.findall("CompletedReads/Read"):
+            cycles += int(read.attrib['Cycles'])
+        process.udf['Current Cycle'] = cycles
+        process.udf['Run Status'] = rcs.find("RunStatus").text
+
+        start_time = parser.parse(rcs.find("RunStartTime").text)
+        local_timezone = tz.tzlocal()
+        process.udf['Run Start Time'] = start_time.astimezone(local_timezone).strftime("%Y-%m-%dT%H:%M:%S")
+
+        end_time = parser.parse(rcs.find("RunEndTime").text)
+        process.udf['Run End Time'] = end_time.astimezone(local_timezone).strftime("%Y-%m-%dT%H:%M:%S")
+    except (IOError, AttributeError):
+        logging.exception("An error occurred while trying to update the final run information.")
+
+
+def complete_step(step):
+    """Advance the step until completion."""
+
+    logging.info("Finishing process " + step.id)
+    for na in step.actions.next_actions:
+        na['action'] = 'complete'
+    step.actions.put()
+    fail = False
+    while not fail and step.current_state.upper() != "COMPLETED":
+        logging.debug("Advancing the step...")
+        step.advance()
+        step.program_status.get(force=True)
+        while not fail and step.program_status.status != "OK":
+            logging.debug("A script is running (state: " + step.program_status.status + ")...")
+            if step.program_status not in ['QUEUED', 'RUNNING']:
+                fail = True
+            time.sleep(10)
+            step.program_status.get(force=True)
+        step.get(force=True)
+    logging.info("Completed " + step.id + ".")
 
 
 def main():
-    logging.basicConfig(filename="run_monitoring.log", level=logging.DEBUG)
-    
+    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+    logging.basicConfig(level=log_level)
     logging.info(f"Executing NovaSeq X run monitoring at {datetime.datetime.now()}")
 
     run_dirs = [r
             for directory in RUN_STORAGES
             for r in glob.glob(os.path.join(directory, "*_*_*"))
-            if re.match(RUN_ID_MATCH, os.path.basename(r))
+            if re.match(RUN_FOLDER_MATCH, os.path.basename(r))
             ]
     
     logging.info(f"Found {len(run_dirs)} run directories")
@@ -290,7 +366,7 @@ def main():
             rp_tree = ElementTree()
             rp_tree.parse(os.path.join(run_dir, "RunParameters.xml"))
         except IOError:
-            logging.warning(f"Run {run_id} does not have a RunParameters.xml file, skipping.")
+            logging.info(f"Run {run_id} does not have a RunParameters.xml file, skipping.")
             continue
         
         library_tube_strip_id = get_library_tube_strip_id(rp_tree)
@@ -299,7 +375,7 @@ def main():
             continue
 
         # Check that the Run ID in the xml file and the run folder name match
-        rp_run_id = rp_tree.find("RunParameters/RunId").text
+        rp_run_id = rp_tree.find("RunId").text
         if rp_run_id != run_id:
             logging.error(f"Run ID in RunParameters.xml {rp_run_id} does not match the run "
                           "folder name {run_id}.")
@@ -307,11 +383,12 @@ def main():
 
         lims_containers = lims.get_containers(name=library_tube_strip_id)
         if not lims_containers:
-            logging.warning(f"Run {run_id} does not have a matching container in LIMS, skipping.")
+            logging.info(f"Run {run_id} does not have a matching container '{library_tube_strip_id}' in "
+                            "LIMS, skipping.")
             continue
         
         # Get one of the artifacts in the container
-        analyte = lims_containers[-1].placements.values()[0]
+        analyte = next(iter(lims_containers[-1].placements.values()))
         # Look for run processes in LIMS
         processes = lims.get_processes(inputartifactlimsid=[analyte.id], type=PROCESS_TYPE_NAME)
 
@@ -341,39 +418,73 @@ def main():
         if process.udf.get('Run ID') is None:
             logging.info(f"Setting initial fields for run {run_id}.")
             set_initial_fields(process, rp_tree, run_id)
+            process.put()
 
             logging.info(f"Creating and setting reagent lots for run {run_id}.")
-            lots = create_reagent_lots(run_dir)
-            logging.info(f"Setting used lots on the step.")
+            lots = create_reagent_lots(rp_tree, run_id)
+            logging.info(f"Created {len(lots)} lots. Setting used lots on the step.")
             step.reagentlots.set_reagent_lots(lots)
+            step.reagentlots.put()
 
         # We now have a run folder and a matching Process in LIMS. We get the run status
         # from the run folder.
         
-        # TODO check flag files
-        if not rta_complete:
-            logging.info(f"Run {run_id} is not complete, updating progress.")
-            cycle_match = re.match(r"Cycle (\d+) of (\d+)", process.udf.get('Status', ''))
-            if cycle_match:
-                old_cycle = int(cycle_match.group(1))
-                total_cycles = int(cycle_match.group(2))
-                current_cycle, total_cycles = get_cycle(total_cycles, run_dir, old_cycle)
-                if current_cycle != old_cycle:
-                    process.udf['Status'] = f"Cycle {current_cycle} of {total_cycles}"
-                    process.put()
-            else:
-                logging.warning(f"Run {run_id} cycle cannot be updated because the status field "
-                                "is not in the expected format.")
-            
-        else: # Sequencing is completed
-            logging.info(f"Run {run_id} sequencing is completed.")
-            # Get lane QC metrics if we have not already done so
-            if process.udf.get('Run finished') is None:
-                logging.info(f"Run {run_id} sequencing is completed, updating QC metrics and final fields.")
-                set_lane_qc(process, run_dir)
-                set_final_fields(process, run_dir, run_id)
+        # Determine if run has already been marked as finished, by checking the End Time
+        if not process.udf.get('Run End Time'):
 
-            # TODO - demultiplexing step?
+            # Match the cycle count to keep track of total cycles
+            logging.info(f"Getting the cycle count to update progress.")
+            old_cycle = process.udf['Current Cycle']
+            total_cycles = process.udf['Total Cycles']
+            current_cycle = get_cycle(total_cycles, run_dir, old_cycle)
+            if current_cycle != old_cycle:
+                process.udf['Run Status'] = f"Cycle {current_cycle} of {total_cycles}"
+                process.udf['Current Cycle'] = current_cycle
+                process.put()
+            
+            # Determine if the run is finished
+            copy_complete = os.path.exists(os.path.join(run_dir, "CopyComplete.txt"))
+            if copy_complete:
+                logging.info(f"Run {run_id} sequencing is recently completed and copied, "
+                                "updating QC metrics.")
+                set_lane_qc(process, run_dir)
+                logging.info("Updated lane QC information, now setting fields for run completion.")
+                set_final_fields(process, run_dir, run_id)
+                process.put()
+
+                # Complete the sequencing step when the run is finsihed
+                complete_step(step)
+
+
+        else: # Step already contains completion information
+            logging.info(f"Run {run_id} is already recorded as completed.")
+
+    # Handle demultiplexing / analysis
+    # Regardless of the step's completion state, there should be a demultiplexing step.
+    # The job of this script is only to start an empty demultiplexing step if DRAGEN analysis
+    # is enabled and there is not already a demultiplexing step.
+    # The demultiplexing step is a placeholder to show the user that it will come when the
+    # run is finished.
+    if not process.udf.get('Demultiplexing Process ID'):
+        logging.info("The run does not have Demultiplexing Process ID field - starting demultiplexing process")
+        # Check if analysis is enabled
+        secondary_analysis = rp_tree.find("SecondaryAnalysisInfo/SecondaryAnalysisInfo")
+        if secondary_analysis is not None:
+            demux_wfs = lims.get_workflows(name=DEMULTIPLEXING_WORKFLOW_NAME)
+            demux_wf = demux_wfs[0]
+            logging.info(f"Will queue input artifacts in workflow {DEMULTIPLEXING_WORKFLOW_NAME}.")
+            selected_inputs = process.all_inputs(unique=True)
+            lims.route_analytes(selected_inputs, demux_wf.stages[0])
+            logging.debug("Creating a step") 
+            dmx_step = lims.create_step(demux_wf.protocols[0].steps[0], selected_inputs)
+            logging.info(f"Created demultiplexing step with id {dmx_step.id}.") 
+            dmx_process = Process(lims, id=dmx_step.id)
+            dmx_process.udf['Run ID'] = process.udf['Run ID']
+            dmx_process.udf['Status'] = "Waiting"
+            dmx_process.put()
+            process.udf['Demultiplexing Process ID'] = dmx_process.id
+            process.put()
+
 
     logging.info(f"NovaSeq X run monitoring completed at {datetime.datetime.now()}")
 

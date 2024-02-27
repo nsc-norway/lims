@@ -1,0 +1,52 @@
+# NovaSeq X Run Monitoring
+
+
+
+CUSTOM FIELDS
+
+
+
+--- NovaSeq X Clarity Integration ---
+
+Populated:
+Flow Cell ID
+Flow Cell Type
+Instrument Control Software Version
+Library Tube Barcode
+Output Folder
+Current Cycle
+Flow Cell Side
+Instrument ID
+Instrument Type
+Run Name (Experiment name)
+Run Status
+Run End Time
+Run Start Time
+
+
+Ignored:
+BaseSpace Run ID
+Current Read
+Flow Cell Part Number (see Lot object)
+Flow Cell Expiration Date  (see Lot object)
+Flow Cell Lot Number (see Lot object)
+Library Tube Lot Number (see Lot object)
+ICA Project ID
+Sequencing Log
+RTA Version
+
+
+--- Added for backward compat ---
+
+Run ID
+
+
+--- Added for other integrations / convenience ---
+
+Demultiplexing Process ID
+System Suite Version
+Read 1 Cycles
+Read 2 Cycles
+Index Read 1 Cycles
+Index Read 2 Cycles
+
