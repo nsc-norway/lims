@@ -165,7 +165,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
     has_any_non_diag_samples = False # Run-level flag to determine compression format
     for lane_artifact in sorted(output_lanes, key=lambda artifact: artifact.location[1][0]):
         # Get lane from well position e.g. B:1 is lane 2.
-        lane_id = "ABCDEFGH".index(lane_artifact.location[1].split(":")[0]) + 1
+        lane_id = int(lane_artifact.location[1].split(":")[0])
         barcode_mismatches = lane_artifact.udf['BarcodeMismatches']
 
         logging.info(f"Processing lane {lane_id}, artifact {lane_artifact.name}. Barcode mismatches = {barcode_mismatches}.")

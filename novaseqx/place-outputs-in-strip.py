@@ -59,7 +59,7 @@ sorted_list = sorted(input_location_output, key=operator.itemgetter(2))
 # not A and B we silently fallback to manual placement.
 if all(r1 == r2 for r1, r2 in zip(range(output_num_lanes), [item[2] for item in sorted_list])):
     placements = [
-        (output, (output_container, rows[row_index] + ":1"))
+        (output, (output_container, f"{row_index+1}:1"))
         for _, col, row_index, output in sorted_list
     ]
     step.placements.set_placement_list(placements)
