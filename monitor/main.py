@@ -12,8 +12,7 @@ import threading
 import jinja2
 import json
 import time
-from functools import partial
-from functools32 import lru_cache # Backport from Python 3.2
+from functools import partial, lru_cache
 from collections import defaultdict
 
 # Dependencies:
