@@ -44,21 +44,19 @@ gunzip -c /dumping/clarity-6.2*.sql.gz | psql -U clarity -h localhost clarityDB
 
 
 # 3. Restore file store backups
-# Confirm that the owner of glsftp is glsftp:claritylims:
-ls -l /opt/restore/opt/gls/clarity/users
 
-rsync -a /opt/restore/opt/gls/clarity/users/glsftp/ /opt/gls/clarity/users/glsftp/
+rsync -a /dumping/opt/gls/clarity/users/glsftp/ /opt/gls/clarity/users/glsftp/
 
 # Restore custom scripts
-sudo rsync -a /opt/restore/opt/gls/clarity/customextensions/ /opt/gls/clarity/customextensions/
+sudo rsync -a /dumping/opt/gls/clarity/customextensions/ /opt/gls/clarity/customextensions/
 
 # Restore SSL certificate config file
 mkdir /root/ssl
-cp /opt/restore/root/ssl/$HOSTNAME.cnf /root/ssl
+cp /dumping/root/ssl/$HOSTNAME.cnf /root/ssl
 
 # Restore corntab if applicable
 cat /etc/crontab
-cp /opt/restore/etc/crontab /etc/crontab
+cp /dumping/etc/crontab /etc/crontab
 
 
 # 4. Migrate the database to new clarity version
