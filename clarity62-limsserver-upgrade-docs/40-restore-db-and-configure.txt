@@ -5,14 +5,9 @@
 # NOTE: Commands here require the root user unless otherwise stated.
 
 
-
-# Backup files: From 10-postpare-old-instance.sh
-# Set paths as appropriate
-export FS_BACKUP_FILE=/data/runScratch.boston/UserData/paalmbj/backups.tar.xz
-export DB_BACKUP_FILE=/data/runScratch.boston/UserData/paalmbj/clarity-5.2-202402051047.tar
-
-# Untar backupfile in /opt/restore
-mkdir -p /opt/restore && cd /opt/restore && tar xf $FS_BACKUP_FILE
+# Untar backupfile in /dumping
+cd /dumping
+tar xf backups.tar
 
 
 # Install Certificates
@@ -40,20 +35,13 @@ mkdir -p /opt/restore && cd /opt/restore && tar xf $FS_BACKUP_FILE
 sudo -u postgres dropdb "clarityDB"
 sudo -u postgres createdb -O clarity "clarityDB"
 
-# Make sure the backup file is readable by the postgres user
-sudo -u postgres ls $DB_BACKUP_FILE
-
-# Importing it as tar fails, instead we extract it and then import it
-mkdir /opt/dbrestore
-cd /opt/dbrestore
-chmod a+rx .
-tar xf $DB_BACKUP_FILE
-sudo -u postgres pg_restore -Fd -d clarityDB .
-cd /
-rm -r /opt/dbrestore
-
 # Grant access on the public schema (new defaults in PG15 require this)
 sudo -u postgres psql clarityDB -c 'GRANT ALL ON SCHEMA public TO clarity;'
+
+# Importing it as tar fails, instead we extract it and then import it
+#Enter name of backup file
+gunzip -c /dumping/clarity-6.2*.sql.gz | psql -U clarity -h localhost clarityDB
+
 
 # 3. Restore file store backups
 # Confirm that the owner of glsftp is glsftp:claritylims:

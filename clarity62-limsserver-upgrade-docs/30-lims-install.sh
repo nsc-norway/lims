@@ -77,6 +77,9 @@ sudo -u glsjboss /opt/gls/clarity/config/pending/05_configure_claritylims_secret
 ## Enter password value for API user:
 #  From installation record pdf
 
+#NOTE: By this point, the LIMS server must have the correct IP address.
+# Or it won't be allowed to use the DB by pg_hba.conf.
+
 #20_configure_claritylims_platform.sh
 echo "## See the installation record for what to enter:"
 echo " - Use database type Postgres and database host FQDN: dev-lims.sequencing.uio.no (etc)."

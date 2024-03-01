@@ -25,8 +25,8 @@ Add to /etc/fstab. Use UUIDs from /dev/disk/by-uuid, NOT the device names given 
 The device names sdb and sdc are not stable in all situations in OL8. See the other entries
 in fstab.
 
-    /dev/sdb	/var/lib/pgsql	xfs	defaults	0 0
-    /dev/sdc	/opt	xfs	defaults	0 0
+    UUID=xxxxxxxx	/var/lib/pgsql	xfs	defaults	0 0
+    UUID=yyyyyyyy	/opt	xfs	defaults	0 0
 
 Reboot and confirm mounting.
 
