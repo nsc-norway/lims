@@ -4,7 +4,7 @@
         "INSTRUMENTS":  ["NovaSeq", "NextSeq", "MiSeq"],
         "SEQUENCING": [["AUTOMATED - NovaSeq Run NSC 3.4", "NovaSeq Data QC NSC 1.0"], ["NextSeq 500/550 Run NSC 3.0"], ["MiSeq Run NSC 3.0"]],
         "FLOWCELL_TYPES": ["SP", "S1", "S2", "S4", "Library Tube", "NextSeq Reagent Cartridge", "MiSeq Reagent Cartridge"],
-        "DATA_PROCESSING": ["Demultiplexing and QC NSC 2.0"],
+        "DATA_PROCESSING": ["Demultiplexing and QC NSC 3.0", "Demultiplexing and QC NSC 2.0"],
         "CREDENTIALS_FILE": null
     }
     ]

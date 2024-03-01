@@ -4,7 +4,7 @@
         "FLOWCELL_TYPES": ["Illumina Flow Cell", "Illumina Rapid Flow Cell"],
         "SEQUENCING": [ ["Illumina Sequencing (HiSeq 3000/4000) 1.0"],
                         ["Illumina Sequencing (Illumina SBS) 5.0"]],
-        "DATA_PROCESSING": ["Demultiplexing and QC NSC 2.0"],
+        "DATA_PROCESSING": ["Demultiplexing and QC NSC 3.0"],
         "CREDENTIALS_FILE": null
     }]
 }
