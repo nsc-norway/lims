@@ -24,7 +24,7 @@ lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
 # Local copies of variables from the pipeline config package
 TAG="prod"
-DEMULTIPLEXING_QC_PROCESS = "Demultiplexing and QC NSC 2.0" 
+DEMULTIPLEXING_QC_PROCESS = "Demultiplexing and QC NSC 3.0"
 SEQ_PROCESSES=[
                 ('hiseqx', 'Illumina Sequencing (HiSeq X) 1.0'),
                 ('hiseqx', 'AUTOMATED - Sequence'),

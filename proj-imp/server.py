@@ -6,7 +6,7 @@ import io
 import threading
 import json
 import string
-import Queue as Mod_Queue # Due to name conflict with genologics
+import queue
 import yaml
 from flask import Flask, url_for, abort, jsonify, Response, request,\
         render_template, redirect
@@ -195,7 +195,7 @@ def status_stream(job):
             # Only latest (current) status is of interest
             while job.queue.get(timeout=0) == "status":
                 pass
-        except Mod_Queue.Empty:
+        except queue.Empty:
             yield "event: status\ndata: " + status_repr(job) + "\n\n"
         else: # In case we received anything other than "status"
             yield "event: status\ndata: " + status_repr(job) + "\n\n"
@@ -268,7 +268,7 @@ class Job(object):
         self.lots = None
         self.sequencing_pool = None
         self.step_url = None
-        self.queue = Mod_Queue.Queue()
+        self.queue = queue.Queue()
         self.tasks = [
                 CheckFields(self),
                 ReadSampleFile(self),

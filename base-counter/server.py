@@ -10,7 +10,7 @@ import re
 import yaml
 import math
 import blinker
-import Queue
+import queue
 import weakref
 import bitstring
 import subprocess
@@ -469,7 +469,7 @@ class SseStream(object):
     TERMINATE = object()
 
     def __init__(self, event_specs):
-        self.queue = Queue.Queue()
+        self.queue = queue.Queue()
         self.helpers = []
         for signal, ident in event_specs:
             qr = EventQueuer(self.queue, ident)
@@ -479,7 +479,7 @@ class SseStream(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         ident, data = self.queue.get(block=True)
         if ident is self.TERMINATE:
             raise StopIteration()

@@ -25,11 +25,11 @@ Lane,Sample_ID,Sample_Name,Sample_Project,index,index2,OverrideCycles,BarcodeMis
 
 {% if dragen_rows %}
 [DragenGermline_Settings]
-SoftwareVersion,{{ process.udf['DragenGermline SoftwareVersion', ''] }}
-AppVersion,{{ process.udf.get('DRAGEN AppVersion DragenGermline') }}
+SoftwareVersion,{{ process.udf['DragenGermline SoftwareVersion'] }}
+AppVersion,{{ process.udf['DRAGEN AppVersion DragenGermline'] }}
 MapAlignOutFormat,cram
 KeepFastQ,true
-ReferenceGenomeDir,hs37d5-cnv.rna-8-1667497696-2
+ReferenceGenomeDir,{{ process.udf['Reference Genome Directory'] }}
 VariantCallingMode,AllVariantCallers
 
 [DragenGermline_Data]

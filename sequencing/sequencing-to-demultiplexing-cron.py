@@ -23,8 +23,8 @@ else:
             "Illumina Sequencing (HiSeq 3000/4000) 1.0"
             ]
 
-DEMULTIPLEXING = "Demultiplexing and QC NSC 2.0"
-WORKFLOW_NAME = "Demultiplexing and QC 2.0"
+DEMULTIPLEXING = "Demultiplexing and QC NSC 3.0"
+WORKFLOW_NAME = "Demultiplexing and QC 3.0"
 
 def start_step(lims, analytes, workflow):
     protocol = workflow.protocols[0]
