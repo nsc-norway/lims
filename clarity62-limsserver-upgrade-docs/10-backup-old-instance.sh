@@ -3,6 +3,10 @@
 
 echo "MAKE SURE YOU HAVE A BACKUP OR SNAPSHOT OF THE LIMS SERVER"
 
+
+# 1. Deploy LIMS scripts to production instance
+
+
 # Run as the root user on the old clarity server before upgrade
 
 # -- 1. validation ---
