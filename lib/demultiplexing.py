@@ -9,7 +9,7 @@ def get_demux_artifact(lims, lane_artifact):
     [(sample, artifact, reagent_label), ...]
     """
 
-    demux_uri = lane_artifact.uri + "/demux"
+    demux_uri = lane_artifact.stateless.uri + "/demux"
     logging.info(f"Fetching demux endpoint {demux_uri} for artifact {lane_artifact.name} well {lane_artifact.location[1]}.")
     demux = lims.get(demux_uri)
     # Get all artifacts that are under a <demux> element (.// matches all children at any level). These may be partially
