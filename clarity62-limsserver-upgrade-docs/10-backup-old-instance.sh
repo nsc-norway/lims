@@ -24,7 +24,7 @@ yum remove ClarityLIMS-UpgradePreValidation
 # -- 3. --
 # pg_dump doesn't seem to respect TMPDIR var. Instead we create /opt/tmp and bind-mount it for the
 # duration of the database backup.
-sudo -u postgres bash -c 'pg_dump -b -O clarityDB' | gzip > /opt/clarity-6.2-`date +%Y%m%d%H%M`.sql.gz
+sudo -u postgres bash -c 'pg_dump -b -O clarityDB' | gzip > /dumping/clarity-6.2-`date +%Y%m%d%H%M`.sql.gz
 
 
 cd /
