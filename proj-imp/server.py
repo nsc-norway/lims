@@ -61,7 +61,8 @@ def get_project_def(project_type):
             raise ValueError("Invalid project name")
         with open(os.path.join(
                 os.path.dirname(__file__),
-                "config", project_type_safe + ".json")
+                "config", project_type_safe + ".json"),
+                encoding='utf-8'
                 ) as f:
             project_data = json.load(f)
             return project_data
