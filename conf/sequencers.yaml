@@ -22,3 +22,7 @@
 - type: novaseq
   name: Nobel
   id: A01447
+- type: novaseqx
+  id: LH00534
+  name: Nox
+
