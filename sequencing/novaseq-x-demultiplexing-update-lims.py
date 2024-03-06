@@ -3,37 +3,25 @@
 # Script to post demultiplexing stats to LIMS.
 
 import os
+import re
+import glob
 import logging
 import argparse
 from xml.etree.ElementTree import ElementTree
 import pandas as pd
 import datetime
+import json
 from genologics.lims import *
 from genologics import config
 from lib import demultiplexing
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-NOVASEQ_RUN_PROCESS_TYPE = "AUTOMATED - NovaSeq X Run AMG 1.0"
-DEMULTIPLEXING_WORKFLOW_NAME = "Demultiplexing AMG 3.0"
+DEMULTIPLEXING_PROCESS_TYPE = "BCL Convert Demultiplexing 0.9"
+DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 1.0"
 
-# Get the Run ID from the run folder. BCL convert copies RunInfo.xml to the Reports
-# folder under the output folder.
-def get_run_id(bclconvert_output_folder):
-    run_info_xml_path = os.path.join(bclconvert_output_folder, 'Reports', 'RunInfo.xml')
-    tree = ElementTree()
-    tree.parse(run_info_xml_path)
-    flowcell_id = tree.find('Run/Flowcell').text
-    return flowcell_id
-
-
-def get_process_by_run_id(run_id):
-    processes = lims.get_processes(type=NOVASEQ_RUN_PROCESS_TYPE, udf={'Run ID': run_id})
-    if len(processes) == 0:
-        raise ValueError(f"No process found with Run ID {run_id}.")
-    if len(processes) > 1:
-        logging.warning(f"Multiple sequencing processes found with Run ID {run_id}. Using the last one.")
-    return processes[-1]
+RUN_STORAGES = ["/data/runScratch.boston/NovaSeqX"]
+RUN_FOLDER_MATCH = r"\d{8}_LH[0-9\-_]+"
 
 
 def well_id_to_lane(well_id):
@@ -47,6 +35,22 @@ def get_lane_input(lane, inputs):
     raise ValueError(f"No input found for lane {lane}.")
 
 
+def get_stepconf_and_workflow(workflow_name, process_type_name):
+    """Based on the workflow name, look up the protocol step ID, which is the
+    same as the queue ID.
+
+    Returns the Step configuration object and the Queue object."""
+
+    workflows = lims.get_workflows(name=workflow_name)
+    assert len(workflows) == 1, f"Expected exactly one workflow with name {workflow_name}, got {len(workflows)}"
+    for stepconf in workflows[0].protocols[0].steps:
+        if stepconf.name == process_type_name:
+            return stepconf, workflows[0]
+    else:
+        raise RuntimeError(f"Cannot find the queue for workflow '{workflow_name}', process type '{process_type_name}'.")
+
+
+
 def get_output_lanes(demultiplex_stats):
     """Based on the demultiplexing stats, get a list of lanes that were processed.
     
@@ -54,8 +58,13 @@ def get_output_lanes(demultiplex_stats):
 
     lane_sums = demultiplex_stats.groupby('Lane').sum()
     nonzero_lanes = lane_sums[lane_sums['# Reads'] > 0]
-    return list(nonzero_lanes.index)lims.put_batch([process])e) + process.all_outputs(unique=True))
+    return list(nonzero_lanes.index)
 
+
+    #lims.put_batch([process])e) + process.all_outputs(unique=True))
+
+
+def update_lims_output_metrics(process, demultiplex_stats, quality_metrics):
     lane_total_read_counts = {
         lane: demultiplex_stats[demultiplex_stats['Lane'] == lane]['# Reads'].sum()
         for lane in demultiplex_stats['Lane'].unique()
@@ -171,48 +180,138 @@ def update_lims_process(process, bcl_convert_root_dir):
     process.put()
 
 
-def update_lims_with_analysis(process, reports_dir):
+def get_input_artifacts(run_dir):
+    """Get the input artifacts of the run based on the library tube strip ID."""
 
-    demultiplex_stats = pd.read_csv(os.path.join(reports_dir, 'Demultiplex_Stats.csv'))
-    quality_metrics = pd.read_csv(os.path.join(reports_dir, 'Quality_Metrics.csv'))
-    update_lims_process(process)
-    update_lims_output_metrics(process, demultiplex_stats, quality_metrics)
-    update_lims_lane_metrics(process, demultiplex_stats, quality_metrics)
+    rp_tree = ElementTree()
+    rp_tree.parse(os.path.join(run_dir, "RunParameters.xml"))
+    logging.info(f"Loaded RunParameters.xml in {run_dir} to look for library tube strip ID.")
+    consumable_infos = rp_tree.findall("ConsumableInfo/ConsumableInfo")
+    for consumable_info in consumable_infos:
+        try:
+            if consumable_info.find("Type").text == "SampleTube":
+                lts_id = consumable_info.find("SerialNumber").text
+                logging.info(f"Found ID {lts_id}.")
+                containers = lims.get_containers(name=lts_id)
+                if len(containers) == 1:
+                    logging.info(f"Found container {containers[0]}.")
+                    return list(containers[0].placements.values())
+                else:
+                    raise RuntimeError(f"Incorrect number of containers named '{lts_id}': {len(containers)}.")
+        except AttributeError: # Ignore missing things in the XML payload
+            pass
+    return None
 
 
-def main(bclconvert_folder, process_id=None):
-    logging.info(f"Updating demultiplexing stats from {bclconvert_folder} to LIMS process {process_id}.")
+def process_analysis(run_dir, analysis_dir):
+    """Import demultiplexing analysis results from DRAGEN Onboard."""
 
-    # Get the inputs of the process and determine the lanes
-    inputs = process.all_inputs(unique=True, resolve=True)
-    if len(set(input.location[0].id for input in inputs)) != 1:
-        raise ValueError(f"Multiple input containers were detected for process {process_id}.")
-    lane_inputs = [(well_id_to_lane(input.location[1]), input) for input in inputs]
-    lanes = [lane for lane, _ in lane_inputs]
-    logging.info(f"Found lanes {lanes} in the LIMS.")
+    # Find the LIMS artifacts of this run
+    logging.info(f"Looking for artifacts.")
+    try:
+        run_artifacts = get_input_artifacts(run_dir)
+    except Exception as e:
+        logging.warn(f"Error while getting input artifacts: {e}.")
+        return
+    if not run_artifacts:
+        logging.info("There are no artifacts for this run, skipping.")
+        return
 
-    # Get the demultiplexing stats from the Stats.json file
-    stats_file = os.path.join(bclconvert_folder, 'Stats.json')
-    if not os.path.exists(stats_file):
-        raise ValueError("Stats.json not found in the output folder.")
-    with open(stats_file, 'r') as f:
-        stats = yaml.safe_load(f)
+    run_artifact_limsids = [a.id for a in run_artifacts]
+    logging.info(f"Run artifacts are: {', '.join(run_artifact_limsids)}.")
+    
+    analysis_id = os.path.basename(analysis_dir)
 
-    # The demultiplexing job may not be configured to process all lanes. We loop over the
-    # lanes found in the Stats file and update only those in LIMS.
-    for lane in stats['Lanes']:
-        pass
+    process = None
+    # If the analysis ID is 1, there may be an existing step created by the run monitoring script
+    if analysis_id == '1':
+        logging.info("Analysis ID is '1', looking for open processes created by run monitoring.")
+        processes = lims.get_processes(inputartifactlimsid=run_artifact_limsids,
+                                    type=DEMULTIPLEXING_PROCESS_TYPE,
+                                    udf={'Status':'Waiting','Analysis ID': '1'})
+        if len(processes) == 1:
+            process = processes[0]
+            logging.info(f"Found process {process.id}, will update it.")
+        elif len(processes) == 0:
+            logging.info(f"No processes match the search criteria, so we will create one instead.")
+        else:
+            logging.error(f"Unexpectedly found {len(processes)} demux processes for analysis 1, will skip this analysis.")
+            return
+
+    if not process:
+        # Queue artifacts and create a process. The artifacts cannot be queued if they are already in a
+        # demux process. In normal operation, the processes of other analyses should have been closed.
+        stepconf, workflow = get_stepconf_and_workflow(DEMULTIPLEXING_WORKFLOW_NAME, DEMULTIPLEXING_PROCESS_TYPE)
+        logging.info(f"Will queue the artifacts for {DEMULTIPLEXING_WORKFLOW_NAME} and start a step.")
+        lims.route_analytes(run_artifacts, workflow)
+        step = lims.create_step(stepconf, run_artifacts)
+        process = Process(lims, id=step.id)
+
+    reports_dir = os.path.join(analysis_dir, "Data", "BCLConvert", "fastq", "Reports")
+    if os.path.isdir(reports_dir):
+        # Import demultiplexing stats
+        demultiplex_stats = pd.read_csv(os.path.join(reports_dir, 'Demultiplex_Stats.csv'))
+        quality_metrics = pd.read_csv(os.path.join(reports_dir, 'Quality_Metrics.csv'))
+        update_lims_process(process)
+        update_lims_output_metrics(process, demultiplex_stats, quality_metrics)
+        update_lims_lane_metrics(process, demultiplex_stats, quality_metrics)
+    else:
+        logging.error(f"Missing reports dir {reports_dir} - unable to import QC metrics.")
+    
+
+    # Write project information
+
+    
+
+
+
+def find_and_process_runs():
+    run_dirs = [r
+            for directory in RUN_STORAGES
+            for r in glob.glob(os.path.join(directory, "*_*_*"))
+            if re.match(RUN_FOLDER_MATCH, os.path.basename(r))
+            ]
+
+    logging.info(f"Found {len(run_dirs)} run directories")
+
+    for run_dir in run_dirs:
+        run_id = os.path.basename(run_dir)
+        logging.info(f"Processing analyses of run {run_id}")
+        analysis_dirs = glob.glob(os.path.join(run_dir, "Analysis", "*"))
+        # There may be multiple analysis directories if the processing has been requeued.
+        # The analyses may be handling different lanes, so we should import all, not just
+        # the newest.
+        for analysis_dir in analysis_dirs:
+            analysis_id = os.path.basename(analysis_dir)
+            logging.info(f"Processing analysis {analysis_id}")
+
+            limsfile_path = os.path.join(analysis_dir, "ClarityLIMSImport_NSC.json")
+            if os.path.exists(limsfile_path):
+                logging.info(f"Skipping analysis {analysis_id} because ClarityLIMSImport_NSC.json exists.")
+                continue
+            if not os.path.exists(os.path.join(analysis_dir, "CopyComplete.txt")):
+                logging.info(f"Analysis {analysis_id} does not have CopyComplete.txt. Skipping.")
+
+            # We will process this analysis or die trying, so we mark it as processed.
+            logging.info(f"Analysis {analysis_id} is ready for LIMS import. Creating ClarityLIMSImport_NSC.json.")
+            with open(limsfile_path, "w") as ofile:
+                ofile.write("{'status': 'ImportStarting'}")
+
+            process_analysis(run_dir, analysis_dir)
+
+
+def main():
+    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+    logging.basicConfig(level=log_level)
+    logging.info(f"Executing NovaSeq X demultiplexing monitoring at {datetime.datetime.now()}")
+
+
+    find_and_process_runs()
+    logging.info(f"Completed NovaSeq X demultiplexing monitoring at {datetime.datetime.now()}")
 
 
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
 
-    # Set up argument parsing
-    parser = argparse.ArgumentParser(description='Script to update LIMS after demultiplexing.')
-    parser.add_argument('bclconvert-output-folder', required=True, help='Path to the output folder of BCL Convert OR the run folder.')
-    parser.add_argument('--run-process-id', help='LIMS process ID of the sequencing run process (e.g. 24-1111) - use if auto-detection fails.')
-    args = parser.parse_args()
-
-    main(args.bclconvert_output_folder, args.run_process_id)
+    main()
