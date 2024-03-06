@@ -214,7 +214,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
             })
             if sample.project.udf['Project type'] != "Diagnostics":
                 has_any_non_diag_samples = True
-            if sample.project.name.startswith("Diag-wgs"):
+            if sample.project.name.startswith("Diag-wgs") and False: # Dragen is disabled for all samples
                 # queue for DRAGEN
                 dragen_germline_rows.append({
                     'sample': sample,
