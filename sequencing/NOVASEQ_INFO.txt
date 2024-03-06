@@ -2,6 +2,17 @@
 
 
 
+--- Cron jobs ---
+
+
+*/5 *  *  *  * glsai	LOG_LEVEL=WARNING /usr/bin/nsc-python3 /opt/gls/clarity/customextensions/lims/sequencing/novaseq-x-run-monitoring.py
+
+
+
+
+
+
+
 CUSTOM FIELDS
 
 

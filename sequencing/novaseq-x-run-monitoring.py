@@ -29,8 +29,8 @@ INSTRUMENT_NAME_MAP = {seq['id']: seq['name']
 
 # This script can only handle a single process type and workflow at a time. If there is a
 # new version, the script should be updated at the time when the new version is activated.
-PROCESS_TYPE_NAME = "AUTOMATED - Sequencing Run NovaSeqX AMG v1.0"
-WORKFLOW_NAME = "NovaSeq X AMG 1.0b"
+PROCESS_TYPE_NAME = "AUTOMATED - Sequencing Run NovaSeqX AMG 1.0"
+WORKFLOW_NAME = "NovaSeq X 0.9"
 DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 1.0"
 
 RUN_STORAGES=[
@@ -191,7 +191,7 @@ def set_lane_qc(process, run_dir):
     for i, o in process.input_output_maps:
         if o['output-generation-type'] == 'PerInput':
             try:
-                lane_number = "ABCDEFGH".index(i['uri'].location[1][0]) + 1
+                lane_number = int(i['uri'].location[1][0])
             except Exception as e:
                 logging.error(f"Error: Could not determine lane number for artifact {i['uri'].id} "
                               f"well location {i['uri'].location[1]}.")
@@ -328,13 +328,6 @@ def complete_step(step):
     while not fail and step.current_state.upper() != "COMPLETED":
         logging.debug("Advancing the step...")
         step.advance()
-        step.program_status.get(force=True)
-        while not fail and step.program_status.status != "OK":
-            logging.debug("A script is running (state: " + step.program_status.status + ")...")
-            if step.program_status not in ['QUEUED', 'RUNNING']:
-                fail = True
-            time.sleep(10)
-            step.program_status.get(force=True)
         step.get(force=True)
     logging.info("Completed " + step.id + ".")
 
@@ -373,12 +366,13 @@ def main():
         if library_tube_strip_id is None:
             logging.warning(f"Run {run_id} does not have a library tube strip ID, skipping.")
             continue
+        logging.info(f"Run {run_id} has library tube strip ID {library_tube_strip_id}.")
 
         # Check that the Run ID in the xml file and the run folder name match
         rp_run_id = rp_tree.find("RunId").text
         if rp_run_id != run_id:
             logging.error(f"Run ID in RunParameters.xml {rp_run_id} does not match the run "
-                          "folder name {run_id}.")
+                          f"folder name {run_id}.")
             continue
 
         lims_containers = lims.get_containers(name=library_tube_strip_id)
@@ -398,7 +392,7 @@ def main():
             process = processes[-1]
             step = Step(lims, id=process.id)
             logging.info(f"Found {len(processes)} processes for run {run_id} in LIMS. Will use "
-                            "process {process.id}.")
+                            f"process {process.id}.")
         else:
             logging.info(f"Run {run_id} does not have a matching process in LIMS, checking queues.")
             if queue is None:
@@ -457,33 +451,34 @@ def main():
 
 
         else: # Step already contains completion information
-            logging.info(f"Run {run_id} is already recorded as completed.")
+            logging.info(f"Run {run_id} already has an 'Run End Time', nothing done.")
 
-    # Handle demultiplexing / analysis
-    # Regardless of the step's completion state, there should be a demultiplexing step.
-    # The job of this script is only to start an empty demultiplexing step if DRAGEN analysis
-    # is enabled and there is not already a demultiplexing step.
-    # The demultiplexing step is a placeholder to show the user that it will come when the
-    # run is finished.
-    if not process.udf.get('Demultiplexing Process ID'):
-        logging.info("The run does not have Demultiplexing Process ID field - starting demultiplexing process")
-        # Check if analysis is enabled
-        secondary_analysis = rp_tree.find("SecondaryAnalysisInfo/SecondaryAnalysisInfo")
-        if secondary_analysis is not None:
-            demux_wfs = lims.get_workflows(name=DEMULTIPLEXING_WORKFLOW_NAME)
-            demux_wf = demux_wfs[0]
-            logging.info(f"Will queue input artifacts in workflow {DEMULTIPLEXING_WORKFLOW_NAME}.")
-            selected_inputs = process.all_inputs(unique=True)
-            lims.route_analytes(selected_inputs, demux_wf.stages[0])
-            logging.debug("Creating a step") 
-            dmx_step = lims.create_step(demux_wf.protocols[0].steps[0], selected_inputs)
-            logging.info(f"Created demultiplexing step with id {dmx_step.id}.") 
-            dmx_process = Process(lims, id=dmx_step.id)
-            dmx_process.udf['Run ID'] = process.udf['Run ID']
-            dmx_process.udf['Status'] = "Waiting"
-            dmx_process.put()
-            process.udf['Demultiplexing Process ID'] = dmx_process.id
-            process.put()
+        # Handle demultiplexing / analysis
+        # Regardless of the step's completion state, there should be a demultiplexing step.
+        # The job of this script is only to start an empty demultiplexing step if DRAGEN analysis
+        # is enabled and there is not already a demultiplexing step.
+        # The demultiplexing step is a placeholder to show the user that it will come when the
+        # run is finished.
+        if not process.udf.get('Demultiplexing Process ID'):
+            logging.info("The run does not have Demultiplexing Process ID field - starting demultiplexing process")
+            # Check if analysis is enabled
+            secondary_analysis = rp_tree.find("SecondaryAnalysisInfo/SecondaryAnalysisInfo")
+            if secondary_analysis is not None:
+                demux_wfs = lims.get_workflows(name=DEMULTIPLEXING_WORKFLOW_NAME)
+                demux_wf = demux_wfs[0]
+                logging.info(f"Will queue input artifacts in workflow {DEMULTIPLEXING_WORKFLOW_NAME}.")
+                selected_inputs = process.all_inputs(unique=True)
+                lims.route_analytes(selected_inputs, demux_wf.stages[0])
+                logging.debug("Creating a step") 
+                dmx_step = lims.create_step(demux_wf.protocols[0].steps[0], selected_inputs)
+                logging.info(f"Created demultiplexing step with id {dmx_step.id}.") 
+                dmx_process = Process(lims, id=dmx_step.id)
+                dmx_process.udf['Run ID'] = process.udf['Run ID']
+                dmx_process.udf['Analysis ID'] = '1'
+                dmx_process.udf['Status'] = "Waiting"
+                dmx_process.put()
+                process.udf['Demultiplexing Process ID'] = dmx_process.id
+                process.put()
 
 
     logging.info(f"NovaSeq X run monitoring completed at {datetime.datetime.now()}")
