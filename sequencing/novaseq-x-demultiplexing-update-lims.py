@@ -74,10 +74,20 @@ def update_lims_output_metrics(process, demultiplex_stats, quality_metrics):
     # on a lane
     demux_cache = {}
     updated_artifacts = []
-    for i, o in process.input_outputs_maps:
+    for i, o in process.input_output_maps:
         lane_artifact = i['uri']
+
+        if o is None:
+            logging.info(f"Input {lane_artifact.id} has a mapping with no output. This sample probably "
+                    "does not have an index. Due to a bug there is nowhere to PUT the demux stats..")
+            continue
+
+        # Only process demultiplexed artifacts
+        if o['output-generation-type'] != 'PerReagentLabel': continue
+
         output_artifact = o['uri']
-        lane_id = well_id_to_lane(input.location[1])
+
+        lane_id = well_id_to_lane(lane_artifact.location[1])
         logging.info(f"Updating output metrics for {output_artifact.name} (lane {lane_id}).")
     
         if lane_id not in demux_cache:
@@ -97,36 +107,41 @@ def update_lims_output_metrics(process, demultiplex_stats, quality_metrics):
         # Update the output artifact with the demultiplexing stats
         sample_demux_stats = demultiplex_stats[
                                         (demultiplex_stats['Lane'] == lane_id) & 
-                                        (demultiplex_stats['sample_id'] == demux_artifact_id)
+                                        (demultiplex_stats['SampleID'] == demux_artifact_id)
                                         ]
         # In rare cases there may be more than one demultiplexed artifact with the same
         # sample ID. We aggregate the stats for all of them.
+
         # There is always a row in quality_metrics for each data read, identified by
-        # ReadNumber. The first selection below includes both reads.
-        sample_quality_metrics = quality_metrics[
-                                        (quality_metrics['Lane'] == lane_id) & 
-                                        (quality_metrics['sample_id'] == demux_artifact_id)
-                                        ]
+        # ReadNumber. The first selection below includes both reads. If fastq output is disabled,
+        # there will be no quality_metrics file.
+        if quality_metrics is not None:
+            sample_quality_metrics = quality_metrics[
+                                            (quality_metrics['Lane'] == lane_id) & 
+                                            (quality_metrics['SampleID'] == demux_artifact_id)
+                                            ]
         read_count = sample_demux_stats['# Reads'].sum()
         if read_count > 0:
+            logging.info(f"Found nonzero read count for {demux_artifact_id}, quality metrics: {quality_metrics is not None}")
             output_artifact.udf['# Reads'] = read_count
-            output_artifact.udf['# Reads (PF)'] = read_count
-            output_artifact.udf['Yield PF (Gb)'] = sample_quality_metrics['Yield'].sum() / 1e9        
+            output_artifact.udf['# Reads PF'] = read_count
             output_artifact.udf['% of PF Clusters Per Lane'] = \
                             read_count / lane_total_read_counts[lane_id] * 100
-            output_artifact.udf['% Perfect Index Reads'] = \
+            output_artifact.udf['% Perfect Index Read'] = \
                             sample_demux_stats['# Perfect Index Reads'] / read_count * 100
             output_artifact.udf['% One Mismatch Reads (Index)'] = \
                             sample_demux_stats['# One Mismatch Index Reads'] / read_count * 100
-            output_artifact.udf['% Bases >=Q30'] = \
-                            sample_quality_metrics['Yield Q30'].sum() / sample_quality_metrics['Yield'].sum() * 100
-            output_artifact.udf['Ave Q Score'] = sample_quality_metrics['Mean Quality Score (PF)'].mean()
+            if quality_metrics is not None:
+                output_artifact.udf['Yield PF (Gb)'] = sample_quality_metrics['Yield'].sum() / 1e9        
+                output_artifact.udf['% Bases >=Q30'] = \
+                                sample_quality_metrics['Yield Q30'].sum() / sample_quality_metrics['Yield'].sum() * 100
+                output_artifact.udf['Ave Q Score'] = sample_quality_metrics['Mean Quality Score (PF)'].mean()
         else:
             output_artifact.udf['# Reads'] = 0
-            output_artifact.udf['# Reads (PF)'] = 0
+            output_artifact.udf['# Reads PF'] = 0
             output_artifact.udf['Yield PF (Gb)'] = 0    
             output_artifact.udf['% of PF Clusters Per Lane'] = 0
-            output_artifact.udf['% Perfect Index Reads'] = 0
+            output_artifact.udf['% Perfect Index Read'] = 0
             output_artifact.udf['% One Mismatch Reads (Index)'] = 0
             output_artifact.udf['% Bases >=Q30'] = 0
             output_artifact.udf['Ave Q Score'] = 0
@@ -137,7 +152,7 @@ def update_lims_output_metrics(process, demultiplex_stats, quality_metrics):
 
 
 def update_lims_lane_metrics(process, demultiplex_stats):
-    """Update lane-level quality metrics, on the input artifacts of the process.
+    """Update lane-level metrics, on the input artifacts of the process.
     
     The lane information is primarily populated in the run monitoring script.
     This script adds the undetermined percentage."""
@@ -147,36 +162,46 @@ def update_lims_lane_metrics(process, demultiplex_stats):
         logging.info(f"Updating lane metrics for lane {lane_id}.")
         lane_demux_stats = demultiplex_stats[demultiplex_stats['Lane'] == lane_id]
         lane_total_read_count = lane_demux_stats['# Reads'].sum()
-        lane_undetermined_read_count = lane_demux_stats[lane_demux_stats['sample_id'] == 'Undetermined']['# Reads'].sum()
+        lane_undetermined_read_count = lane_demux_stats[lane_demux_stats['SampleID'] == 'Undetermined']['# Reads'].sum()
         if lane_total_read_count > 0:
             i.udf['NSC % Undetermined Indices (PF)'] = lane_undetermined_read_count / lane_total_read_count * 100
         
     lims.put_batch(process.all_inputs(unique=True))
 
 
-def update_lims_process(process, bcl_convert_root_dir):
+def parse_bclconvert_info_log(infolog_path):
+    """Parse the log to get the software version.
+
+    Return the version string."""
+
+    with open(infolog_path) as infolog:
+        for line in infolog:
+            version_match = re.match(r".*\sSoftwareVersion = (.*)$", line)
+            if version_match:
+                return version_match.group(1)
+        else:
+            raise RuntimeError("Info.log does not contain the software version.")
+
+
+
+def update_lims_process(process, analysis_dir, run_id, analysis_id):
     """Update the process with the status and the date of completion."""
 
-    fastq_complete = os.path.join(bcl_convert_root_dir, 'Logs', 'FastqComplete.txt')
-    bcl_convert_version = "UNKNOWN"
-    try:
-        with open(fastq_complete, 'r') as f:
-            for line in f:
-                if line.startswith('bcl-convert Version '):
-                    # Expected line:
-                    #bcl-convert Version 00.000.000.4.2.7
-                    # The version is then 4.2.7.
-                    dummy_prefix = "00.000.000."
-                    bcl_convert_version = line.split()[-1]
-                    if bcl_convert_version.startswith(dummy_prefix):
-                        bcl_convert_version = bcl_convert_version[len(dummy_prefix):]
-                    break
-    except IOError:
-        pass
+    # Info.log is created by onboard DRAGEN and stand-alone BCLConvert, but is not present in onboard 
+    # analysis if fastq output is disabled
+    # Path for onboard analysis:
+    bc_info_log = os.path.join(analysis_dir, "Data", "BCLConvert", "fastq", "Logs", "Info.log")
+    if os.path.exists(bc_info_log):
+        bcl_convert_version = parse_bclconvert_info_log(bc_info_log)
+    else:
+        bcl_convert_version = "UNKNOWN"
+    logging.info(f"BCLConvert version detected: {bcl_convert_version}.")
 
+    process.udf['Run ID'] = run_id
+    process.udf['Analysis ID'] = analysis_id
     process.udf['BCL Convert Version'] = bcl_convert_version
     process.udf['Status'] = 'Completed'
-    process.udf['LIMS import completed'] = datetime.datetime.now()
+    process.udf['LIMS import completed'] = str(datetime.datetime.now())
     process.put()
 
 
@@ -203,6 +228,21 @@ def get_input_artifacts(run_dir):
     return None
 
 
+def complete_step(step):
+    """Advance the step until completion."""
+
+    logging.info("Completing step " + step.id)
+    for na in step.actions.next_actions:
+        na['action'] = 'complete'
+    step.actions.put()
+    fail = False
+    while not fail and step.current_state.upper() != "COMPLETED":
+        logging.debug("Advancing the step...")
+        step.advance()
+        step.get(force=True)
+    logging.info("Completed " + step.id + ".")
+
+
 def process_analysis(run_dir, analysis_dir):
     """Import demultiplexing analysis results from DRAGEN Onboard."""
 
@@ -221,48 +261,78 @@ def process_analysis(run_dir, analysis_dir):
     logging.info(f"Run artifacts are: {', '.join(run_artifact_limsids)}.")
     
     analysis_id = os.path.basename(analysis_dir)
+    run_id = os.path.basename(run_dir)
+
+    # Demultiplex_Stats.csv is available in the Demux directory and in the BCLConvert directory.
+    # If FASTQ output is not requested, the BCLConvert directory may not exist, but we can get
+    # Demultiplex_stats anyway
+    demux_report_path = os.path.join(analysis_dir, "Data", "Demux", "Demultiplex_Stats.csv")
+    if not os.path.isfile(demux_report_path):
+        logging.error(f"Missing file {demux_report_path} - unable to process the analysis.")
+        return
+    demultiplex_stats = pd.read_csv(demux_report_path)
+    # Use the file to determine the lane set used for analysis
+    analysis_lanes = set(demultiplex_stats['Lane'])
+    logging.info(f"Analysis '{analysis_id}' includes lanes: {','.join(str(l) for l in sorted(analysis_lanes))}.")
 
     process = None
     # If the analysis ID is 1, there may be an existing step created by the run monitoring script
-    if analysis_id == '1':
-        logging.info("Analysis ID is '1', looking for open processes created by run monitoring.")
-        processes = lims.get_processes(inputartifactlimsid=run_artifact_limsids,
-                                    type=DEMULTIPLEXING_PROCESS_TYPE,
-                                    udf={'Status':'Waiting','Analysis ID': '1'})
-        if len(processes) == 1:
-            process = processes[0]
-            logging.info(f"Found process {process.id}, will update it.")
-        elif len(processes) == 0:
-            logging.info(f"No processes match the search criteria, so we will create one instead.")
-        else:
-            logging.error(f"Unexpectedly found {len(processes)} demux processes for analysis 1, will skip this analysis.")
-            return
+    # This function is temporarily disabled. It may be relevant to keep demultiplexing steps open, not
+    # just the first analysis. At the moment it's not clear how to get the selected lane set from an analysis
+    # before it's completed.
+    #if analysis_id == '1':
+    #    logging.info("Analysis ID is '1', looking for open processes created by run monitoring.")
+    #    processes = lims.get_processes(inputartifactlimsid=run_artifact_limsids,
+    #                                type=DEMULTIPLEXING_PROCESS_TYPE,
+    #                                udf={'Status':'Waiting','Analysis ID': '1'})
+    #    if len(processes) == 1:
+    #        process = processes[0]
+    #        step=...
+    #        # TO DO? Verify input lane set?
+    #        logging.info(f"Found process {process.id}, will update it.")
+    #    elif len(processes) == 0:
+    #        logging.info(f"No processes match the search criteria, so we will create one instead.")
+    #    else:
+    #        logging.error(f"Unexpectedly found {len(processes)} demux processes for analysis 1, will skip this analysis.")
+    #        return
 
-    if not process:
+    if not process: # Always the case now- we have to start a process
         # Queue artifacts and create a process. The artifacts cannot be queued if they are already in a
-        # demux process. In normal operation, the processes of other analyses should have been closed.
+        # demux process, then this will fail. In normal operation, the processes of other analyses should
+        # have been closed.
+        qbl_artifacts = []
+        for a in run_artifacts:
+            if well_id_to_lane(a.location[1]) in analysis_lanes:
+                qbl_artifacts.append(a)
+        if qbl_artifacts:
+            logging.info(f"Will create a step with artifacts: {qbl_artifacts}.")
+        else:
+            logging.error("None of the artifacts had locations matching the lane IDs. Skipping this analysis.")
+            return
+            
         stepconf, workflow = get_stepconf_and_workflow(DEMULTIPLEXING_WORKFLOW_NAME, DEMULTIPLEXING_PROCESS_TYPE)
         logging.info(f"Will queue the artifacts for {DEMULTIPLEXING_WORKFLOW_NAME} and start a step.")
-        lims.route_analytes(run_artifacts, workflow)
+        lims.route_analytes(qbl_artifacts, workflow)
         step = lims.create_step(stepconf, run_artifacts)
         process = Process(lims, id=step.id)
+        logging.info(f"Started process {process.id}.")
 
-    reports_dir = os.path.join(analysis_dir, "Data", "BCLConvert", "fastq", "Reports")
-    if os.path.isdir(reports_dir):
-        # Import demultiplexing stats
-        demultiplex_stats = pd.read_csv(os.path.join(reports_dir, 'Demultiplex_Stats.csv'))
-        quality_metrics = pd.read_csv(os.path.join(reports_dir, 'Quality_Metrics.csv'))
-        update_lims_process(process)
-        update_lims_output_metrics(process, demultiplex_stats, quality_metrics)
-        update_lims_lane_metrics(process, demultiplex_stats, quality_metrics)
+    # Import demultiplexing stats
+    qmetrics_path = os.path.join(analysis_dir, "Data", "BCLConvert", "fastq", "Reports", "Quality_Metrics.csv")
+    if os.path.exists(qmetrics_path):
+        quality_metrics = pd.read_csv(qmetrics_path)
     else:
-        logging.error(f"Missing reports dir {reports_dir} - unable to import QC metrics.")
-    
+        # If fastq output is deselected, no quality metrics are available here.
+        quality_metrics = None
 
-    # Write project information
+    logging.info(f"Updating output (per index) metrics.")
+    update_lims_output_metrics(process, demultiplex_stats, quality_metrics)
+    logging.info(f"Updating lane metrics.")
+    update_lims_lane_metrics(process, demultiplex_stats)
+    logging.info(f"Updating global process-level details.")
+    update_lims_process(process, analysis_dir, run_id, analysis_id)
 
-    
-
+    complete_step(step)
 
 
 def find_and_process_runs():
@@ -295,7 +365,7 @@ def find_and_process_runs():
             # We will process this analysis or die trying, so we mark it as processed.
             logging.info(f"Analysis {analysis_id} is ready for LIMS import. Creating ClarityLIMSImport_NSC.json.")
             with open(limsfile_path, "w") as ofile:
-                ofile.write("{'status': 'ImportStarting'}")
+                ofile.write("{'status': 'ImportStarted'}")
 
             process_analysis(run_dir, analysis_dir)
 
