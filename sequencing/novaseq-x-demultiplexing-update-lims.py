@@ -18,7 +18,7 @@ from lib import demultiplexing
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
 DEMULTIPLEXING_PROCESS_TYPE = "BCL Convert Demultiplexing 0.9"
-DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 1.0"
+DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 0.9"
 
 RUN_STORAGES = ["/data/runScratch.boston/NovaSeqX"]
 RUN_FOLDER_MATCH = r"\d{8}_LH[0-9\-_]+"
