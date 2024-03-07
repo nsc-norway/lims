@@ -69,7 +69,7 @@ def get_zip_file(collection, run_id):
     if not re.match(r"[0-9]+_[0-9a-zA-Z-_]+$", run_id):
         return "Error: Invalid run-id specified", 400
     for base_dir in base_dirs:
-    	run_path = os.path.join(base_dir, run_id)
+        run_path = os.path.join(base_dir, run_id)
         if os.path.isdir(run_path):
             break
     else:
