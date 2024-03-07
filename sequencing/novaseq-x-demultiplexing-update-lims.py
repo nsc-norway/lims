@@ -369,6 +369,9 @@ def find_and_process_runs():
 
             process_analysis(run_dir, analysis_dir)
 
+            with open(limsfile_path, "w") as ofile:
+                ofile.write("{'status': 'ImportCompleted'}")
+
 
 def main():
     log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
