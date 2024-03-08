@@ -51,8 +51,8 @@ def load_kits():
     try:
         kit_list = yaml.safe_load(open(kits_file).read())
         kits = dict((str(e['ref']), e) for e in kit_list)
-    except IOError, e:
-        print "Failed to read kits: ", e
+    except IOError as e:
+        print("Failed to read kits: ", e)
         kits = {}
 
 if __name__ == '__main__':
@@ -91,7 +91,7 @@ def get_kit(ref):
                 "setActive": kit['setActive'],
                 "ref": kit['ref']
                 })
-    except KeyError, e:
+    except KeyError as e:
         return ("Kit not found", 404)
 
 @app.route('/kits/<group>', methods=['POST'])
@@ -113,14 +113,14 @@ def new_kit(group):
         try:
             sorted_values = sorted(kits.values(), key=lambda e: e.get('name'))
             open(kits_file, "w").write(yaml.safe_dump(sorted_values))
-        except IOError, e:
+        except IOError as e:
             if e.errno == 13:
                 return ("Access denied to write data file", 403)
             else:
                 return ("Unable to write data file", 500)
         return ("OK", 200)
 
-    except KeyError, e:
+    except KeyError as e:
         return ("Missing field " + str(e) + " in request", 400) 
 
 
@@ -214,7 +214,7 @@ def create_lot(ref, lotnumber, group):
             return ("There was a protocol error between the backend and the LIMS server. '{}'".format(e), 500)
         except KitDoesNotExistError as e:
             return (str(e), 500)
-    except KeyError, e:
+    except KeyError as e:
         return ("Missing required field " + str(e), 400)
 
     return jsonify({
@@ -236,7 +236,7 @@ def edit_lot(limsId):
         return ("LIMS-ID not specified", 400)
     try:
         lot.get()
-    except requests.HTTPError, e:
+    except requests.HTTPError as e:
         if e.response.status_code == 404:
             return ("Lot does not exist", 404)
         else:
