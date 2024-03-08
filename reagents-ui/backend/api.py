@@ -72,7 +72,7 @@ def get_lims_kit(name, group=None):
         kitname = GROUP_KIT_NAME_FUNCTION[group](name)
     except KeyError:
         raise KitDoesNotExistError("Group " + str(group) + " is not known")
-    if kitname in lims_kits:
+    if kitname not in lims_kits:
         try:
             lims_kits[kitname] = lims.get_reagent_kits(name=kitname)[0]
         except IndexError:
@@ -186,36 +186,38 @@ def create_lot(ref, lotnumber, group):
         return ("Kit not found", 404)
     data = request.json
     try:
-        if lotnumber != data['lotnumber']:
-            return ("Lot number does not match URI", 400)
-        try:
-            unique_id = data.get('assignedUniqueId')
-            if not unique_id:
-                if not kit.get('hasUniqueId'):
-                    unique_id = get_next_name(kit, group)
-                elif kit.get('lotcode'):
-                    unique_id = "{0}-{1}".format(data['uniqueId'], kit['lotcode'])
-                else:
-                    unique_id = data['uniqueId']
-
-            lims_kit = get_lims_kit(kit['name'], group)
-            dup_lots = lims.get_reagent_lots(kitname=lims_kit.name, name=unique_id, number=lotnumber)
-            if dup_lots:
-                return ("Error: The lot already exists, with status {}.".format(dup_lots[0].status), 500)
-
-            lot = lims.create_lot(
-                lims_kit,
-                unique_id,
-                lotnumber,
-                data['expiryDate'].replace("/", "-"),
-                status='ACTIVE' if kit['setActive'] else 'PENDING'
-            )
-        except requests.HTTPError as e:
-            return ("There was a protocol error between the backend and the LIMS server. '{}'".format(e), 500)
-        except KitDoesNotExistError as e:
-            return (str(e), 500)
+        data_lotnumber = data['lotnumber']
+        unique_id = data.get('assignedUniqueId')
+        if not unique_id:
+            if not kit.get('hasUniqueId'):
+                unique_id = get_next_name(kit, group)
+            elif kit.get('lotcode'):
+                unique_id = "{0}-{1}".format(data['uniqueId'], kit['lotcode'])
+            else:
+                unique_id = data['uniqueId']
+        expiry_date = data['expiryDate'].replace("/", "-"),
     except KeyError as e:
         return ("Missing required field " + str(e), 400)
+
+    if lotnumber != data_lotnumber:
+        return ("Lot number does not match URI", 400)
+    try:
+        lims_kit = get_lims_kit(kit['name'], group)
+        dup_lots = lims.get_reagent_lots(kitname=lims_kit.name, name=unique_id, number=lotnumber)
+        if dup_lots:
+            return ("Error: The lot already exists, with status {}.".format(dup_lots[0].status), 500)
+
+        lot = lims.create_lot(
+            lims_kit,
+            unique_id,
+            lotnumber,
+            expiry_date,
+            status='ACTIVE' if kit['setActive'] else 'PENDING'
+        )
+    except requests.HTTPError as e:
+        return ("There was a protocol error between the backend and the LIMS server. '{}'".format(e), 500)
+    except KitDoesNotExistError as e:
+        return (str(e), 500)
 
     return jsonify({
         "expiryDate": lot.expiry_date,
