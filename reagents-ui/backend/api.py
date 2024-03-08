@@ -72,7 +72,7 @@ def get_lims_kit(name, group=None):
         kitname = GROUP_KIT_NAME_FUNCTION[group](name)
     except KeyError:
         raise KitDoesNotExistError("Group " + str(group) + " is not known")
-    if not lims_kits.has_key(kitname):
+    if kitname in lims_kits:
         try:
             lims_kits[kitname] = lims.get_reagent_kits(name=kitname)[0]
         except IndexError:
@@ -100,7 +100,7 @@ def new_kit(group):
     try:
         ref = data['ref']
         load_kits()
-        if kits.has_key(data['ref']):
+        if data['ref'] in kits:
             return ("Kit " + str(ref) + " already exists", 400)
         try:
             get_lims_kit(data['name'], group)
