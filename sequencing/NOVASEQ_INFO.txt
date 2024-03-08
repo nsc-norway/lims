@@ -6,6 +6,7 @@
 
 
 */5 *  *  *  * glsai	LOG_LEVEL=WARNING /usr/bin/nsc-python3 /opt/gls/clarity/customextensions/lims/sequencing/novaseq-x-run-monitoring.py
+*/5 *  *  *  * glsai	LOG_LEVEL=WARNING /usr/bin/nsc-python3 /opt/gls/clarity/customextensions/lims/sequencing/novaseq-x-demultiplexing-update-lims.py
 
 
 
