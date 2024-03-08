@@ -195,7 +195,7 @@ def create_lot(ref, lotnumber, group):
                 unique_id = "{0}-{1}".format(data['uniqueId'], kit['lotcode'])
             else:
                 unique_id = data['uniqueId']
-        expiry_date = data['expiryDate'].replace("/", "-"),
+        expiry_date = data['expiryDate'].replace("/", "-")
     except KeyError as e:
         return ("Missing required field " + str(e), 400)
 
