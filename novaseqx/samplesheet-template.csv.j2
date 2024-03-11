@@ -23,18 +23,17 @@ Lane,Sample_ID,Sample_Name,Sample_Project,index,index2,OverrideCycles,BarcodeMis
 {% for row in bclconvert_rows %}{{ row.lane }},{{ row.artifact.id }},{{ row.sample.name }},{{ row.sample.project.name }},{{ row.index1 }},{{ row.index2 }},{{ row.override_cycles }},{{ row.barcode_mismatches }},{{ row.barcode_mismatches }}
 {% endfor %}
 
-{% if dragen_rows %}
+{% if dragen_germline_rows %}
 [DragenGermline_Settings]
 SoftwareVersion,{{ process.udf['DragenGermline SoftwareVersion'] }}
-AppVersion,{{ process.udf['DRAGEN AppVersion DragenGermline'] }}
+AppVersion,{{ process.udf['DragenGermline AppVersion'] }}
 MapAlignOutFormat,cram
 KeepFastQ,true
 ReferenceGenomeDir,{{ process.udf['Reference Genome Directory'] }}
 VariantCallingMode,AllVariantCallers
 
 [DragenGermline_Data]
-Sample_ID
-{% for row in dragen_rows %}
+Sample_ID{% for row in dragen_germline_rows %}
 {{ row.artifact.id }}
 {% endfor %}
 {% endif %}

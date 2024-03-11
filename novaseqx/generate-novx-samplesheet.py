@@ -225,7 +225,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
     # only be present once in the DragenGermline table, but will have been added several times above.
     dragen_germline_id_map = {entry['artifact'].id: entry for entry in dragen_germline_rows}
     dragen_germline_rows = dragen_germline_id_map.values()
-    dragen_germline_rows = sorted(dragen_germline_rows, key=lambda row: row.sample.udf.get('Prioritet', 0), reverse=True)
+    dragen_germline_rows = sorted(dragen_germline_rows, key=lambda row: row['sample'].udf.get('Prioritet', 0), reverse=True)
 
     # generate template
     variables = {
