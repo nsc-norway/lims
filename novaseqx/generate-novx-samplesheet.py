@@ -214,7 +214,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
             })
             if sample.project.udf['Project type'] != "Diagnostics":
                 has_any_non_diag_samples = True
-            if sample.project.name.startswith("Diag-wgs") and False: # Dragen is disabled for all samples
+            if sample.udf.get('NovaSeqX Secondary Analysis') == 'DragenGermline-Settings-1.0':
                 # queue for DRAGEN
                 dragen_germline_rows.append({
                     'sample': sample,
@@ -253,7 +253,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
 
     # Write to shared storage sample sheet folder
     instrument_dir = "".join([c for c in process.udf['NovaSeq X Instrument'] if c.isalpha()]).lower()
-    write_samplesheet_path = f"/boston/runScratch/SampleSheets/{instrument_dir}/{output_file_name}"
+    write_samplesheet_path = f"/boston/runScratch/NovaSeqX/SampleSheets/{instrument_dir}/{output_file_name}"
     with open(write_samplesheet_path, "w") as output_file:
         output_file.write(samplesheet_data)
 
