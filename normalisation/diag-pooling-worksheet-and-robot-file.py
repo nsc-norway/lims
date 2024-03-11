@@ -255,9 +255,11 @@ def main(process_id, robot_file_name, worksheet_file_name):
             adjusted_special_molarity = base_special_molarity * pool_norm_conc / nov_input_conc
 
         # Get a list of sample information dicts
-        samples, error = \
+        samples, error2 = \
             get_sample_details(pool.inputs, pool_pool_volume, target_sample_conc, input_tubes,
                                 target_special_pool_molarity=adjusted_special_molarity)
+
+        error = error or error2
 
         # Compute total sample volume, to determine amount of buffer
         total_sample_volume = sum(sample['sample_volume'] for sample in samples)
