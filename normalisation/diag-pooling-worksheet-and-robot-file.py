@@ -264,7 +264,7 @@ def main(process_id, robot_file_name, worksheet_file_name):
         buffer_volume = pool_pool_volume - total_sample_volume
 
         if not error and buffer_volume < 0:
-            print("Total sample volume in pool", pool.name, "is", sum(sample_volumes),
+            print("Total sample volume in pool", pool.name, "is", total_sample_volume,
                 "uL, which exceeds the target pool volume", pool_pool_volume, ".")
             error = True
 
