@@ -112,7 +112,7 @@ def get_sample_details(pool_input_samples, pool_pool_volume, target_sample_conc,
         })
 
     if unknown_molarity:
-        print("ERROR: In pool", pool.name, ", the Molarity field is missing for pool members ",
+        print("ERROR: The Molarity field is missing for pool members ",
                 ", ".join(unknown_molarity))
         sys.exit(1)
 
