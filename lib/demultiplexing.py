@@ -21,7 +21,7 @@ def get_demux_artifact(lims, lane_artifact):
         # If there is only one sample, we will get a single <artifact> element in the demux endpoint
         # which is the same as the lane_artifact we queried for demux
         art_check = demux.find('artifact')
-        if (art_check is not None) and art_check.attrib['uri'] == lane_artifact.uri:
+        if (art_check is not None) and art_check.attrib['uri'] == lane_artifact.stateless.uri:
             num_labels = len(lane_artifact.reagent_labels)
             assert len(lane_artifact.samples) == 1, f"Non-pool artifact {lane_artifact.name} has {len(lane_artifact.samples)} samples, expected one sample."
             if num_labels == 1:

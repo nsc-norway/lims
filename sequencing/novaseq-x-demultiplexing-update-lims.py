@@ -23,6 +23,15 @@ DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 0.9"
 RUN_STORAGES = ["/data/runScratch.boston/NovaSeqX"]
 RUN_FOLDER_MATCH = r"\d{8}_LH[0-9\-_]+"
 
+# Use this to cache demultiplexings of lanes. They are used in two functions.
+demux_cache = {}
+
+def get_demux_artifact(artifact):
+    global demux_cache
+    if artifact.id not in demux_cache:
+        demux_cache[artifact.id] = demultiplexing.get_demux_artifact(lims, artifact)
+    return demux_cache[artifact.id]
+
 
 def well_id_to_lane(well_id):
     return int(well_id[0])
@@ -72,7 +81,6 @@ def update_lims_output_metrics(process, demultiplex_stats, quality_metrics):
 
     # Update stats for each input-output pair, representing a unique indexed sample
     # on a lane
-    demux_cache = {}
     updated_artifacts = []
     for i, o in process.input_output_maps:
         lane_artifact = i['uri']
@@ -90,12 +98,11 @@ def update_lims_output_metrics(process, demultiplex_stats, quality_metrics):
         lane_id = well_id_to_lane(lane_artifact.location[1])
         logging.info(f"Updating output metrics for {output_artifact.name} (lane {lane_id}).")
     
-        if lane_id not in demux_cache:
-            demux_cache[lane_id] = demultiplexing.get_demux_artifact(lims, lane_artifact)
+        demux = get_demux_artifact(lane_artifact)
         
         # Locate the demultiplexed artifact with the same reagent label as the output
         # of this step
-        for _, demux_artifact, _ in demux_cache[lane_id]:
+        for _, demux_artifact, _ in demux:
             if demux_artifact.reagent_labels == output_artifact.reagent_labels:
                 demux_artifact_id = demux_artifact.id
                 break
@@ -228,6 +235,54 @@ def get_input_artifacts(run_dir):
     return None
 
 
+def get_sample_identity_matching(process):
+    """Retrieves the sample/project naming, index information and LIMS identifiers
+    for the samples in this analysis.
+
+    Returns a list of sample_info dicts:
+    """
+
+    sample_list = []
+    for i, o in process.input_output_maps:
+        lane_artifact = i['uri']
+        lane_id = well_id_to_lane(lane_artifact.location[1])
+        demux = get_demux_artifact(lane_artifact)
+
+        sample_info = {'lane': lane_id, 'lane_artifact': lane_artifact.id}
+        # Only process demultiplexed artifacts. There will however be one input-output-map with
+        # no "o" if the lane has no indexes.
+        if o is None:
+            sample_info['output_artifact_id'] = None
+            output_reagent_label = None
+            assert len(lane_artifact.samples) == 1, f"The artifact should have a single sample, found {len(lane_artifact.samples)}."
+            sample = lane_artifact.samples[0]
+        elif o['output-generation-type'] == 'PerReagentLabel':
+            sample_info['output_artifact_id'] = o['limsid']
+            output_reagent_label = next(iter(o['uri'].reagent_labels))
+            assert len(o['uri'].samples) == 1, f"There should be one sample in the demux step output artifact, found {len(o['uri'].samples)}."
+            sample = o['uri'].samples[0]
+        else: # This is some other output like a log file etc., skip it
+            continue
+
+        sample_info['sample_id'] = sample.id
+        sample_info['sample_name'] = sample.name
+        sample_info['project_id'] = sample.project.id
+        sample_info['project_name'] = sample.project.name
+        sample_info['project_type'] = sample.project.udf.get('Project type')
+
+        # Locate the demultiplexed artifact with the same reagent label as the output
+        # of this step. This may be used as Sample_ID in the sample sheet..
+        for sample, demux_artifact, dem_reagent_label in demux:
+            if dem_reagent_label == output_reagent_label:
+                sample_info['artifact_id'] = demux_artifact.id
+                sample_info['artifact_name'] = demux_artifact.name
+                break
+        sample_list.append(sample_info)
+
+    return sample_list
+
+
+
 def complete_step(step):
     """Advance the step until completion."""
 
@@ -331,9 +386,16 @@ def process_analysis(run_dir, analysis_dir):
     update_lims_lane_metrics(process, demultiplex_stats)
     logging.info(f"Updating global process-level details.")
     update_lims_process(process, analysis_dir, run_id, analysis_id)
+    logging.info(f"Prepare a list of sample identities.")
+    sample_id_list = get_sample_identity_matching(process)
 
     complete_step(step)
-
+    limsfile_path = os.path.join(analysis_dir, "ClarityLIMSImport_NSC.json")
+    with open(limsfile_path, "w") as ofile:
+        json.dump({
+            'status': 'ImportCompleted',
+            'samples': sample_id_list
+            }, ofile)
 
 def find_and_process_runs():
     run_dirs = [r
@@ -368,9 +430,6 @@ def find_and_process_runs():
                 ofile.write("{'status': 'ImportStarted'}")
 
             process_analysis(run_dir, analysis_dir)
-
-            with open(limsfile_path, "w") as ofile:
-                ofile.write("{'status': 'ImportCompleted'}")
 
 
 def main():
