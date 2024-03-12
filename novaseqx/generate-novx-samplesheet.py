@@ -164,7 +164,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
     # Dragen Germline setting can be configured easily in the LIMS process. If the sample is set to use
     # NovaSeqX Secondary Analysis = DragenGermline-Settings-1.0
     # We will use the settings provided on the process. Otherwise, the settings can be configured in detail
-    # in this UDF.
+    # in Sample UDF "NovaSeqX Secondary Analysis".
     dragen_germline_standard_settings = "[DragenGermline]"
     dragen_germline_standard_settings += "SoftwareVersion=" + process.udf['DragenGermline SoftwareVersion']
     dragen_germline_standard_settings += ";AppVersion=" + process.udf['DragenGermline AppVersion']
@@ -243,7 +243,18 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
                     analysis_strings[analysis].append(artifact.id)
 
 
-    # Parse analysis configs
+    # Parse the analysis configuration strings and structure them by app name
+    app_configs = defaultdict(dict)
+    for analysis_string, samplesheet_sample_ids in analysis_strings.items():
+        matches = re.match(r"\[([A-Z-a-z]+)\](.*)$", analysis_string)
+        if matches:
+            app = matches.group(1)
+            app_configs[app].append({
+                'settings': matches.group(2),
+                'sample_ids': samplesheet_sample_ids
+            })
+        
+
     analysis_configs = []
     for analysis_string, samplesheet_sample_ids in analysis_strings.items():
         matches = re.match(r"\[([A-Z-a-z]+)\](.*)$", analysis_string)
@@ -254,16 +265,8 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
                 sys.exit(1)
             logging.info(f"Preparing analysis block for: {analysis['name']}.")
             analysis['settings'] = []
-            for setting in matches.group(2).split(";"):
-                split = setting.split("=", max_split=1)
-                if len(split) == 1:
-                    key = split[0]
-                    value = ''
-                else:
-                    key, value = split
-                analysis['settings'].append({'key': key, 'value': value})
             analysis['sample_ids'] = list(set(samplesheet_sample_ids))
-            ad_hoc_analyses.append(analysis)
+            analysis_configs.append(analysis)
             have_apps.add(analysis['app'])
 
     # generate template
@@ -302,7 +305,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
 
 if __name__ == "__main__":
     if len(sys.argv) <3:
-        print(f"Usage: {sys.argv[0]} PROCESS_ID SAMPLESHEET_ARTIFACT_LUID LOG_FILE_NAME")
+        print(f–…"Usage: {sys.argv[0]} PROCESS_ID SAMPLESHEET_ARTIFACT_LUID LOG_FILE_NAME")
         sys.exit(1)
     log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
     logging.basicConfig(level=log_level, filename=sys.argv[3])
