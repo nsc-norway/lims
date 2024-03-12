@@ -3,8 +3,10 @@ from genologics import config
 import sys
 import traceback
 import os
+import re
 import operator
 import logging
+from collections import defaultdict
 import pandas as pd
 import jinja2
 import lib.demultiplexing
@@ -158,10 +160,23 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
     library_tube_strip_id = container.name
     # This check is important to prevent writing unexpected files - see output file below
     assert all((c.isalnum() or c in ['-']) for c in library_tube_strip_id), "Illegal characters in library strip tube name"
+
+    # Dragen Germline setting can be configured easily in the LIMS process. If the sample is set to use
+    # NovaSeqX Secondary Analysis = DragenGermline-Settings-1.0
+    # We will use the settings provided on the process. Otherwise, the settings can be configured in detail
+    # in this UDF.
+    dragen_germline_standard_settings = "[DragenGermline]"
+    dragen_germline_standard_settings += "SoftwareVersion=" + process.udf['DragenGermline SoftwareVersion']
+    dragen_germline_standard_settings += ";AppVersion=" + process.udf['DragenGermline AppVersion']
+    dragen_germline_standard_settings += ";MapAlignOutFormat=cram;KeepFastQ=true"
+    dragen_germline_standard_settings += ";ReferenceGenomeDir=" + process.udf['Reference Genome Directory']
+    dragen_germline_standard_settings += ";VariantCallingMode=AllVariantCallers"
+    logging.info(f"The standard settings for DragenGermline are: {dragen_germline_standard_settings}.")
     
     # Process each lane and produce BCLConvert and DragenGermline sample tables
     bclconvert_rows = []
     dragen_germline_rows = []
+    analysis_strings = defaultdict(list)
     has_any_non_diag_samples = False # Run-level flag to determine compression format
     for lane_artifact in sorted(output_lanes, key=lambda artifact: artifact.location[1][0]):
         # Get lane from well position e.g. B:1 is lane 2.
@@ -195,6 +210,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
 
         # Loop over the unique samples (indexes) in this lane
         for (sample, artifact, _), (index1, index2) in zip(demux_list, index_pairs):
+            logging.info(f"Adding sample {sample.name} / artifact ID {artifact.id}.")
             override_cycles = get_override_cycles(
                         process.udf['Read 1 Cycles'],
                         process.udf['Read 2 Cycles'],
@@ -215,17 +231,40 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
             if sample.project.udf['Project type'] != "Diagnostics":
                 has_any_non_diag_samples = True
             if sample.udf.get('NovaSeqX Secondary Analysis') == 'DragenGermline-Settings-1.0':
-                # queue for DRAGEN
-                dragen_germline_rows.append({
-                    'sample': sample,
-                    'artifact': artifact
-                })
+                logging.info(f"Enable DragenGermline standard settings for this sample.")
+                analysis_strings[dragen_germline_standard_settings].append(artifact.id)
+            # ... add more preset analysis types here?
+            elif sample.udf.get('NovaSeqX Secondary Analysis'):
+                # Ad-hoc analysis type should contain the application name in square brackets and all required options.
+                # [DragenGermline]SoftwareVersion=0;AppVersion=1;KeepFastQ=FALSE
+                analysis = str(sample.udf['NovaSeqX Secondary Analysis'])
+                if analysis.startswith('[') and ']' in analysis:
+                    logging.info(f"Enable ad-hoc analysis: {analysis}.")
+                    analysis_strings[analysis].append(artifact.id)
 
-    # Deduplicate DragenGermline entries. Samples that are sequenced on multiple lanes should
-    # only be present once in the DragenGermline table, but will have been added several times above.
-    dragen_germline_id_map = {entry['artifact'].id: entry for entry in dragen_germline_rows}
-    dragen_germline_rows = dragen_germline_id_map.values()
-    dragen_germline_rows = sorted(dragen_germline_rows, key=lambda row: row['sample'].udf.get('Prioritet', 0), reverse=True)
+
+    # Parse analysis configs
+    analysis_configs = []
+    for analysis_string, samplesheet_sample_ids in analysis_strings.items():
+        matches = re.match(r"\[([A-Z-a-z]+)\](.*)$", analysis_string)
+        if matches:
+            analysis = {'name': matches.group(1)}
+            if analysis['name'] in have_apps:
+                print(f"Error: Cannot configure multiple analyses for app: {matches.group(1)}.")
+                sys.exit(1)
+            logging.info(f"Preparing analysis block for: {analysis['name']}.")
+            analysis['settings'] = []
+            for setting in matches.group(2).split(";"):
+                split = setting.split("=", max_split=1)
+                if len(split) == 1:
+                    key = split[0]
+                    value = ''
+                else:
+                    key, value = split
+                analysis['settings'].append({'key': key, 'value': value})
+            analysis['sample_ids'] = list(set(samplesheet_sample_ids))
+            ad_hoc_analyses.append(analysis)
+            have_apps.add(analysis['app'])
 
     # generate template
     variables = {
@@ -233,7 +272,8 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
             'fastq_compression_format': "gzip" if has_any_non_diag_samples else "dragen",
             'process': process,
             'bclconvert_rows': sorted(bclconvert_rows, key=operator.itemgetter('lane')),
-            'dragen_germline_rows': dragen_germline_rows
+            'dragen_germline_rows': dragen_germline_rows,
+            'ad_hoc_analyses': []
     }
     template_dir = os.path.dirname(os.path.realpath(__file__))
     samplesheet_data = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir)) \

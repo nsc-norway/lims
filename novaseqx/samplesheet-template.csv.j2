@@ -38,3 +38,17 @@ Sample_ID{% for row in dragen_germline_rows %}
 {% endfor %}
 {% endif %}
 
+{% for analysis in ad_hoc_analyses %}
+[{{ analysis['app'] }}_Settings]
+{% for setting in analysis['global_settings'] %}
+{{ setting.key }},{{ setting.value }}
+{% endfor %}
+
+[{{ analysis['app'] }}_Data]
+Sample_ID,{% for setting in analysis['settings'] %}
+{% for sample_id in analysis['sample_ids'] %}
+{{ sample_id }}
+{% endfor %}
+
+{% endfor %}
+
