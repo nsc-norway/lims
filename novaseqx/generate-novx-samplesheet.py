@@ -160,23 +160,12 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
     library_tube_strip_id = container.name
     # This check is important to prevent writing unexpected files - see output file below
     assert all((c.isalnum() or c in ['-']) for c in library_tube_strip_id), "Illegal characters in library strip tube name"
-
-    # Dragen Germline setting can be configured easily in the LIMS process. If the sample is set to use
-    # NovaSeqX Secondary Analysis = DragenGermline-Settings-1.0
-    # We will use the settings provided on the process. Otherwise, the settings can be configured in detail
-    # in Sample UDF "NovaSeqX Secondary Analysis".
-    dragen_germline_standard_settings = "[DragenGermline]"
-    dragen_germline_standard_settings += "SoftwareVersion=" + process.udf['DragenGermline SoftwareVersion']
-    dragen_germline_standard_settings += ";AppVersion=" + process.udf['DragenGermline AppVersion']
-    dragen_germline_standard_settings += ";MapAlignOutFormat=cram;KeepFastQ=true"
-    dragen_germline_standard_settings += ";ReferenceGenomeDir=" + process.udf['Reference Genome Directory']
-    dragen_germline_standard_settings += ";VariantCallingMode=AllVariantCallers"
-    logging.info(f"The standard settings for DragenGermline are: {dragen_germline_standard_settings}.")
     
     # Process each lane and produce BCLConvert and DragenGermline sample tables
     bclconvert_rows = []
     dragen_germline_rows = []
-    analysis_strings = defaultdict(list)
+
+    analysis_settings = []
     has_any_non_diag_samples = False # Run-level flag to determine compression format
     for lane_artifact in sorted(output_lanes, key=lambda artifact: artifact.location[1][0]):
         # Get lane from well position e.g. B:1 is lane 2.
@@ -230,11 +219,13 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
             })
             if sample.project.udf['Project type'] != "Diagnostics":
                 has_any_non_diag_samples = True
-            if sample.udf.get('NovaSeqX Secondary Analysis') == 'DragenGermline-Settings-1.0':
+            analysis_type = sample.udf.get('NovaSeqX Secondary Analysis')
+            if analysis_type == 'DragenGermline-Settings-1.0':
                 logging.info(f"Enable DragenGermline standard settings for this sample.")
                 analysis_strings[dragen_germline_standard_settings].append(artifact.id)
             # ... add more preset analysis types here?
-            elif sample.udf.get('NovaSeqX Secondary Analysis'):
+            elif analysis_type.lower().replace("-", "") == 'adhoc':
+                sample.udf.get('NovaSeqX Secondary Analysis Settings')
                 # Ad-hoc analysis type should contain the application name in square brackets and all required options.
                 # [DragenGermline]SoftwareVersion=0;AppVersion=1;KeepFastQ=FALSE
                 analysis = str(sample.udf['NovaSeqX Secondary Analysis'])
@@ -305,7 +296,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
 
 if __name__ == "__main__":
     if len(sys.argv) <3:
-        print(f–…"Usage: {sys.argv[0]} PROCESS_ID SAMPLESHEET_ARTIFACT_LUID LOG_FILE_NAME")
+        print(f"Usage: {sys.argv[0]} PROCESS_ID SAMPLESHEET_ARTIFACT_LUID LOG_FILE_NAME")
         sys.exit(1)
     log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
     logging.basicConfig(level=log_level, filename=sys.argv[3])
