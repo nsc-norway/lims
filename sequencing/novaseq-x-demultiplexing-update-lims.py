@@ -423,6 +423,7 @@ def find_and_process_runs():
                 continue
             if not os.path.exists(os.path.join(analysis_dir, "CopyComplete.txt")):
                 logging.info(f"Analysis {analysis_id} does not have CopyComplete.txt. Skipping.")
+                continue
 
             # We will process this analysis or die trying, so we mark it as processed.
             logging.info(f"Analysis {analysis_id} is ready for LIMS import. Creating ClarityLIMSImport_NSC.json.")
