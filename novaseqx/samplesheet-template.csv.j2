@@ -29,12 +29,12 @@ SoftwareVersion,{{ process.udf['DragenGermline SoftwareVersion'] }}
 AppVersion,{{ process.udf['DragenGermline AppVersion'] }}
 MapAlignOutFormat,cram
 KeepFastQ,true
-ReferenceGenomeDir,{{ process.udf['Reference Genome Directory'] }}
+
 VariantCallingMode,AllVariantCallers
 
 [DragenGermline_Data]
-Sample_ID{% for row in dragen_germline_rows %}
-{{ row.artifact.id }}
+Sample_ID,ReferenceGenomeDir{% for row in dragen_germline_rows %}
+{{ row.artifact.id }},{{ process.udf['Reference Genome Directory'] }}
 {% endfor %}
 {% endif %}
 
