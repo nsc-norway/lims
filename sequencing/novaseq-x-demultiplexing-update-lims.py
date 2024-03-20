@@ -368,7 +368,7 @@ def process_analysis(run_dir, analysis_dir):
         stepconf, workflow = get_stepconf_and_workflow(DEMULTIPLEXING_WORKFLOW_NAME, DEMULTIPLEXING_PROCESS_TYPE)
         logging.info(f"Will queue the artifacts for {DEMULTIPLEXING_WORKFLOW_NAME} and start a step.")
         lims.route_analytes(qbl_artifacts, workflow)
-        step = lims.create_step(stepconf, run_artifacts)
+        step = lims.create_step(stepconf, qbl_artifacts)
         process = Process(lims, id=step.id)
         logging.info(f"Started process {process.id}.")
 
