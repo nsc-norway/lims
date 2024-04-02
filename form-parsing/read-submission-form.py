@@ -26,7 +26,8 @@ PLACEHOLDER_STRING = "Click.*here.*left.*of.*box"
 
 
 DNA_PREPS = [
-        ("Nextera.*Flex", "Nextera Flex"),
+        ("Nextera.*Flex", "Nextera Flex"), # Previous versions
+        ("Illumina.*DNA Prep", "TODO RENAMING?"), # > 2024-04
         (".*TruSeq.*adapter ligation", "TruSeq Nano"),
         ("TruSeq.*PCR-free prep", "TruSeq PCR-free"),
         (".*ThruPLEX.*", "ThruPLEX"),
@@ -342,7 +343,7 @@ LABEL_UDF_PARSER = [
         ("Species:", 'Species', get_text_single),
         ("Reference genome", 'Reference genome', get_text_single),
         ("Sequencing type", 'Sequencing method', partial(single_choice_checkbox, SEQUENCING_TYPES)),
-        ("Desired insert size", 'Desired insert size', get_text_single),
+        ("Desired insert size", 'Desired insert size', get_text_single), # 2024-04: Option removed in current version
         ("Sequencing Instrument requested", 'Sequencing instrument requested', 
             partial(single_choice_checkbox, SEQUENCING_INSTRUMENTS)), # <2019-04 seq instrument
         ("Read Length", 'Read length TEMPFIELD', read_length),        # <2019-04 read length; Needs post-proc'ing
@@ -378,6 +379,9 @@ def get_values_from_doc(xml_tree):
     instrument_output_table = None
     instrument_udfs = []
     instruments_found = 0
+    new_2024_found_sequencer = None
+    new_2024_found_read_length = None
+    
     for row in xml_tree.getiterator(TABLE_ROW):
         cells = list(row.getiterator(TABLE_CELL))
         if cells:
@@ -407,6 +411,13 @@ def get_values_from_doc(xml_tree):
                 if instrument_udfs_tmp:
                     instruments_found += 1
                     instrument_udfs = instrument_udfs_tmp
+            elif len(cells) == 4: # 2024-04 New Sequencing table
+                for i, cell in enumerate(cells):
+                    print("CELL TEXT", i)
+                    print([str(x.text) for x in list(cell.getiterator(TEXT))])
+                    print("CELL CHECKBOXES", i)
+                    print([str(is_checked(x)) for x in list(cell.getiterator(CHECKBOX))])
+                print("END ROW")
     if instruments_found == 1:
         results += instrument_udfs
     return results
