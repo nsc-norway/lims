@@ -21,6 +21,13 @@ CHECKBOX = WORD_NAMESPACE + 'checkBox'
 CHECKED = WORD_NAMESPACE + 'checked'
 DEFAULT = WORD_NAMESPACE + 'default'
 VAL = WORD_NAMESPACE + 'val'
+# Newer versions of Word make checkboxes with different tags. The parser
+# supports both kinds of checkbox (get_checkbox function).
+WORD_NAMESPACE_2 = '{http://schemas.microsoft.com/office/word/2010/wordml}'
+CHECKBOX_2 = WORD_NAMESPACE_2 + 'checkbox' # Note lowercase "b"
+CHECKED_2 = WORD_NAMESPACE_2 + 'checked'
+DEFAULT_ = WORD_NAMESPACE_2 + 'default'
+VAL_2 = WORD_NAMESPACE_2 + 'val'
 
 PLACEHOLDER_STRINGS = [
     "Click.*here.*left.*of.*box",
@@ -58,6 +65,16 @@ SEQUENCING_TYPES = [ # Note: used both in old (single_choice_checkbox) and new
         ("Paired End", "Paired End Read"),
         ]
 
+SEQUENCING_TYPES_v17 = {
+    "SR": "Single Read",
+    "PE": "Paired End Read",
+}
+
+# The following list is deprecated since form version v17.1. In the new form we use the function
+# get_instrument_and_mode_v17, which contains the sequencer types within it.
+# The second elements of the tuples in here correspond to the UDF values entered into LIMS,
+# and the same values should also be used in get_instrument_and_mode_v17. An exception
+# is NovaSeq X, which was only added in v17.1 and is not included here.
 SEQUENCING_INSTRUMENTS = [
         ("HiSeq X", "HiSeq X"),
         ("HiSeq 4000", "HiSeq 4000"),
@@ -120,6 +137,23 @@ def is_checked(checkbox_elem):
     else:
         return False
 
+# New checkbox type in new Word version
+def is_checked_2(checkbox_elem):
+    checked_elem = checkbox_elem.find(CHECKED_2)
+    if checked_elem is None:
+        checked_elem = checkbox_elem.find(DEFAULT_2)
+    if not checked_elem is None:
+        val = checked_elem.attrib.get(VAL_2)
+        if val == "1":
+            return True
+        elif val == "0":
+            return False
+        elif val == None:
+            return True
+        else:
+            raise ValueError("Unexpected value for checkbox: " + val)
+    else:
+        return False
 
 def is_placeholder(text):
     return any(re.search(ph, text) for ph in PLACEHOLDER_STRINGS)
@@ -179,6 +213,9 @@ def get_checkbox(cell):
     checkboxes = cell.iter(CHECKBOX)
     for cb in checkboxes: # Process only the first checkbox
         return is_checked(cb)
+    checkboxes = cell.iter(CHECKBOX_2)
+    for cb in checkboxes:
+        return is_checked_2(cb)
     return None
 
 
@@ -342,6 +379,69 @@ def get_instrument_and_mode(instrument_output_table, cells):
         return None
 
 
+def cleanup_seq_table_string(s):
+    """Gets the text contents of a string, for the strings in the sequencer table.
+    
+    First pick out anything before open parenthesis if present. Then replace
+    every non-alphanumeric character with spaces, then collapse all whitespaces to
+    single spaces, and finally remove leading & trailing spaces.
+    """
+
+    pre_parens = s.split("(", maxsplit=1)[0]
+    replaced = re.sub(r"[^A-Za-z0-9]", " ", pre_parens)
+    collapsed = re.sub(r"\s+", " ", replaced)
+    return collapsed.strip()
+
+
+def get_read_length_and_sequencing_type(read_length_string):
+    """Parse fixed-format values like '150 bp PE'."""
+
+    m = re.match(r"(\d+) bp ([A-Z]{2})$", read_length_string)
+    if m:
+        read_length = m.group(1) # Report as numeric string
+        seq_method = m.group(2)  # PE or SR
+        if seq_method in SEQUENCING_TYPES_v17:
+            return (read_length, SEQUENCING_TYPES_v17[seq_method])
+    return None, None
+
+
+def get_instrument_and_mode_v17(instrument_string, cells):
+    """Process a row of the table, corresponding to a sequencer and mode.
+    This operates on v17.1 of the form.
+
+    If the mode's checkbox (col 2) is ticked, the information about sequencer,
+    mode and read length is extracted and returned. The fourth column, for the
+    number of lanes, is ignored. The checkbox next to the seqencer name is
+    ignored.
+
+    Returns None if this row is not selected.
+    """
+
+    if get_checkbox(cells[1]):
+        # Don't get the instrument (the commented line below). Instead it is provided
+        # as an argument.
+        #instrument_string = get_text_single(cells[0])
+        instrument = cleanup_seq_table_string(instrument_string)
+        mode = cleanup_seq_table_string(get_text_single(cells[1]))
+
+        # For backward compat, replace NovaSeq 6000 with NovaSeq
+        if instrument == "NovaSeq 6000":
+            instrument = "NovaSeq"
+        
+        result = [
+            ('Sequencing instrument requested', instrument + " " + mode)
+        ]
+
+        read_length, seq_meth = get_read_length_and_sequencing_type(get_text_single(cells[2]))
+        if read_length and seq_meth:
+            result.append(('Read length requested', read_length))
+            result.append(('Sequencing method', seq_meth))
+
+        return result
+    else:
+        return None
+
+
 # List of (label, udf, parser_func)
 LABEL_UDF_PARSER = [
         ("Method used to purify DNA / RNA", 'Method used to purify DNA/RNA', get_text_single),
@@ -393,8 +493,8 @@ def get_values_from_doc(xml_tree):
     instrument_output_table = None
     instrument_udfs = []
     instruments_found = 0
-    new_v17_found_sequencer = None
-    new_v17_found_read_length = None
+    # Keep information from previous rows for merged cells in the v17.1 sequencer table.
+    current_instrument_string_formv17 = None
     for row in xml_tree.iter(TABLE_ROW):
         cells = list(row.iter(TABLE_CELL))
         if cells:
@@ -415,10 +515,10 @@ def get_values_from_doc(xml_tree):
                             results.append((udf, value))
             # Instrument / Output table has many columns and can't be parsed using the normal
             # framework.
-            # Pre-2024-04 form has the following: Three columns.
+            # Pre-v17.1 form has three columns.
             # Stateful parsing based on first looking for the header row, then the
             # per-instrument rows.
-            # Post-2024-04: 
+            # Post-v17.1: Stateful parsing based on rows
             elif len(cells) == 3:
                 if label == "Instrument / output size":
                     instrument_output_table = get_seq_types_read_lengths(*cells[1:])
@@ -427,10 +527,15 @@ def get_values_from_doc(xml_tree):
                 if instrument_udfs_tmp:
                     instruments_found += 1
                     instrument_udfs = instrument_udfs_tmp
-            elif len(cells) == 4: # 2024-04 New Sequencing table
-                for i, cell in enumerate(cells):
-                    print("TODO")
-                print("END ROW")
+            elif len(cells) == 4: # v17.1 New Sequencing table (will also process and ignore the header row)
+                instrument = get_text_single(cells[0])
+                if instrument:
+                    current_instrument_string_formv17 = instrument
+                instrument_udfs_tmp = get_instrument_and_mode_v17(current_instrument_string_formv17, cells)
+                if instrument_udfs_tmp:
+                    instruments_found += 1
+                    instrument_udfs = instrument_udfs_tmp
+
     if instruments_found == 1:
         results += instrument_udfs
     return results
