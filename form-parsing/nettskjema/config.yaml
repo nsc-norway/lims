@@ -19,7 +19,7 @@ questions:
     default:    '-- Not provided --'
   
   - udf:        'Project Goal'
-    line:       'Project goal'
+    line:       'Project Goal'
   
   - udf:        'Project type'
     line:       'Project type'
@@ -44,22 +44,36 @@ questions:
 
   - udf:        'Sample prep requested'
     line:       'For DNA samples'
+    mapping:    sample_prep_dna
     
   - udf:        'Sample prep requested'
     line:       'For RNA samples'
+    mapping:    sample_prep_rna
 
   - udf:        'Sequencing instrument requested'
     line:       'Sequencing Instrument requested'
 
+# "Choose run type" for MiSeq & NextSeq sets lengths, PE mode and sequencer detail
+  - udf:        'Sequencing instrument requested'
+    line:       'Choose run type'
+    mapping:    'choose_run_type_sequencer'
+  - udf:        'Read length requested'
+    line:       'Choose run type'
+    mapping:    'choose_run_type_readlength'
+  - udf:        'Sequencing method'
+    line:       'Choose run type'
+    mapping:    'choose_run_type_seqmeth'
+
+# NovaSeq
   - udf:        'Sequencing instrument requested'
     line:       'Choose Flowcell'
     mapping:    'novaseq_fc'
-
   - udf:        'Read length requested'
-    line:       'Choose run length'
-
-  - udf:        'Read length requested'
-    line:       'Choose run type'
+    line:       'Choose read length'
+    mapping:    choose_read_length_readlength
+  - udf:        'Sequencing method'
+    line:       'Choose read length'
+    mapping:    choose_read_length_seqmeth
 
   - udf:        'Total # of lanes requested'
     line:       'Total number of runs requested'
@@ -166,6 +180,13 @@ mappings:
       out: NovaSeq S2
     - in: S4
       out: NovaSeq S4
+    - in: 1.5B
+      out: NovaSeq X 1.5B
+    - in: 25B
+      out: NovaSeq X 25B
+    - in: 10B
+      out: NovaSeq X 10B
+
   
   project_type:
     - in: Non-sensitive
@@ -178,3 +199,142 @@ mappings:
       out: True
     - in: 'No'
       out: False
+
+  sample_prep_dna:
+    - in: 'Illumina DNA Prep, Tagmentation'
+      out: 'Illumina DNA Prep'
+    - in: 'TruSeq® Nano DNA library prep'
+      out: 'TruSeq Nano'
+    - in: 'ThruPLEX® low-input sample prep'
+      out: 'ThruPLEX'
+    - in: '16S prep (Fadrosh DW et. al)'
+      out: '16S prep'
+    - in: 'I'm unsure, please advise'
+      out: 'User unsure'
+
+  sample_prep_rna:
+    - in: 'Strand-specific mRNA-seq library prep'
+      out: 'TruSeq Stranded mRNA'
+    - in: 'Strand-specific total RNA-seq library prep'
+      out: 'TruSeq Stranded total RNA'
+    - in: 'small RNA library prep'
+      out: 'QiaSeq miRNA'
+    - in: 'rRNA/globin depletion'
+      out: 'QiaSeq FastSelect rRNA/Globin Depletion'
+    - in: 'I'm unsure, please advise'
+      out: 'User unsure'
+
+  choose_read_length_readlength:
+    - in: '1 x 100 bp'
+      out: '100'
+    - in: '2 x 50 bp'
+      out: '50'
+    - in: '2 x 100 bp'
+      out: '100'
+    - in: '2 x 150 bp'
+      out: '150'
+    - in: '2 x 250 bp'
+      out: '250'
+
+  choose_read_length_seqmeth:
+    - in: '1 x 100 bp'
+      out: 'Single Read'
+    - in: '2 x 50 bp'
+      out: 'Paired End Read'
+    - in: '2 x 100 bp'
+      out: 'Paired End Read'
+    - in: '2 x 150 bp'
+      out: 'Paired End Read'
+    - in: '2 x 250 bp'
+      out: 'Paired End Read'
+
+  choose_run_type_sequencer:
+    - in: '2 x 150 bp Nano v2'
+      out: 'MiSeq v2 Nano'
+    - in: '2 x 250 bp Nano v2'
+      out: 'MiSeq v2 Nano'
+    - in: '2 x 150 bp Micro v2'
+      out: 'MiSeq v2 Micro'
+    - in: '1 x 50 bp v2'
+      out: 'MiSeq v2'
+    - in: '2 x 25 bp v2'
+      out: 'MiSeq v2'
+    - in: '2 x 150 bp v2'
+      out: 'MiSeq v2'
+    - in: '2 x 250 bp v2'
+      out: 'MiSeq v2'
+    - in: '2 x 75 bp v3'
+      out: 'MiSeq v3'
+    - in: '2 x 300 bp v3'
+      out: 'MiSeq v3'
+    - in: '1 x 75 bp High-output'
+      out: 'NextSeq high output'
+    - in: '2 x 75 bp High-output'
+      out: 'NextSeq high output'
+    - in: '2 x 150 bp High-output'
+      out: 'NextSeq high output'
+    - in: '2 x 75 bp Mid-output'
+      out: 'NextSeq mid output'
+    - in: '2 x 150 bp Mid-output'
+      out: 'NextSeq mid output'
+
+  choose_run_type_readlength:
+    - in: '2 x 150 bp Nano v2'
+      out: '150'
+    - in: '2 x 250 bp Nano v2'
+      out: '250'
+    - in: '2 x 150 bp Micro v2'
+      out: '150'
+    - in: '1 x 50 bp v2'
+      out: '50'
+    - in: '2 x 25 bp v2'
+      out: '25'
+    - in: '2 x 150 bp v2'
+      out: '150'
+    - in: '2 x 250 bp v2'
+      out: '250'
+    - in: '2 x 75 bp v3'
+      out: '75'
+    - in: '2 x 300 bp v3'
+      out: '300'
+    - in: '1 x 75 bp High-output'
+      out: '75'
+    - in: '2 x 75 bp High-output'
+      out: '75'
+    - in: '2 x 150 bp High-output'
+      out: '150'
+    - in: '2 x 75 bp Mid-output'
+      out: '75'
+    - in: '2 x 150 bp Mid-output'
+      out: '150'
+
+  choose_run_type_seqmeth:
+    - in: '2 x 150 bp Nano v2'
+      out: 'Paired End Read'
+    - in: '2 x 250 bp Nano v2'
+      out: 'Paired End Read'
+    - in: '2 x 150 bp Micro v2'
+      out: 'Paired End Read'
+    - in: '1 x 50 bp v2'
+      out: 'Single Read'
+    - in: '2 x 25 bp v2'
+      out: 'Paired End Read'
+    - in: '2 x 150 bp v2'
+      out: 'Paired End Read'
+    - in: '2 x 250 bp v2'
+      out: 'Paired End Read'
+    - in: '2 x 75 bp v3'
+      out: 'Paired End Read'
+    - in: '2 x 300 bp v3'
+      out: 'Paired End Read'
+    - in: '1 x 75 bp High-output'
+      out: 'Single Read'
+    - in: '2 x 75 bp High-output'
+      out: 'Paired End Read'
+    - in: '2 x 150 bp High-output'
+      out: 'Paired End Read'
+    - in: '2 x 75 bp Mid-output'
+      out: 'Paired End Read'
+    - in: '2 x 150 bp Mid-output'
+      out: 'Paired End Read'
+      
