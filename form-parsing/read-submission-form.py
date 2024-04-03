@@ -22,7 +22,10 @@ CHECKED = WORD_NAMESPACE + 'checked'
 DEFAULT = WORD_NAMESPACE + 'default'
 VAL = WORD_NAMESPACE + 'val'
 
-PLACEHOLDER_STRING = "Click.*here.*left.*of.*box"
+PLACEHOLDER_STRINGS = [
+    "Click.*here.*left.*of.*box",
+    "Click.*here.*to.*enter.*text"
+]
 
 
 DNA_PREPS = [
@@ -112,12 +115,15 @@ def is_checked(checkbox_elem):
         return False
 
 
+def is_placeholder(text):
+    return any(re.search(ph, text) for ph in PLACEHOLDER_STRINGS)
+
 
 # Parsing various inputs
 def get_text_multi(cell, check_placeholder=True):
     text = ""
     first = True
-    for node in cell.getiterator():
+    for node in cell.iter():
         if node.tag == PARA:
             if not first:
                 text += "\n\n"
@@ -126,7 +132,7 @@ def get_text_multi(cell, check_placeholder=True):
             text += "\n"
         elif node.tag == TEXT:
             text += node.text
-    if check_placeholder and re.search(PLACEHOLDER_STRING, text):
+    if check_placeholder and is_placeholder(text):
         return None
     else:
         return text
@@ -137,7 +143,7 @@ def get_text_single(cell, line_sep=",", check_placeholder=True):
     if multiline is None:
         return None
     val = re.sub(r"\n+", ", ", multiline.strip("\n"))
-    if check_placeholder and re.search(PLACEHOLDER_STRING, val):
+    if check_placeholder and is_placeholder(val):
         return None
     else:
         return val.strip().rstrip(".")
@@ -157,14 +163,14 @@ def get_substring(prefix, cell):
             value_index = substring_index + len(prefix)
             suffix = data[value_index:]
             val = suffix.partition("\n")[0]
-            if not re.search(PLACEHOLDER_STRING, val):
+            if not is_placeholder(val):
                 return val
         except (ValueError, IndexError):
             return None
 
 
 def get_checkbox(cell):
-    checkboxes = cell.getiterator(CHECKBOX)
+    checkboxes = cell.iter(CHECKBOX)
     for cb in checkboxes: # Process only the first checkbox
         return is_checked(cb)
     return None
@@ -174,7 +180,7 @@ def get_yes_no_checkbox(cell):
     is_selected = None
     yes_seen = False
     no_seen = False
-    for node in cell.getiterator():
+    for node in cell.iter():
         if node.tag == CHECKBOX:
             is_selected = is_checked(node)
         elif node.tag == TEXT and not is_selected is None and node.text.strip() != "":
@@ -201,7 +207,7 @@ def match_key(value_map, partial_key):
 def single_choice_checkbox(values, cell):
     yes = False
     choice = None
-    for node in cell.getiterator():
+    for node in cell.iter():
         if node.tag == CHECKBOX:
             _yes = is_checked(node)
             if yes and _yes:
@@ -222,7 +228,7 @@ def single_choice_checkbox(values, cell):
 def read_length(cell):
     yes = False
     choice = None
-    for node in cell.getiterator():
+    for node in cell.iter():
         if node.tag == CHECKBOX:
             _yes = is_checked(node)
             if yes and _yes:
@@ -254,18 +260,18 @@ def is_library(cell):
 
 
 def library_prep_used(cell):
-    text_nodes = list(cell.getiterator(TEXT))
+    text_nodes = list(cell.iter(TEXT))
     if len(text_nodes) >= 1:
         prompt = "If yes, please state which kit / method you used here:"
         if prompt in text_nodes[0].text.strip():
             data = "".join(text_node.text for text_node in text_nodes)[len(prompt):].strip()
-            if not re.search(PLACEHOLDER_STRING, data):
+            if not is_placeholder(data):
                 return data
         
 
 def get_portable_hard_drive(cell):
     # First checkbox is User HDD, second is New HDD
-    selected = [is_checked(node) for node in cell.getiterator(CHECKBOX)]
+    selected = [is_checked(node) for node in cell.iter(CHECKBOX)]
     if len(selected) == 2:
         if selected[0] and not selected[1]:
             return "User HDD"
@@ -274,7 +280,7 @@ def get_portable_hard_drive(cell):
 
 
 def get_delivery_method(cell):
-    selected = [is_checked(node) for node in cell.getiterator(CHECKBOX)]
+    selected = [is_checked(node) for node in cell.iter(CHECKBOX)]
     if (len(selected) in [4,5]) and sum(1 for s in selected if s) == 1: 
         try:
             return ["Norstore", "NeLS project", "User HDD", "New HDD", "TSD project"][selected.index(True)]
@@ -354,7 +360,9 @@ LABEL_UDF_PARSER = [
         ("Upload to https site", 'Delivery method', get_delivery_method),       # New delivery method table
         ("If you want to get primary data analysis", 'Bioinformatic services', get_checkbox),
         ("Contact Name", 'Contact person', get_text_single),
-        ("Institution", 'Institution', get_text_single),# Needs post-processing (Contact / Billing same field name)
+        ("Institution:", 'Institution', get_text_single),# Needs post-processing (Contact / Billing same field name)
+                                                         # 2024-04: Require a complete match (traiing :) to ignore the
+                                                         # VAT number field, which also begins with "Institution".
         ("Address", 'Contact address', get_text_multi),
         ("Email", 'Email', get_text_lower),         # Needs post-processing
         ("Telephone", 'Telephone', get_text_single), # Needs post-processing
@@ -378,8 +386,8 @@ def get_values_from_doc(xml_tree):
     instrument_output_table = None
     instrument_udfs = []
     instruments_found = 0
-    for row in xml_tree.getiterator(TABLE_ROW):
-        cells = list(row.getiterator(TABLE_CELL))
+    for row in xml_tree.iter(TABLE_ROW):
+        cells = list(row.iter(TABLE_CELL))
         if cells:
             label = get_text_single(cells[0], check_placeholder=False)
             # Row-by-row parsing for tables with two columns, based on matching strings
