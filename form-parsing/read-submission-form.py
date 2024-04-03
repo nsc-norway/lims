@@ -359,6 +359,7 @@ LABEL_UDF_PARSER = [
         ("Upload to https site", 'Delivery method', partial(single_checkbox, 'Norstore')), # Support old form versions
         ("Portable hard drive", 'Delivery method', get_portable_hard_drive),    # Support old form versions
         ("Upload to https site", 'Delivery method', get_delivery_method),       # New delivery method table
+        ("Upload to NIRD", 'Delivery method', get_delivery_method),             # New delivery method table + new text 2024
         ("If you want to get primary data analysis", 'Bioinformatic services', get_checkbox),
         ("Contact Name", 'Contact person', get_text_single),
         ("Institution:", 'Institution', get_text_single),# Needs post-processing (Contact / Billing same field name)
@@ -408,8 +409,11 @@ def get_values_from_doc(xml_tree):
                         if not value is None:
                             results.append((udf, value))
             # Instrument / Output table has many columns and can't be parsed using the normal
-            # framework. Stateful parsing based on first looking for the header row, then the
+            # framework.
+            # Pre-2024-04 form has the following: Three columns.
+            # Stateful parsing based on first looking for the header row, then the
             # per-instrument rows.
+            # Post-2024-04: 
             elif len(cells) == 3:
                 if label == "Instrument / output size":
                     instrument_output_table = get_seq_types_read_lengths(*cells[1:])
@@ -420,10 +424,7 @@ def get_values_from_doc(xml_tree):
                     instrument_udfs = instrument_udfs_tmp
             elif len(cells) == 4: # 2024-04 New Sequencing table
                 for i, cell in enumerate(cells):
-                    print("CELL TEXT", i)
-                    print([str(x.text) for x in list(cell.getiterator(TEXT))])
-                    print("CELL CHECKBOXES", i)
-                    print([str(is_checked(x)) for x in list(cell.getiterator(CHECKBOX))])
+                    print("TODO")
                 print("END ROW")
     if instruments_found == 1:
         results += instrument_udfs
