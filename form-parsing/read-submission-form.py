@@ -29,9 +29,10 @@ PLACEHOLDER_STRINGS = [
 
 
 DNA_PREPS = [
-        ("Nextera.*Flex", "Nextera Flex"), # Previous versions
-        ("Illumina.*DNA Prep", "TODO RENAMING?"), # > 2024-04
+        ("Nextera.*Flex", "Nextera Flex"),           # < v17.1 Previous versions
+        ("Illumina.*DNA Prep", "Illumina DNA Prep"), # >= v17.1 Replaces Nextera Flex
         (".*TruSeq.*adapter ligation", "TruSeq Nano"),
+        (".*TruSeq.*Nano DNA.*prep", "TruSeq Nano"), # >= v17.1 Matching
         ("TruSeq.*PCR-free prep", "TruSeq PCR-free"),
         (".*ThruPLEX.*", "ThruPLEX"),
         ("16S library prep", "16S prep"),
@@ -44,7 +45,11 @@ RNA_PREPS = [
         ("Strand-specific TruSeqTM.*mRNA.*", "TruSeq Stranded mRNA"),
         ("Strand-specific TruSeq.*total.*RNA.*", "TruSeq Stranded total RNA"),
         ("Strand-specific TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Pre v.15: Not separate total/mRNA
+        (".*QiaSeq miRNA.*", "QiaSeq miRNA"),                           # >= v17.1: Note this choice needs to be before the
+                                                                        # next line "NEBnext", as otherwise the text will
+                                                                        # match the NEBnext string instead.
         ("small RNA library preparation", "NEBNext miRNA"),
+        (".*depletion.*QiaSeq fastselect.*", "QiaSeq FastSelect rRNA/Globin Depletion"),
         (".* unsure, please advise", "User unsure")
         ]
 SEQUENCING_TYPES = [ # Note: used both in old (single_choice_checkbox) and new
@@ -349,7 +354,7 @@ LABEL_UDF_PARSER = [
         ("Species:", 'Species', get_text_single),
         ("Reference genome", 'Reference genome', get_text_single),
         ("Sequencing type", 'Sequencing method', partial(single_choice_checkbox, SEQUENCING_TYPES)),
-        ("Desired insert size", 'Desired insert size', get_text_single), # 2024-04: Option removed in current version
+        ("Desired insert size", 'Desired insert size', get_text_single), # >=v17.1: Option removed in current version
         ("Sequencing Instrument requested", 'Sequencing instrument requested', 
             partial(single_choice_checkbox, SEQUENCING_INSTRUMENTS)), # <2019-04 seq instrument
         ("Read Length", 'Read length TEMPFIELD', read_length),        # <2019-04 read length; Needs post-proc'ing
@@ -359,11 +364,11 @@ LABEL_UDF_PARSER = [
         ("Upload to https site", 'Delivery method', partial(single_checkbox, 'Norstore')), # Support old form versions
         ("Portable hard drive", 'Delivery method', get_portable_hard_drive),    # Support old form versions
         ("Upload to https site", 'Delivery method', get_delivery_method),       # New delivery method table
-        ("Upload to NIRD", 'Delivery method', get_delivery_method),             # New delivery method table + new text 2024
+        ("Upload to NIRD", 'Delivery method', get_delivery_method),             # New delivery method table + new text v17.1
         ("If you want to get primary data analysis", 'Bioinformatic services', get_checkbox),
         ("Contact Name", 'Contact person', get_text_single),
         ("Institution:", 'Institution', get_text_single),# Needs post-processing (Contact / Billing same field name)
-                                                         # 2024-04: Require a complete match (traiing :) to ignore the
+                                                         # v17.1: Require a complete match (traiing :) to ignore the
                                                          # VAT number field, which also begins with "Institution".
         ("Address", 'Contact address', get_text_multi),
         ("Email", 'Email', get_text_lower),         # Needs post-processing
@@ -388,8 +393,8 @@ def get_values_from_doc(xml_tree):
     instrument_output_table = None
     instrument_udfs = []
     instruments_found = 0
-    new_2024_found_sequencer = None
-    new_2024_found_read_length = None
+    new_v17_found_sequencer = None
+    new_v17_found_read_length = None
     for row in xml_tree.iter(TABLE_ROW):
         cells = list(row.iter(TABLE_CELL))
         if cells:
