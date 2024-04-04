@@ -4,6 +4,7 @@ import re
 import zipfile
 import datetime
 from functools import partial
+import itertools
 import io
 import requests
 from xml.etree.ElementTree import XML
@@ -49,14 +50,14 @@ DNA_PREPS = [
         ]
 RNA_PREPS = [
         ("Regular TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Old form version
-        ("Strand-specific TruSeqTM.*mRNA.*", "TruSeq Stranded mRNA"),
-        ("Strand-specific TruSeq.*total.*RNA.*", "TruSeq Stranded total RNA"),
+        (".*TruSeq.*mRNA.*", "TruSeq Stranded mRNA"),
+        (".*TruSeq.*total.*RNA.*QiaSeq FastSelect.*", "TruSeq Stranded total RNA+FastSelect rRNA/Globin Depletion"),
+        (".*TruSeq.*total.*RNA-seq library prep$", "TruSeq Stranded total RNA"),        # This has to be AFTER rRNA depletion,
         ("Strand-specific TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Pre v.15: Not separate total/mRNA
         (".*QiaSeq miRNA.*", "QiaSeq miRNA"),                           # >= v17.1: Note this choice needs to be before the
                                                                         # next line "NEBnext", as otherwise the text will
                                                                         # match the NEBnext string instead.
         ("small RNA library preparation", "NEBNext miRNA"),
-        (".*depletion.*QiaSeq fastselect.*", "QiaSeq FastSelect rRNA/Globin Depletion"),
         (".* unsure, please advise", "User unsure")
         ]
 SEQUENCING_TYPES = [ # Note: used both in old (single_choice_checkbox) and new
@@ -123,9 +124,15 @@ ERROR_UDF = "Submission form processing errors"
 def is_checked(checkbox_elem):
     checked_elem = checkbox_elem.find(CHECKED)
     if checked_elem is None:
+        checked_elem = checkbox_elem.find(CHECKED_2)
+    elif checked_elem is None:
         checked_elem = checkbox_elem.find(DEFAULT)
+    elif checked_elem is None:
+        checked_elem = checkbox_elem.find(DEFAULT_2)
     if not checked_elem is None:
         val = checked_elem.attrib.get(VAL)
+        if val is None:
+            val = checked_elem.attrib.get(VAL_2)
         if val == "1":
             return True
         elif val == "0":
@@ -137,23 +144,6 @@ def is_checked(checkbox_elem):
     else:
         return False
 
-# New checkbox type in new Word version
-def is_checked_2(checkbox_elem):
-    checked_elem = checkbox_elem.find(CHECKED_2)
-    if checked_elem is None:
-        checked_elem = checkbox_elem.find(DEFAULT_2)
-    if not checked_elem is None:
-        val = checked_elem.attrib.get(VAL_2)
-        if val == "1":
-            return True
-        elif val == "0":
-            return False
-        elif val == None:
-            return True
-        else:
-            raise ValueError("Unexpected value for checkbox: " + val)
-    else:
-        return False
 
 def is_placeholder(text):
     return any(re.search(ph, text) for ph in PLACEHOLDER_STRINGS)
@@ -208,14 +198,14 @@ def get_substring(prefix, cell):
         except (ValueError, IndexError):
             return None
 
+def find_checkbox_elements(cell):
+    return 
+
 
 def get_checkbox(cell):
-    checkboxes = cell.iter(CHECKBOX)
+    checkboxes = itertools.chain(cell.iter(CHECKBOX), cell.iter(CHECKBOX_2))
     for cb in checkboxes: # Process only the first checkbox
         return is_checked(cb)
-    checkboxes = cell.iter(CHECKBOX_2)
-    for cb in checkboxes:
-        return is_checked_2(cb)
     return None
 
 
@@ -224,17 +214,21 @@ def get_yes_no_checkbox(cell):
     yes_seen = False
     no_seen = False
     for node in cell.iter():
-        if node.tag == CHECKBOX:
+        if node.tag in [CHECKBOX, CHECKBOX_2]:
             is_selected = is_checked(node)
-        elif node.tag == TEXT and not is_selected is None and node.text.strip() != "":
+        elif node.tag == TEXT and (not is_selected is None) and (node.text.strip() != ""):
             text = node.text.strip()
+            found_answer = False
             if text.startswith("Yes"):
                 yes_selected = is_selected
                 yes_seen = True
+                found_answer = True
             elif text.startswith("No"):
                 no_selected = is_selected
                 no_seen = True
-            is_selected = None
+                found_answer = True
+            if found_answer:
+                is_selected = None
     if yes_seen and no_seen:
         if yes_selected != no_selected:
             return yes_selected
@@ -251,7 +245,7 @@ def single_choice_checkbox(values, cell):
     yes = False
     choice = None
     for node in cell.iter():
-        if node.tag == CHECKBOX:
+        if node.tag in [CHECKBOX, CHECKBOX_2]:
             _yes = is_checked(node)
             if yes and _yes:
                 return None # Don't allow multiple
@@ -272,7 +266,7 @@ def read_length(cell):
     yes = False
     choice = None
     for node in cell.iter():
-        if node.tag == CHECKBOX:
+        if node.tag in [CHECKBOX, CHECKBOX_2]:
             _yes = is_checked(node)
             if yes and _yes:
                 return None # Don't allow multiple
@@ -314,7 +308,7 @@ def library_prep_used(cell):
 
 def get_portable_hard_drive(cell):
     # First checkbox is User HDD, second is New HDD
-    selected = [is_checked(node) for node in cell.iter(CHECKBOX)]
+    selected = [is_checked(node) for node in itertools.chain(cell.iter(CHECKBOX), cell.iter(CHECKBOX_2))]
     if len(selected) == 2:
         if selected[0] and not selected[1]:
             return "User HDD"
@@ -323,7 +317,7 @@ def get_portable_hard_drive(cell):
 
 
 def get_delivery_method(cell):
-    selected = [is_checked(node) for node in cell.iter(CHECKBOX)]
+    selected = [is_checked(node) for node in itertools.chain(cell.iter(CHECKBOX), cell.iter(CHECKBOX_2))]
     if (len(selected) in [4,5]) and sum(1 for s in selected if s) == 1: 
         try:
             return ["Norstore", "NeLS project", "User HDD", "New HDD", "TSD project"][selected.index(True)]
