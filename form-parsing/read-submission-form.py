@@ -4,6 +4,7 @@ import re
 import zipfile
 import datetime
 from functools import partial
+import itertools
 import io
 import requests
 from xml.etree.ElementTree import XML
@@ -21,13 +22,25 @@ CHECKBOX = WORD_NAMESPACE + 'checkBox'
 CHECKED = WORD_NAMESPACE + 'checked'
 DEFAULT = WORD_NAMESPACE + 'default'
 VAL = WORD_NAMESPACE + 'val'
+# Newer versions of Word make checkboxes with different tags. The parser
+# supports both kinds of checkbox (get_checkbox function).
+WORD_NAMESPACE_2 = '{http://schemas.microsoft.com/office/word/2010/wordml}'
+CHECKBOX_2 = WORD_NAMESPACE_2 + 'checkbox' # Note lowercase "b"
+CHECKED_2 = WORD_NAMESPACE_2 + 'checked'
+DEFAULT_ = WORD_NAMESPACE_2 + 'default'
+VAL_2 = WORD_NAMESPACE_2 + 'val'
 
-PLACEHOLDER_STRING = "Click.*here.*left.*of.*box"
+PLACEHOLDER_STRINGS = [
+    "Click.*here.*left.*of.*box",
+    "Click.*here.*to.*enter.*text"
+]
 
 
 DNA_PREPS = [
-        ("Nextera.*Flex", "Nextera Flex"),
+        ("Nextera.*Flex", "Nextera Flex"),           # < v17.1 Previous versions
+        ("Illumina.*DNA Prep", "Illumina DNA Prep"), # >= v17.1 Replaces Nextera Flex
         (".*TruSeq.*adapter ligation", "TruSeq Nano"),
+        (".*TruSeq.*Nano DNA.*prep", "TruSeq Nano"), # >= v17.1 Matching
         ("TruSeq.*PCR-free prep", "TruSeq PCR-free"),
         (".*ThruPLEX.*", "ThruPLEX"),
         ("16S library prep", "16S prep"),
@@ -37,9 +50,13 @@ DNA_PREPS = [
         ]
 RNA_PREPS = [
         ("Regular TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Old form version
-        ("Strand-specific TruSeqTM.*mRNA.*", "TruSeq Stranded mRNA"),
-        ("Strand-specific TruSeq.*total.*RNA.*", "TruSeq Stranded total RNA"),
+        (".*TruSeq.*mRNA.*", "TruSeq Stranded mRNA"),
+        (".*TruSeq.*total.*RNA.*QiaSeq FastSelect.*", "TruSeq Stranded total RNA + FastSelect rRNA/Globin Depletion"),
+        (".*TruSeq.*total.*RNA-seq library prep$", "TruSeq Stranded total RNA"),        # This has to be AFTER rRNA depletion,
         ("Strand-specific TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Pre v.15: Not separate total/mRNA
+        (".*QiaSeq miRNA.*", "QiaSeq miRNA"),                           # >= v17.1: Note this choice needs to be before the
+                                                                        # next line "NEBnext", as otherwise the text will
+                                                                        # match the NEBnext string instead.
         ("small RNA library preparation", "NEBNext miRNA"),
         (".* unsure, please advise", "User unsure")
         ]
@@ -49,6 +66,16 @@ SEQUENCING_TYPES = [ # Note: used both in old (single_choice_checkbox) and new
         ("Paired End", "Paired End Read"),
         ]
 
+SEQUENCING_TYPES_v17 = {
+    "SR": "Single Read",
+    "PE": "Paired End Read",
+}
+
+# The following list is deprecated since form version v17.1. In the new form we use the function
+# get_instrument_and_mode_v17, which contains the sequencer types within it.
+# The second elements of the tuples in here correspond to the UDF values entered into LIMS,
+# and the same values should also be used in get_instrument_and_mode_v17. An exception
+# is NovaSeq X, which was only added in v17.1 and is not included here.
 SEQUENCING_INSTRUMENTS = [
         ("HiSeq X", "HiSeq X"),
         ("HiSeq 4000", "HiSeq 4000"),
@@ -97,9 +124,15 @@ ERROR_UDF = "Submission form processing errors"
 def is_checked(checkbox_elem):
     checked_elem = checkbox_elem.find(CHECKED)
     if checked_elem is None:
+        checked_elem = checkbox_elem.find(CHECKED_2)
+    elif checked_elem is None:
         checked_elem = checkbox_elem.find(DEFAULT)
+    elif checked_elem is None:
+        checked_elem = checkbox_elem.find(DEFAULT_2)
     if not checked_elem is None:
         val = checked_elem.attrib.get(VAL)
+        if val is None:
+            val = checked_elem.attrib.get(VAL_2)
         if val == "1":
             return True
         elif val == "0":
@@ -112,12 +145,15 @@ def is_checked(checkbox_elem):
         return False
 
 
+def is_placeholder(text):
+    return any(re.search(ph, text) for ph in PLACEHOLDER_STRINGS)
+
 
 # Parsing various inputs
 def get_text_multi(cell, check_placeholder=True):
     text = ""
     first = True
-    for node in cell.getiterator():
+    for node in cell.iter():
         if node.tag == PARA:
             if not first:
                 text += "\n\n"
@@ -126,7 +162,7 @@ def get_text_multi(cell, check_placeholder=True):
             text += "\n"
         elif node.tag == TEXT:
             text += node.text
-    if check_placeholder and re.search(PLACEHOLDER_STRING, text):
+    if check_placeholder and is_placeholder(text):
         return None
     else:
         return text
@@ -137,7 +173,7 @@ def get_text_single(cell, line_sep=",", check_placeholder=True):
     if multiline is None:
         return None
     val = re.sub(r"\n+", ", ", multiline.strip("\n"))
-    if check_placeholder and re.search(PLACEHOLDER_STRING, val):
+    if check_placeholder and is_placeholder(val):
         return None
     else:
         return val.strip().rstrip(".")
@@ -157,14 +193,17 @@ def get_substring(prefix, cell):
             value_index = substring_index + len(prefix)
             suffix = data[value_index:]
             val = suffix.partition("\n")[0]
-            if not re.search(PLACEHOLDER_STRING, val):
+            if not is_placeholder(val):
                 return val
         except (ValueError, IndexError):
             return None
 
+def find_checkbox_elements(cell):
+    return 
+
 
 def get_checkbox(cell):
-    checkboxes = cell.getiterator(CHECKBOX)
+    checkboxes = itertools.chain(cell.iter(CHECKBOX), cell.iter(CHECKBOX_2))
     for cb in checkboxes: # Process only the first checkbox
         return is_checked(cb)
     return None
@@ -174,18 +213,22 @@ def get_yes_no_checkbox(cell):
     is_selected = None
     yes_seen = False
     no_seen = False
-    for node in cell.getiterator():
-        if node.tag == CHECKBOX:
+    for node in cell.iter():
+        if node.tag in [CHECKBOX, CHECKBOX_2]:
             is_selected = is_checked(node)
-        elif node.tag == TEXT and not is_selected is None and node.text.strip() != "":
+        elif node.tag == TEXT and (not is_selected is None) and (node.text.strip() != ""):
             text = node.text.strip()
+            found_answer = False
             if text.startswith("Yes"):
                 yes_selected = is_selected
                 yes_seen = True
+                found_answer = True
             elif text.startswith("No"):
                 no_selected = is_selected
                 no_seen = True
-            is_selected = None
+                found_answer = True
+            if found_answer:
+                is_selected = None
     if yes_seen and no_seen:
         if yes_selected != no_selected:
             return yes_selected
@@ -201,8 +244,8 @@ def match_key(value_map, partial_key):
 def single_choice_checkbox(values, cell):
     yes = False
     choice = None
-    for node in cell.getiterator():
-        if node.tag == CHECKBOX:
+    for node in cell.iter():
+        if node.tag in [CHECKBOX, CHECKBOX_2]:
             _yes = is_checked(node)
             if yes and _yes:
                 return None # Don't allow multiple
@@ -222,8 +265,8 @@ def single_choice_checkbox(values, cell):
 def read_length(cell):
     yes = False
     choice = None
-    for node in cell.getiterator():
-        if node.tag == CHECKBOX:
+    for node in cell.iter():
+        if node.tag in [CHECKBOX, CHECKBOX_2]:
             _yes = is_checked(node)
             if yes and _yes:
                 return None # Don't allow multiple
@@ -242,8 +285,15 @@ def read_length(cell):
 
 
 def single_checkbox(value, cell):
-    if get_checkbox(cell):
-        return value
+    """Returns value if the cell contains a single checkbox and it is checked.
+
+    This function was fixed in the v17.1 form parser so it doesn't match if there are
+    multiple checkboxes in the cell.
+    """
+    checkboxes = list(cell.iter(CHECKBOX)) + list(cell.iter(CHECKBOX_2))
+    if len(checkboxes) == 1:
+        if is_checked(checkboxes[0]):
+            return value
 
 
 def is_library(cell):
@@ -254,18 +304,38 @@ def is_library(cell):
 
 
 def library_prep_used(cell):
-    text_nodes = list(cell.getiterator(TEXT))
+    text_nodes = list(cell.iter(TEXT))
     if len(text_nodes) >= 1:
         prompt = "If yes, please state which kit / method you used here:"
         if prompt in text_nodes[0].text.strip():
             data = "".join(text_node.text for text_node in text_nodes)[len(prompt):].strip()
-            if not re.search(PLACEHOLDER_STRING, data):
+            if not is_placeholder(data):
                 return data
-        
+    # New prompt / box. The text elements are split so that the first letter is in a
+    # separate cell. The answer is always expected to be in a separete element from the
+    # prompt.
+    text_elements = [node.text for node in text_nodes]
+    prompt = "tate which kit / method used"
+    i = -1 # Set a default in case there are no text elemnets (old form)
+    for i, element in enumerate(text_elements):
+        if prompt in element:
+            break
+    if len(text_elements) < i+2: # There should always be several text cells after this prompt
+                                 # This will also return if the prompt is not found
+        return None
+    if text_elements[i+1] == ".": # Skip full stop after prompt (in separate element)
+        i += 1
+    answer = ""
+    for element in text_elements[i+1:]:
+        if element == '☐':
+            return answer.strip()
+        answer += element
+    return None
+
 
 def get_portable_hard_drive(cell):
     # First checkbox is User HDD, second is New HDD
-    selected = [is_checked(node) for node in cell.getiterator(CHECKBOX)]
+    selected = [is_checked(node) for node in itertools.chain(cell.iter(CHECKBOX), cell.iter(CHECKBOX_2))]
     if len(selected) == 2:
         if selected[0] and not selected[1]:
             return "User HDD"
@@ -274,7 +344,7 @@ def get_portable_hard_drive(cell):
 
 
 def get_delivery_method(cell):
-    selected = [is_checked(node) for node in cell.getiterator(CHECKBOX)]
+    selected = [is_checked(node) for node in itertools.chain(cell.iter(CHECKBOX), cell.iter(CHECKBOX_2))]
     if (len(selected) in [4,5]) and sum(1 for s in selected if s) == 1: 
         try:
             return ["Norstore", "NeLS project", "User HDD", "New HDD", "TSD project"][selected.index(True)]
@@ -330,6 +400,69 @@ def get_instrument_and_mode(instrument_output_table, cells):
         return None
 
 
+def cleanup_seq_table_string(s):
+    """Gets the text contents of a string, for the strings in the sequencer table.
+    
+    First pick out anything before open parenthesis if present. Then replace
+    every non-alphanumeric character with spaces, then collapse all whitespaces to
+    single spaces, and finally remove leading & trailing spaces.
+    """
+
+    pre_parens = s.split("(", maxsplit=1)[0]
+    replaced = re.sub(r"[^A-Za-z0-9]", " ", pre_parens)
+    collapsed = re.sub(r"\s+", " ", replaced)
+    return collapsed.strip()
+
+
+def get_read_length_and_sequencing_type(read_length_string):
+    """Parse fixed-format values like '150 bp PE'."""
+
+    m = re.match(r"(\d+) bp ([A-Z]{2})$", read_length_string)
+    if m:
+        read_length = m.group(1) # Report as numeric string
+        seq_method = m.group(2)  # PE or SR
+        if seq_method in SEQUENCING_TYPES_v17:
+            return (read_length, SEQUENCING_TYPES_v17[seq_method])
+    return None, None
+
+
+def get_instrument_and_mode_v17(instrument_string, cells):
+    """Process a row of the table, corresponding to a sequencer and mode.
+    This operates on v17.1 of the form.
+
+    If the mode's checkbox (col 2) is ticked, the information about sequencer,
+    mode and read length is extracted and returned. The fourth column, for the
+    number of lanes, is ignored. The checkbox next to the seqencer name is
+    ignored.
+
+    Returns None if this row is not selected.
+    """
+
+    if get_checkbox(cells[1]):
+        # Don't get the instrument (the commented line below). Instead it is provided
+        # as an argument.
+        #instrument_string = get_text_single(cells[0])
+        instrument = cleanup_seq_table_string(instrument_string)
+        mode = cleanup_seq_table_string(get_text_single(cells[1]))
+
+        # For backward compat, replace NovaSeq 6000 with NovaSeq
+        if instrument == "NovaSeq 6000":
+            instrument = "NovaSeq"
+        
+        result = [
+            ('Sequencing instrument requested', instrument + " " + mode)
+        ]
+
+        read_length, seq_meth = get_read_length_and_sequencing_type(get_text_single(cells[2]))
+        if read_length and seq_meth:
+            result.append(('Read length requested', read_length))
+            result.append(('Sequencing method', seq_meth))
+
+        return result
+    else:
+        return None
+
+
 # List of (label, udf, parser_func)
 LABEL_UDF_PARSER = [
         ("Method used to purify DNA / RNA", 'Method used to purify DNA/RNA', get_text_single),
@@ -339,22 +472,31 @@ LABEL_UDF_PARSER = [
         ("Are the samples ready to sequence?", 'Evaluation type', is_library),
         ("For DNA samples", 'Sample prep requested', partial(single_choice_checkbox, DNA_PREPS)),
         ("For RNA samples", 'Sample prep requested', partial(single_choice_checkbox, RNA_PREPS)),
-        ("Species:", 'Species', get_text_single),
+        ("Species", 'Species', get_text_single),
         ("Reference genome", 'Reference genome', get_text_single),
         ("Sequencing type", 'Sequencing method', partial(single_choice_checkbox, SEQUENCING_TYPES)),
-        ("Desired insert size", 'Desired insert size', get_text_single),
+        ("Desired insert size", 'Desired insert size', get_text_single), # >=v17.1: Option removed in current version
         ("Sequencing Instrument requested", 'Sequencing instrument requested', 
             partial(single_choice_checkbox, SEQUENCING_INSTRUMENTS)), # <2019-04 seq instrument
         ("Read Length", 'Read length TEMPFIELD', read_length),        # <2019-04 read length; Needs post-proc'ing
         ("Total number lanes", 'Total # of lanes requested', get_text_single),
+        ("Total number runs requested", 'Total # of lanes requested', get_text_single), # >= v1.17: New text. Uses the top level item.
         ("Project Goal", 'Project goal', get_text_multi),
         ("REK approval number", 'REK approval number', get_text_single),
         ("Upload to https site", 'Delivery method', partial(single_checkbox, 'Norstore')), # Support old form versions
         ("Portable hard drive", 'Delivery method', get_portable_hard_drive),    # Support old form versions
-        ("Upload to https site", 'Delivery method', get_delivery_method),       # New delivery method table
+        ("Upload to https site", 'Delivery method', get_delivery_method),       # New delivery method table (but before v17.1)
+        ("Upload to NIRD", 'Delivery method', partial(single_checkbox, 'Norstore')),    # BEGIN Newer v17.1 delivery method table, separate rows
+        ("Upload to NeLS", 'Delivery method', partial(single_checkbox, 'NeLS roject')), 
+        ("Upload to NeLS", "NeLS project identifier", partial(get_substring, 'Existing project')),
+        (r"Portable hard drive \(exFAT format\), Provided by user", 'Delivery method', partial(single_checkbox, 'User HDD')),
+        (r"Portable hard drive \(exFAT format\), provided by NSC", 'Delivery method', partial(single_checkbox, 'New HDD')),
+        ("Upload to TSD", 'Delivery method', partial(single_checkbox, 'TSD roject')),   # END v17.1 table
         ("If you want to get primary data analysis", 'Bioinformatic services', get_checkbox),
         ("Contact Name", 'Contact person', get_text_single),
-        ("Institution", 'Institution', get_text_single),# Needs post-processing (Contact / Billing same field name)
+        ("Institution:", 'Institution', get_text_single),# Needs post-processing (Contact / Billing same field name)
+                                                         # Pre-v17.1: Search for trailing colon to ignore the VAT field
+        ("Institution$", 'Institution', get_text_single),# >= v17.1: Require complete match (end of string character)
         ("Address", 'Contact address', get_text_multi),
         ("Email", 'Email', get_text_lower),         # Needs post-processing
         ("Telephone", 'Telephone', get_text_single), # Needs post-processing
@@ -378,8 +520,10 @@ def get_values_from_doc(xml_tree):
     instrument_output_table = None
     instrument_udfs = []
     instruments_found = 0
-    for row in xml_tree.getiterator(TABLE_ROW):
-        cells = list(row.getiterator(TABLE_CELL))
+    # Keep information from previous rows for merged cells in the v17.1 sequencer table.
+    current_instrument_string_formv17 = None
+    for row in xml_tree.iter(TABLE_ROW):
+        cells = list(row.iter(TABLE_CELL))
         if cells:
             label = get_text_single(cells[0], check_placeholder=False)
             # Row-by-row parsing for tables with two columns, based on matching strings
@@ -397,8 +541,11 @@ def get_values_from_doc(xml_tree):
                         if not value is None:
                             results.append((udf, value))
             # Instrument / Output table has many columns and can't be parsed using the normal
-            # framework. Stateful parsing based on first looking for the header row, then the
+            # framework.
+            # Pre-v17.1 form has three columns.
+            # Stateful parsing based on first looking for the header row, then the
             # per-instrument rows.
+            # Post-v17.1: Stateful parsing based on rows
             elif len(cells) == 3:
                 if label == "Instrument / output size":
                     instrument_output_table = get_seq_types_read_lengths(*cells[1:])
@@ -407,6 +554,15 @@ def get_values_from_doc(xml_tree):
                 if instrument_udfs_tmp:
                     instruments_found += 1
                     instrument_udfs = instrument_udfs_tmp
+            elif len(cells) == 4: # v17.1 New Sequencing table (will also process and ignore the header row)
+                instrument = get_text_single(cells[0])
+                if instrument:
+                    current_instrument_string_formv17 = instrument
+                instrument_udfs_tmp = get_instrument_and_mode_v17(current_instrument_string_formv17, cells)
+                if instrument_udfs_tmp:
+                    instruments_found += 1
+                    instrument_udfs = instrument_udfs_tmp
+
     if instruments_found == 1:
         results += instrument_udfs
     return results

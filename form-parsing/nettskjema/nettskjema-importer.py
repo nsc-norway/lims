@@ -5,8 +5,13 @@ import yaml
 import datetime
 import subprocess
 import requests
+
+# TEST MDOE:
+# For test mode, use "test" as the second argument:
+#    python nettskjema-importer.py INPUT_FILE test
+
 # Import LIMS packages if not in test mode
-if len(sys.argv) != 2 or sys.argv[1] != "test":
+if not (len(sys.argv) > 2 and sys.argv[2] == "test"):
     from genologics import config
     from genologics.lims import *
 
