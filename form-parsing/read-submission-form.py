@@ -51,7 +51,7 @@ DNA_PREPS = [
 RNA_PREPS = [
         ("Regular TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Old form version
         (".*TruSeq.*mRNA.*", "TruSeq Stranded mRNA"),
-        (".*TruSeq.*total.*RNA.*QiaSeq FastSelect.*", "TruSeq Stranded total RNA+FastSelect rRNA/Globin Depletion"),
+        (".*TruSeq.*total.*RNA.*QiaSeq FastSelect.*", "TruSeq Stranded total RNA + FastSelect rRNA/Globin Depletion"),
         (".*TruSeq.*total.*RNA-seq library prep$", "TruSeq Stranded total RNA"),        # This has to be AFTER rRNA depletion,
         ("Strand-specific TruSeqTM RNA-seq library prep", "TruSeq Stranded RNA"), # Pre v.15: Not separate total/mRNA
         (".*QiaSeq miRNA.*", "QiaSeq miRNA"),                           # >= v17.1: Note this choice needs to be before the
@@ -285,8 +285,15 @@ def read_length(cell):
 
 
 def single_checkbox(value, cell):
-    if get_checkbox(cell):
-        return value
+    """Returns value if the cell contains a single checkbox and it is checked.
+
+    This function was fixed in the v17.1 form parser so it doesn't match if there are
+    multiple checkboxes in the cell.
+    """
+    checkboxes = list(cell.iter(CHECKBOX)) + list(cell.iter(CHECKBOX_2))
+    if len(checkboxes) == 1:
+        if is_checked(checkboxes[0]):
+            return value
 
 
 def is_library(cell):
@@ -304,7 +311,27 @@ def library_prep_used(cell):
             data = "".join(text_node.text for text_node in text_nodes)[len(prompt):].strip()
             if not is_placeholder(data):
                 return data
-        
+    # New prompt / box. The text elements are split so that the first letter is in a
+    # separate cell. The answer is always expected to be in a separete element from the
+    # prompt.
+    text_elements = [node.text for node in text_nodes]
+    prompt = "tate which kit / method used"
+    i = -1 # Set a default in case there are no text elemnets (old form)
+    for i, element in enumerate(text_elements):
+        if prompt in element:
+            break
+    if len(text_elements) < i+2: # There should always be several text cells after this prompt
+                                 # This will also return if the prompt is not found
+        return None
+    if text_elements[i+1] == ".": # Skip full stop after prompt (in separate element)
+        i += 1
+    answer = ""
+    for element in text_elements[i+1:]:
+        if element == '☐':
+            return answer.strip()
+        answer += element
+    return None
+
 
 def get_portable_hard_drive(cell):
     # First checkbox is User HDD, second is New HDD
@@ -445,7 +472,7 @@ LABEL_UDF_PARSER = [
         ("Are the samples ready to sequence?", 'Evaluation type', is_library),
         ("For DNA samples", 'Sample prep requested', partial(single_choice_checkbox, DNA_PREPS)),
         ("For RNA samples", 'Sample prep requested', partial(single_choice_checkbox, RNA_PREPS)),
-        ("Species:", 'Species', get_text_single),
+        ("Species", 'Species', get_text_single),
         ("Reference genome", 'Reference genome', get_text_single),
         ("Sequencing type", 'Sequencing method', partial(single_choice_checkbox, SEQUENCING_TYPES)),
         ("Desired insert size", 'Desired insert size', get_text_single), # >=v17.1: Option removed in current version
@@ -453,17 +480,23 @@ LABEL_UDF_PARSER = [
             partial(single_choice_checkbox, SEQUENCING_INSTRUMENTS)), # <2019-04 seq instrument
         ("Read Length", 'Read length TEMPFIELD', read_length),        # <2019-04 read length; Needs post-proc'ing
         ("Total number lanes", 'Total # of lanes requested', get_text_single),
+        ("Total number runs requested", 'Total # of lanes requested', get_text_single), # >= v1.17: New text. Uses the top level item.
         ("Project Goal", 'Project goal', get_text_multi),
         ("REK approval number", 'REK approval number', get_text_single),
         ("Upload to https site", 'Delivery method', partial(single_checkbox, 'Norstore')), # Support old form versions
         ("Portable hard drive", 'Delivery method', get_portable_hard_drive),    # Support old form versions
-        ("Upload to https site", 'Delivery method', get_delivery_method),       # New delivery method table
-        ("Upload to NIRD", 'Delivery method', get_delivery_method),             # New delivery method table + new text v17.1
+        ("Upload to https site", 'Delivery method', get_delivery_method),       # New delivery method table (but before v17.1)
+        ("Upload to NIRD", 'Delivery method', partial(single_checkbox, 'Norstore')),    # BEGIN Newer v17.1 delivery method table, separate rows
+        ("Upload to NeLS", 'Delivery method', partial(single_checkbox, 'NeLS roject')), 
+        ("Upload to NeLS", "NeLS project identifier", partial(get_substring, 'Existing project')),
+        (r"Portable hard drive \(exFAT format\), Provided by user", 'Delivery method', partial(single_checkbox, 'User HDD')),
+        (r"Portable hard drive \(exFAT format\), provided by NSC", 'Delivery method', partial(single_checkbox, 'New HDD')),
+        ("Upload to TSD", 'Delivery method', partial(single_checkbox, 'TSD roject')),   # END v17.1 table
         ("If you want to get primary data analysis", 'Bioinformatic services', get_checkbox),
         ("Contact Name", 'Contact person', get_text_single),
         ("Institution:", 'Institution', get_text_single),# Needs post-processing (Contact / Billing same field name)
-                                                         # v17.1: Require a complete match (traiing :) to ignore the
-                                                         # VAT number field, which also begins with "Institution".
+                                                         # Pre-v17.1: Search for trailing colon to ignore the VAT field
+        ("Institution$", 'Institution', get_text_single),# >= v17.1: Require complete match (end of string character)
         ("Address", 'Contact address', get_text_multi),
         ("Email", 'Email', get_text_lower),         # Needs post-processing
         ("Telephone", 'Telephone', get_text_single), # Needs post-processing

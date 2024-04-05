@@ -50,6 +50,10 @@ questions:
     line:       'For RNA samples'
     mapping:    sample_prep_rna
 
+  - udf:        'Sample prep requested'
+    line:       'Do you need rRNA depletion (HMR)?'
+    mapping:    sample_prep_depletion
+
   - udf:        'Sequencing instrument requested'
     line:       'Sequencing Instrument requested'
 
@@ -209,20 +213,27 @@ mappings:
       out: 'ThruPLEX'
     - in: '16S prep (Fadrosh DW et. al)'
       out: '16S prep'
-    - in: 'I'm unsure, please advise'
+    - in: "I'm unsure, please advise"
       out: 'User unsure'
 
   sample_prep_rna:
     - in: 'Strand-specific mRNA-seq library prep'
       out: 'TruSeq Stranded mRNA'
     - in: 'Strand-specific total RNA-seq library prep'
-      out: 'TruSeq Stranded total RNA'
+      out: 'DUMMY_SEE_DEPLETION_QUESTION'
     - in: 'small RNA library prep'
       out: 'QiaSeq miRNA'
     - in: 'rRNA/globin depletion'
-      out: 'QiaSeq FastSelect rRNA/Globin Depletion'
-    - in: 'I'm unsure, please advise'
+      out: 'rRNA/Globin Depletion'
+    - in: "I'm unsure, please advise"
       out: 'User unsure'
+
+  sample_prep_depletion:
+    - in: 'Yes'
+      out: 'TruSeq Stranded total RNA + FastSelect rRNA/Globin Depletion'
+    # Is this too much of a hack? The question about depletion is only asked for the totalRNA prep
+    - in: 'No'
+      out: 'TruSeq Stranded total RNA'
 
   choose_read_length_readlength:
     - in: '1 x 100 bp'
