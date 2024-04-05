@@ -129,6 +129,41 @@ def get_override_cycles(r1c, r2c, i1c, i2c, sample_i1, sample_i2):
     return override_string
 
 
+def parse_settings(settings_string):
+    """The settings are specified as a semicolon-separated string. The first element contains the
+    app name, but before the app name, it can optionally contain a configuration name followed by colon.
+    The following items are key-value pairs separated by equals signs.
+
+    DiagWgsSettings_1.0:DragenGermline;AppVersion=1.0.0;SoftwareVersion=4.1.23;ReferenceGenomeDir=hg38-alt_masked.cnv.hla.rna-8-1667496521-2;MapAlignOutFormat=cram;KeepFastQ=true;VariantCallingMode=AllVariantCallers
+
+    The function returns a normalized tuple representation of this configuration. The first element of the
+    return value is the App name. The second element is a tuple of tuples for the list of key-value pairs.
+    
+    return AppName, (
+        (Setting1, SettingValue1),
+        (Setting2, SettingValue2),
+        ...
+    )
+    """
+
+    parts = settings_string.split(";")
+    app_name = parts[0].split(":")[-1]
+    if '=' in app_name:
+        raise ValueError(f"Incorrect analysis string: The first element (app name) contains 'equals sign': '{app_name}'.")
+    
+    kv_list = []
+    for part in parts[1:]:
+        kv = part.split("=", maxsplit=1)
+        if len(kv) == 1:
+            raise ValueError(f"Incorrect settings element '{part}' in analysis string: Does not contain equals sign (key=value).")
+        kv_list.append(tuple(kv))
+    
+    if len(set(k for k, _ in kv_list)) < len(kv_list):
+        raise ValueError("There appears to be a duplicate setting in the analysis string for this sample. Only specify each setting once.")
+
+    return app_name, tuple(kv_list)
+
+
 def generate_saample_sheet(process_id, output_samplesheet_luid):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
@@ -149,10 +184,10 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
     container_size = container.type.y_dimension['size']
     if flowcell_type in ['10B', '25B']:
         if container_size != 8:
-            raise ValueError(f"The 8-tube strip should be used for a 10B or 25B flow cell, but found container size {container_size}.")
+            raise ValueError(f"Flow cell type {flowcell_type} requested, container size should be 8, but is {container_size}.")
     elif flowcell_type == '1.5B':
         if container_size != 2:
-            raise ValueError(f"The 2-tube strip should be used for a 1.5B flow cell, but found container size {container_size}.")
+            raise ValueError(f"Flow cell type 1.5B requested, container size should be 2, but is {container_size}.")
     else:
         logging.warning(f"Unknown Flow Cell Type '{flowcell_type}'.")
 
@@ -163,10 +198,11 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
     
     # Process each lane and produce BCLConvert and DragenGermline sample tables
     bclconvert_rows = []
-    dragen_germline_rows = []
 
+    # This list will contain tuples of (sample_id, (app, settings))
+    # (app, settings) is a parsed tuple structure from the UDF NovaSeqX Secondary Analysis string
     analysis_settings = []
-    has_any_non_diag_samples = False # Run-level flag to determine compression format
+
     for lane_artifact in sorted(output_lanes, key=lambda artifact: artifact.location[1][0]):
         # Get lane from well position e.g. B:1 is lane 2.
         lane_id = int(lane_artifact.location[1].split(":")[0])
@@ -199,7 +235,8 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
 
         # Loop over the unique samples (indexes) in this lane
         for (sample, artifact, _), (index1, index2) in zip(demux_list, index_pairs):
-            logging.info(f"Adding sample {sample.name} / artifact ID {artifact.id}.")
+            sample_id = artifact.id
+            logging.info(f"Adding sample {sample.name} / artifact ID {artifact.id}. Sample_ID in SampleSheet: {sample_id}.")
             override_cycles = get_override_cycles(
                         process.udf['Read 1 Cycles'],
                         process.udf['Read 2 Cycles'],
@@ -210,6 +247,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
                     )
             bclconvert_rows.append({
                 'lane': lane_id,
+                'sample_id': sample_id, # The sample ID should be determined here, not in the template, for consistency w analysis
                 'sample': sample,
                 'artifact': artifact,
                 'index1': index1,
@@ -217,57 +255,82 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
                 'override_cycles': override_cycles,
                 'barcode_mismatches': barcode_mismatches
             })
-            if sample.project.udf['Project type'] != "Diagnostics":
-                has_any_non_diag_samples = True
-            analysis_type = sample.udf.get('NovaSeqX Secondary Analysis')
-            if analysis_type == 'DragenGermline-Settings-1.0':
-                logging.info(f"Enable DragenGermline standard settings for this sample.")
-                analysis_strings[dragen_germline_standard_settings].append(artifact.id)
-            # ... add more preset analysis types here?
-            elif analysis_type.lower().replace("-", "") == 'adhoc':
-                sample.udf.get('NovaSeqX Secondary Analysis Settings')
-                # Ad-hoc analysis type should contain the application name in square brackets and all required options.
-                # [DragenGermline]SoftwareVersion=0;AppVersion=1;KeepFastQ=FALSE
-                analysis = str(sample.udf['NovaSeqX Secondary Analysis'])
-                if analysis.startswith('[') and ']' in analysis:
-                    logging.info(f"Enable ad-hoc analysis: {analysis}.")
-                    analysis_strings[analysis].append(artifact.id)
 
+            analysis_string = sample.udf.get('NovaSeqX Secondary Analysis')
+            if analysis_string:
+                logging.info(f"Sample {sample.name} has UDF NovaSeqX Secondary Analysis = '{analysis_string}'.")
+                analysis = parse_settings(analysis_string)
+                analysis_settings.append((sample_id, analysis))
+                logging.info(f"Sample {sample.name} will be analysed with app {analysis[0]} with {len(analysis[1:])} settings.")
 
-    # Parse the analysis configuration strings and structure them by app name
-    app_configs = defaultdict(dict)
-    for analysis_string, samplesheet_sample_ids in analysis_strings.items():
-        matches = re.match(r"\[([A-Z-a-z]+)\](.*)$", analysis_string)
-        if matches:
-            app = matches.group(1)
-            app_configs[app].append({
-                'settings': matches.group(2),
-                'sample_ids': samplesheet_sample_ids
-            })
+    # The following three lists contain one element per analysis type (App)
+    analysis_settings_blocks = []
+    analysis_data_blocks = []
+    analysis_data_block_headers = []
+    analysis_apps = []
+
+    logging.info("Finished demultiplexing settings, will prepare analysis settings. Note that you can edit the sample's 'NovaSeqX Secondary Analysis' field now if there are any problems.")
+
+    # Process each unique app block
+    for app in set(app for _, (app, _) in analysis_settings):
+        samples_settings = [(sample_id, settings) for sample_id, (element_app, settings) in analysis_settings if element_app == app]
+        # Get all settings keys seen
+        settings_keys = {
+            key
+            for (sample_id, settings) in samples_settings
+            for (key, value) in settings
+        }
+        logging.info(f"Preparing app {app} with settings keys {', '.join(settings_keys)}.")
+        # De-duplicate samples and add missing keys, so all samples have all keys.
+        # Preserves the order of samples in the original list.
+        samples_settings_unique_complete = {}
+        for sample_id, settings in samples_settings:
+            dictify = dict(settings)
+            full_settings_dict = {key: dictify.get(key, 'na') for key in settings_keys}
+            prev_settings = samples_settings_unique_complete.get(sample_id)
+            if not prev_settings:
+                samples_settings_unique_complete[sample_id] = full_settings_dict
+            elif prev_settings != full_settings_dict:
+                raise RuntimeError(f"Sample id {sample_id} has two different analysis configurations: {full_settings_dict} != {prev_settings}.")
+
+        # Place settings in the headers or the data block depending on whether they have different values
+        data_block_keys = []
+        settings_block = []
+        for key in settings_keys:
+            first_sample_value = next(iter(samples_settings_unique_complete.values()))[key]
+            if all(
+                    sample_settings[key] == first_sample_value
+                    for sample_id, sample_settings in samples_settings_unique_complete.items()
+                    ):
+                settings_block.append((key, first_sample_value))
+            else:
+                data_block_keys.append(key)
+        for required_header_field in ['AppVersion', 'SoftwareVersion']:
+            if required_header_field in data_block_keys:
+                raise RuntimeError(f"There are different values for {required_header_field} among the samples queued for app {app}, but only a single value is supported.")
+            if required_header_field not in [k for k,v in settings_block]:
+                raise RuntimeError(f"The analysis settings must contain field {required_header_field}, but it is not specified for app {app}.")
+
+        logging.info(f"There are {len(samples_settings_unique_complete)} samples queued for {app}.")
+
+        # Construct the data block as a list of lists
+        data_block = []
+        for sample_id, sample_settings in samples_settings_unique_complete.items():
+            data_block.append([sample_id] + [sample_settings[k] for k in data_block_keys])
         
-
-    analysis_configs = []
-    for analysis_string, samplesheet_sample_ids in analysis_strings.items():
-        matches = re.match(r"\[([A-Z-a-z]+)\](.*)$", analysis_string)
-        if matches:
-            analysis = {'name': matches.group(1)}
-            if analysis['name'] in have_apps:
-                print(f"Error: Cannot configure multiple analyses for app: {matches.group(1)}.")
-                sys.exit(1)
-            logging.info(f"Preparing analysis block for: {analysis['name']}.")
-            analysis['settings'] = []
-            analysis['sample_ids'] = list(set(samplesheet_sample_ids))
-            analysis_configs.append(analysis)
-            have_apps.add(analysis['app'])
+        # Save the config for this app in the global lists
+        analysis_settings_blocks.append(settings_block)
+        analysis_data_block_headers.append(['Sample_ID'] + data_block_keys)
+        analysis_data_blocks.append(data_block)
+        analysis_apps.append(app)
+        logging.info(f"Added {len(settings_block)} shared settings and {len(data_block_keys)} per-sample settings for {app}.")
 
     # generate template
     variables = {
             'library_tube_strip_id': library_tube_strip_id,
-            'fastq_compression_format': "gzip" if has_any_non_diag_samples else "dragen",
             'process': process,
             'bclconvert_rows': sorted(bclconvert_rows, key=operator.itemgetter('lane')),
-            'dragen_germline_rows': dragen_germline_rows,
-            'ad_hoc_analyses': []
+            'analyses_zipped': zip(analysis_apps, analysis_settings_blocks, analysis_data_block_headers, analysis_data_blocks),
     }
     template_dir = os.path.dirname(os.path.realpath(__file__))
     samplesheet_data = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir)) \
@@ -275,7 +338,8 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
 
     # The file name is based on the library strip ID
     # library_tube_strip_id is checked above, should be safe for a file name
-    output_file_name = library_tube_strip_id + ".csv"
+    safe_run_name = "".join([c for c in process.udf['Run Name'] if c.isalpha()]).lower()
+    output_file_name =  "TODO_FIX_FILE_NAME.csv"
 
     # Upload to LIMS
     output_samplesheet_artifact = Artifact(lims, id=output_samplesheet_luid)
