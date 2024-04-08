@@ -6,6 +6,7 @@ import os
 import re
 import operator
 import logging
+import datetime
 from collections import defaultdict
 import pandas as pd
 import jinja2
@@ -336,10 +337,10 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
     samplesheet_data = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir)) \
                             .get_template('samplesheet-template.csv.j2').render(variables)
 
-    # The file name is based on the library strip ID
-    # library_tube_strip_id is checked above, should be safe for a file name
-    safe_run_name = "".join([c for c in process.udf['Run Name'] if c.isalpha()]).lower()
-    output_file_name =  "TODO_FIX_FILE_NAME.csv"
+    # The file name is set as <date>_<run-name>_<process-id>
+    safe_run_name = "".join([c for c in process.udf['Run Name'] if (c.isalnum() or c in "-_.,")])
+    date_string = datetime.datetime.now().strftime("%Y%m%d")
+    output_file_name = "_".join([date_string, safe_run_name, process_id]) + ".csv"
 
     # Upload to LIMS
     output_samplesheet_artifact = Artifact(lims, id=output_samplesheet_luid)
