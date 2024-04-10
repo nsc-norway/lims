@@ -35,12 +35,13 @@ def get_runs(collection):
     return jsonify(run_ids=sorted(run_ids, reverse=True))
 
 
-def add_directory(zfile, source_base, dest_base):
+def add_directory(zfile, source_base, dest_base, recursive=True):
     for f in os.listdir(source_base):
         source_path = os.path.join(source_base, f)
         dest_path = os.path.join(dest_base, f)
         if os.path.isdir(source_path):
-            add_directory(zfile, source_path, dest_path)
+            if recursive:
+                add_directory(zfile, source_path, dest_path)
         else:
             zfile.write(source_path, dest_path)
 
@@ -88,6 +89,13 @@ def get_zip_file(collection, run_id):
                     path = os.path.join(base_dir, run_id, file_test)
                     if os.path.isfile(path):
                         zfile.write(path, os.path.join(run_id, file_test))
+            elif file == "InterOp_top_level":
+                add_directory(
+                        zfile,
+                        os.path.join(run_path, "InterOp"),
+                        os.path.join(run_id, "InterOp"),
+                        recursive=False
+                        )
             elif file in [
                     "InterOp", "Images", "RTALogs", "Logs", "Recipe", "Config"
                     ]:
