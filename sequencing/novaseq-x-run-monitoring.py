@@ -449,6 +449,11 @@ def main():
                 # Complete the sequencing step when the run is finsihed
                 complete_step(step)
 
+                # Set the UDF on the container, for use by the overview page
+                # Under normal operation, there should only be one library tube strip container.
+                lims_containers[-1].udf['Recently completed'] = True
+                lims_containers[-1].put()
+
 
         else: # Step already contains completion information
             logging.info(f"Run {run_id} already has an 'Run End Time', nothing done.")
