@@ -110,53 +110,70 @@ for _, input, output in position_sorted_input_output:
     worksheet_row['PhiX %'] = phix_percent
 
     # Define constants
+    # PhiX stock concentration for use in manual and robotic blending / spiking
     phix_conc = 2 # nM
-    total_volume_constant = 56.7
+    # This is the total volume that should be present in the library tube strip after dilution and
+    # adding PhiX.
+    output_volume = 56.7 # uL
+    # This is the final total volume after also adding other reagents. This is only used to translate
+    # to 'Input Conc. (pM)', which is specified in reference to this total volume.
+    final_total_volume = 281.6 # uL
 
     # Calculate sample volume. The logic is different for robot file and worksheet, due to how
     # the lab workflow is done. The robot will always add 1% PhiX. The manual workflow is designed
-    # to handle cases when the PhiX concentration is different from 1 %. If PhiX is 1 %, the lab
-    # sheet should just have zeros for that library.
-    library_volume_simple = (target_input_conc/1000) * 281.6 / library_conc
+    # to handle cases when the PhiX concentration is greater than 1 %. If PhiX is 1 %, the lab
+    # sheet should just have zeros for that library. The result of manual PhiX blending is intentially
+    # not quite accurate, as we will add another 1% on the robot in addition to the specified amount.
+    if phix_percent == 1.0:
+        library_conc_robot = library_conc
+    else:
+        # The library and PhiX will be diluted to a predefined intermeditate molarity (1.5 nM)
+        # in the manual step.
+        # It can't do the final dilution to target_input_conc pM manually, because there would be too
+        # large volume for the robot to pipette.
+        # The robot then uses this as input, instead of the actual library conc.
+        library_conc_robot = 1.5 # nM
+
+    # Calculate dilution of library, or PhiX + library blend from manual step, on the robot
+    library_volume_robot = (target_input_conc/1000) * final_total_volume / library_conc_robot
     # PhiX volume is always 4.8 for 1 % PhiX
     phix_volume_simple = 4.8
-    rsb_volume_simple = total_volume_constant - library_volume_simple - phix_volume_simple
+    rsb_volume_simple = output_volume - library_volume_simple - phix_volume_simple
 
     if phix_percent == 1.0:
         logging.info(f"Library {input.name} has 1% PhiX, setting columns to zero in worksheet.")
         worksheet_row['Library Volume'] = 0.0
         worksheet_row['RSB Volume'] = 0.0
-        worksheet_row['PhiX 2nM Volume'] = 0.0
+        worksheet_row[f'PhiX {phix_conc}nM Volume'] = 0.0
     else:
-        phix_fraction = phix_percent / 100
-        logging.info(f"Library {input.name} has {phix_percent} % PhiX - computing manual dilution.")
-        logging.info(f"For the following automated dilution we need to input 1.1 x {total_volume_constant} uL of sample+phix+rsb mix.")
+        phix_fraction = (phix_percent-1.0) / 100
 
-        required_total_volume = 1.1 * total_volume_constant # uL
-        required_dna_quantity = 281.6 * target_input_conc / 1000 # nmol
+        # This volume is always the same. Based on the predefined robot conc. plus some extra.
+        required_mix_volume = 10 + output_volume # uL
+        logging.info(f"Library {input.name} requires {phix_percent} % PhiX - computing manual dilution to"
+                        f" {library_conc_robot} nM in {required_mix_volume} uL.")
 
-        # Compute nanomoles of library and phix needed to produce the necessary DNA conc.
-        required_library_quantity = required_dna_quantity * (1-phix_fraction)
-        required_phix_quantity = required_dna_quantity * phix_fraction
+        # Compute the total DNA quantity required, in nanomoles
+        required_dna_quantity = required_mix_volume * library_conc_robot # nmol
+        
+        phix_quantity = required_dna_quantity * phix_fraction
+        library_quantity = required_dna_quantity * (1.0 - phix_fraction)
 
-        # Compute volume of ibrary and phix
-        library_volume = required_library_quantity / library_conc # uL
-        phix_volume = required_phix_quantity / phix_conc
-        worksheet_row['Library Volume'] = library_volume
+        # Compute volumes of PhiX and library
+        phix_volume = phix_quantity / phix_conc # nmol / (nmol/uL) = uL
         worksheet_row[f'PhiX {phix_conc}nM Volume'] = phix_volume
+        
+        library_volume = library_quantity / library_conc # uL
+        worksheet_row['Library Volume'] = library_volume
 
         # Buffer is what is remaining to fill the volume
-        worksheet_row['RSB Volume'] = required_total_volume - library_volume - phix_volume
+        worksheet_row['RSB Volume'] = required_mix_volume - library_volume - phix_volume
 
-        logging.info(f"Computed manual dilution, resetting volumes for robot")
-        library_volume_simple = total_volume_constant
-        rsb_volume_simple = 0.0
-
-    # Store computed simple values for the robot. If the samples were diluted manually, the simple
+    # Store computed values for the robot. If the samples were diluted manually, the simple
     # volumes are adjusted to include only the sample and no rsb - the sample will already be at the
     # correct conc.
     # Add 10% extra volumes in robot.
-    robot_row['Library Volume'] = 1.1 * library_volume_simple
+    robot_row['Library Volume'] = 1.1 * library_volume_robot
     robot_row['RSB Volume'] = 1.1 * rsb_volume_simple
     
     common_rows.append(common_row)
