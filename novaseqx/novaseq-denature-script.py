@@ -27,6 +27,7 @@ process.get()
 # Costants used for tube to plate conversion
 tube_input_container_name = "NSC"
 tube_input_counter = 0
+known_unique_input_tubes = {}
 tube_position_sequence = [c + r for r in "12" for c in "ABCDEFGH"]
 
 # Extract the relevant inputs and outputs. Sort by destination well
@@ -65,8 +66,26 @@ for _, input, output in position_sorted_input_output:
 
     if input.location[0].type.name == "Tube":
         common_row['Source Plate'] = tube_input_container_name
-        common_row['Source Position'] = tube_position_sequence[tube_input_counter]
-        tube_input_counter += 1
+        container_name = input.location[0].name
+        cn_parts = container_name.rsplit("_", maxsplit=1)
+        if len(cn_parts) > 1 and cn_parts[-1].isdigit():
+            # Remove underscore and numeric suffix for tubes that have been duplicated on the
+            # Queue for sequencing NSC step, because they should be run on multiple lanes.
+            # These will have the name as original plate position and then _01, _02, etc. They
+            # should be treated as a single tube because that's what they are.
+            tube_id_name = cn_parts[0] + "^" + input.name
+        else:
+            # The input is now identified by container name and ID. This may work if the
+            # step is configured with "variable number of outputs" and the library is
+            # duplicated when entering this step.
+            tube_id_name = container_name + "." + input.id
+        if tube_id_name in known_unique_input_tubes: 
+            common_row['Source Position'] = known_unique_input_tubes[tube_id_name]
+        else:
+            new_tube_position = tube_position_sequence[tube_input_counter] 
+            tube_input_counter += 1
+            common_row['Source Position'] = new_tube_position
+            known_unique_input_tubes[tube_id_name] = new_tube_position
     else:
         common_row['Source Plate'] = input.location[0].name
         # The LIMS position is separated by colon, we will REMOVE THE COLON
