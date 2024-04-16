@@ -131,6 +131,7 @@ questions:
 
   - udf:        'Billing address'
     line:       'Billing institution and full billing address'
+    default:    '-- Not provided --'
 
   - udf:        'Purchase order number'
     line:       'Purchase Order Number'
