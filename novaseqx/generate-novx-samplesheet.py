@@ -236,7 +236,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
 
         # Loop over the unique samples (indexes) in this lane
         for (sample, artifact, _), (index1, index2) in zip(demux_list, index_pairs):
-            sample_id = artifact.id
+            sample_id = sample.name + "_" + artifact.id
             logging.info(f"Adding sample {sample.name} / artifact ID {artifact.id}. Sample_ID in SampleSheet: {sample_id}.")
             override_cycles = get_override_cycles(
                         process.udf['Read 1 Cycles'],
