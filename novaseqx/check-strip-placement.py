@@ -18,3 +18,7 @@ if outputs[0].location[0].id == outputs[0].location[0].name:
     print("The container name should be changed to the barcode of the Library Tube Strip.")
     sys.exit(1)
 
+# Fix output container name strip tube barcode, change "+" to "-" (BC reader keyboard layout)
+outputs[0].location[0].name == outputs[0].location[0].name.replace("+", "-")
+outputs[0].location[0].put()
+
