@@ -19,7 +19,7 @@ SoftwareVersion,{{ process.udf['DRAGEN BCLConvert SoftwareVersion'] }}
 FastqCompressionFormat,{{ process.udf['FASTQ Compression Format'] }}
 
 [BCLConvert_Data]
-Lane,Sample_ID,index,index2,OverrideCycles,BarcodeMismatchesIndex1,BarcodeMismatchesIndex2
+Lane,Sample_ID,Index,Index2,OverrideCycles,BarcodeMismatchesIndex1,BarcodeMismatchesIndex2
 {% for row in bclconvert_rows %}{{ row.lane }},{{ row.sample_id }},{{ row.index1 }},{{ row.index2 }},{{ row.override_cycles }},{{ row.barcode_mismatches }},{{ row.barcode_mismatches }}
 {% endfor %}
 
