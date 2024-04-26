@@ -30,7 +30,7 @@ INSTRUMENT_NAME_MAP = {seq['id']: seq['name']
 # This script can only handle a single process type and workflow at a time. If there is a
 # new version, the script should be updated at the time when the new version is activated.
 PROCESS_TYPE_NAME = "AUTOMATED - Sequencing Run NovaSeqX AMG 1.0"
-WORKFLOW_NAME = "NovaSeq X 0.9"
+WORKFLOW_NAME = "NovaSeq X 1.0"
 #DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 1.0"
 
 RUN_STORAGES=[
