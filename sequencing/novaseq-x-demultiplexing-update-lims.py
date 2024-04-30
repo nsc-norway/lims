@@ -27,6 +27,8 @@ RUN_FOLDER_MATCH = r"\d{8}_LH[0-9\-_]+"
 demux_cache = {}
 
 def get_demux_artifact(artifact):
+    """Memoised version of get_demux_artifact"""
+    
     global demux_cache
     if artifact.id not in demux_cache:
         demux_cache[artifact.id] = demultiplexing.get_demux_artifact(lims, artifact)
@@ -70,12 +72,16 @@ def get_output_lanes(demultiplex_stats):
     return list(nonzero_lanes.index)
 
 
-    #lims.put_batch([process])e) + process.all_outputs(unique=True))
+def get_samplesheet_sampleid(sample, artifact):
+    """Return the string used as Sample_ID in the sample sheet. This needs to mirror the selected string in the
+    sample sheet generator."""
+
+    return sample.name + "_" + artifact.id
 
 
-def update_lims_output_metrics(process, demultiplex_stats, quality_metrics):
+def update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary):
     lane_total_read_counts = {
-        lane: demultiplex_stats[demultiplex_stats['Lane'] == lane]['# Reads'].sum()
+        lane: demultiplex_stats[demultiplex_stats['Lane'] == lane]['# Reads'].sum().item()
         for lane in demultiplex_stats['Lane'].unique()
     }
 
@@ -102,19 +108,21 @@ def update_lims_output_metrics(process, demultiplex_stats, quality_metrics):
         
         # Locate the demultiplexed artifact with the same reagent label as the output
         # of this step
-        for _, demux_artifact, _ in demux:
+        for sample, demux_artifact, _ in demux:
             if demux_artifact.reagent_labels == output_artifact.reagent_labels:
-                demux_artifact_id = demux_artifact.id
+                samplesheet_sampleid = get_samplesheet_sampleid(sample, demux_artifact)
+                logging.info(f"Looking up artifact {demux_artifact.id} in metrics files by SampleSheet Sample_ID '{samplesheet_sampleid}'.")
                 break
         else:
             # Unable to find the demultiplexed artifact. We set an invalid ID, so the
             # update will fail.
-            demux_artifact_id = None
+            samplesheet_sampleid = None
+            logging.warn(f"No corresponding demux artifact found for output artifact {output_artifact.id}.")
 
         # Update the output artifact with the demultiplexing stats
         sample_demux_stats = demultiplex_stats[
                                         (demultiplex_stats['Lane'] == lane_id) & 
-                                        (demultiplex_stats['SampleID'] == demux_artifact_id)
+                                        (demultiplex_stats['SampleID'] == samplesheet_sampleid)
                                         ]
         # In rare cases there may be more than one demultiplexed artifact with the same
         # sample ID. We aggregate the stats for all of them.
@@ -125,24 +133,25 @@ def update_lims_output_metrics(process, demultiplex_stats, quality_metrics):
         if quality_metrics is not None:
             sample_quality_metrics = quality_metrics[
                                             (quality_metrics['Lane'] == lane_id) & 
-                                            (quality_metrics['SampleID'] == demux_artifact_id)
+                                            (quality_metrics['SampleID'] == samplesheet_sampleid)
                                             ]
-        read_count = sample_demux_stats['# Reads'].sum()
+        read_count = sample_demux_stats['# Reads'].sum().item()
+
         if read_count > 0:
-            logging.info(f"Found nonzero read count for {demux_artifact_id}, quality metrics: {quality_metrics is not None}")
+            logging.info(f"Found nonzero read count for {samplesheet_sampleid}, quality metrics: {quality_metrics is not None}")
             output_artifact.udf['# Reads'] = read_count
             output_artifact.udf['# Reads PF'] = read_count
             output_artifact.udf['% of PF Clusters Per Lane'] = \
                             read_count / lane_total_read_counts[lane_id] * 100
             output_artifact.udf['% Perfect Index Read'] = \
-                            sample_demux_stats['# Perfect Index Reads'] / read_count * 100
+                            sample_demux_stats['# Perfect Index Reads'].item() / read_count * 100
             output_artifact.udf['% One Mismatch Reads (Index)'] = \
-                            sample_demux_stats['# One Mismatch Index Reads'] / read_count * 100
+                            sample_demux_stats['# One Mismatch Index Reads'].item() / read_count * 100
             if quality_metrics is not None:
-                output_artifact.udf['Yield PF (Gb)'] = sample_quality_metrics['Yield'].sum() / 1e9        
+                output_artifact.udf['Yield PF (Gb)'] = sample_quality_metrics['Yield'].sum().item() / 1e9        
                 output_artifact.udf['% Bases >=Q30'] = \
-                                sample_quality_metrics['Yield Q30'].sum() / sample_quality_metrics['Yield'].sum() * 100
-                output_artifact.udf['Ave Q Score'] = sample_quality_metrics['Mean Quality Score (PF)'].mean()
+                                sample_quality_metrics['YieldQ30'].sum().item() / sample_quality_metrics['Yield'].sum().item() * 100
+                output_artifact.udf['Ave Q Score'] = sample_quality_metrics['Mean Quality Score (PF)'].mean().item()
         else:
             output_artifact.udf['# Reads'] = 0
             output_artifact.udf['# Reads PF'] = 0
@@ -152,6 +161,20 @@ def update_lims_output_metrics(process, demultiplex_stats, quality_metrics):
             output_artifact.udf['% One Mismatch Reads (Index)'] = 0
             output_artifact.udf['% Bases >=Q30'] = 0
             output_artifact.udf['Ave Q Score'] = 0
+
+        # The Sample_ID may be used on multiple lanes, so the following info is not unique
+        output_artifact.udf['SampleSheet Sample_ID'] = samplesheet_sampleid
+
+        if detailed_summary is not None:
+            # Save the pipeline type used for this sample
+            workflow_names = [
+                            workflow['workflow_name']
+                            for workflow in detailed_summary['workflows']
+                            for sample in workflow['samples']
+                            if sample['sample_id'] == samplesheet_sampleid
+                            ]
+            if len(workflow_names) == 1:
+                output_artifact.udf['Onboard analysis type'] = workflow_names[0]
 
         updated_artifacts.append(output_artifact)
      
@@ -191,7 +214,7 @@ def parse_bclconvert_info_log(infolog_path):
 
 
 
-def update_lims_process(process, analysis_dir, run_id, analysis_id):
+def update_lims_process(process, analysis_dir, run_id, analysis_id, detailed_summary):
     """Update the process with the status and the date of completion."""
 
     # Info.log is created by onboard DRAGEN and stand-alone BCLConvert, but is not present in onboard 
@@ -200,6 +223,8 @@ def update_lims_process(process, analysis_dir, run_id, analysis_id):
     bc_info_log = os.path.join(analysis_dir, "Data", "BCLConvert", "fastq", "Logs", "Info.log")
     if os.path.exists(bc_info_log):
         bcl_convert_version = parse_bclconvert_info_log(bc_info_log)
+    elif detailed_summary: # Detailed summary is available when running in onboard mode
+        bcl_convert_version = detailed_summary['software_version']
     else:
         bcl_convert_version = "UNKNOWN"
     logging.info(f"BCLConvert version detected: {bcl_convert_version}.")
@@ -207,7 +232,12 @@ def update_lims_process(process, analysis_dir, run_id, analysis_id):
     process.udf['Run ID'] = run_id
     process.udf['Analysis ID'] = analysis_id
     process.udf['BCL Convert Version'] = bcl_convert_version
-    process.udf['Status'] = 'Completed'
+    if detailed_summary:
+        process.udf['Status'] = detailed_summary['result'].upper()
+        process.udf['Compute platform'] = 'Onboard DRAGEN'
+    else:
+        process.udf['Status'] = 'COMPLETED'
+        process.udf['Compute platform'] = 'UNKNOWN'
     process.udf['LIMS import completed'] = str(datetime.datetime.now())
     process.put()
 
@@ -217,7 +247,7 @@ def get_input_artifacts(run_dir):
 
     rp_tree = ElementTree()
     rp_tree.parse(os.path.join(run_dir, "RunParameters.xml"))
-    logging.info(f"Loaded RunParameters.xml in {run_dir} to look for library tube strip ID.")
+    logging.info(f"Loaded RunParameters.xml in {run_dir} to look for library tube strip ID.")
     consumable_infos = rp_tree.findall("ConsumableInfo/ConsumableInfo")
     for consumable_info in consumable_infos:
         try:
@@ -254,7 +284,7 @@ def get_sample_identity_matching(process):
         if o is None:
             sample_info['output_artifact_id'] = None
             output_reagent_label = None
-            assert len(lane_artifact.samples) == 1, f"The artifact should have a single sample, found {len(lane_artifact.samples)}."
+            assert len(lane_artifact.samples) == 1, f"Un-indexed artifact should have a single sample, found {len(lane_artifact.samples)}."
             sample = lane_artifact.samples[0]
         elif o['output-generation-type'] == 'PerReagentLabel':
             sample_info['output_artifact_id'] = o['limsid']
@@ -276,6 +306,7 @@ def get_sample_identity_matching(process):
             if dem_reagent_label == output_reagent_label:
                 sample_info['artifact_id'] = demux_artifact.id
                 sample_info['artifact_name'] = demux_artifact.name
+                sample_info['samplesheet_sample_id'] = get_samplesheet_sampleid(sample, demux_artifact)
                 break
         sample_list.append(sample_info)
 
@@ -372,20 +403,34 @@ def process_analysis(run_dir, analysis_dir):
         process = Process(lims, id=step.id)
         logging.info(f"Started process {process.id}.")
 
-    # Import demultiplexing stats
-    qmetrics_path = os.path.join(analysis_dir, "Data", "BCLConvert", "fastq", "Reports", "Quality_Metrics.csv")
-    if os.path.exists(qmetrics_path):
-        quality_metrics = pd.read_csv(qmetrics_path)
+    # Import demultiplexing quality metrics. They will be in the App configured for the specific sample.
+    qmetrics_paths = glob.glob(os.path.join(analysis_dir, "Data", "*", "fastq", "Reports", "Quality_Metrics.csv"))
+    if qmetrics_paths:
+        quality_metrics = pd.concat([
+            pd.read_csv(qmetrics_path)
+            for qmetrics_path in qmetrics_paths
+            ])
     else:
         # If fastq output is deselected, no quality metrics are available here.
         quality_metrics = None
 
-    logging.info(f"Updating output (per index) metrics.")
-    update_lims_output_metrics(process, demultiplex_stats, quality_metrics)
+    # Import detailed summary (Onboard analysis)
+    # Use glob for DRAGEN version directory name
+    detailed_summary_paths = glob.glob(os.path.join(analysis_dir, "Data", "summary", "*", "detailed_summary.json"))
+    if len(detailed_summary_paths) == 1:
+        with open(detailed_summary_paths[0]) as ds:
+            detailed_summary = json.load(ds)
+    elif len(detailed_summary_paths) == 0:
+        detailed_summary = None
+    else:
+        raise RuntimeError("Found multiple detailed_summary.json, but there should only be one.")
+
+    logging.info(f"Updating output (per index) metrics and details.")
+    update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary)
     logging.info(f"Updating lane metrics.")
     update_lims_lane_metrics(process, demultiplex_stats)
     logging.info(f"Updating global process-level details.")
-    update_lims_process(process, analysis_dir, run_id, analysis_id)
+    update_lims_process(process, analysis_dir, run_id, analysis_id, detailed_summary)
     logging.info(f"Prepare a list of sample identities.")
     sample_id_list = get_sample_identity_matching(process)
 
@@ -409,7 +454,10 @@ def find_and_process_runs():
     for run_dir in run_dirs:
         run_id = os.path.basename(run_dir)
         logging.info(f"Processing analyses of run {run_id}")
-        analysis_dirs = glob.glob(os.path.join(run_dir, "Analysis", "*"))
+        analysis_dirs = [
+                    adir for adir in glob.glob(os.path.join(run_dir, "Analysis", "*"))
+                    if os.path.isdir(adir)
+                ]
         # There may be multiple analysis directories if the processing has been requeued.
         # The analyses may be handling different lanes, so we should import all, not just
         # the newest.
