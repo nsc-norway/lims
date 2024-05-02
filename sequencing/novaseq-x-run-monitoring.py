@@ -233,7 +233,7 @@ def set_lane_qc(process, run_dir):
                 set_if_not_nan(artifact, f'% Phasing R{read_label}', lane_summary.phasing().mean())
                 set_if_not_nan(artifact, f'% Prephasing R{read_label}', lane_summary.prephasing().mean())
                 set_if_not_nan(artifact, f'% Aligned R{read_label}', lane_summary.percent_aligned().mean())
-                set_if_not_nan(artifact, f'% Occupied Wells', lane_summary.percent_occupied().mean())
+                set_if_not_nan(artifact, f'% Occupied Wells', lane_summary.percent_occupied().median())
                 nonindex_read_count += 1
     lims.put_batch([a for _, a in lane_artifacts])
 
