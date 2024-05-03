@@ -72,11 +72,21 @@ def get_output_lanes(demultiplex_stats):
     return list(nonzero_lanes.index)
 
 
-def get_samplesheet_sampleid(sample, artifact):
-    """Return the string used as Sample_ID in the sample sheet. This needs to mirror the selected string in the
-    sample sheet generator."""
+def get_samplesheet_sampleid_pattern(sample, artifact):
+    """Return the string to match the Sample_ID in the sample sheet. This needs to mirror the selected string in the
+    sample sheet generator. A part of the Sample_ID may be random, so this is implemented as a regex."""
 
-    return sample.name + "_" + artifact.id
+    if sample.project.udf.get('Project type') == "Diagnostics":
+        split = sample.project.name.split("-")
+        if len(split) >= 2:
+            batch_id = split[1]
+        else:
+            batch_id = sample.project.name
+        dna_id = sample.name.split("-")[0]
+        sample_id = f"^{re.escape(batch_id)}_{re.escape(dna_id)}_[a-f0-9-]+$"
+        return sample_id
+    else:
+        return sample.name + "_" + artifact.id
 
 
 def update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary):
@@ -110,19 +120,19 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
         # of this step
         for sample, demux_artifact, _ in demux:
             if demux_artifact.reagent_labels == output_artifact.reagent_labels:
-                samplesheet_sampleid = get_samplesheet_sampleid(sample, demux_artifact)
+                samplesheet_sampleid = get_samplesheet_sampleid_pattern(sample, demux_artifact)
                 logging.info(f"Looking up artifact {demux_artifact.id} in metrics files by SampleSheet Sample_ID '{samplesheet_sampleid}'.")
                 break
         else:
-            # Unable to find the demultiplexed artifact. We set an invalid ID, so the
-            # update will fail.
-            samplesheet_sampleid = None
+            # Unable to find the demultiplexed artifact. We set the sample ID to a regex that will
+            # never match anything.
+            samplesheet_sampleid = "^\b$"
             logging.warn(f"No corresponding demux artifact found for output artifact {output_artifact.id}.")
 
         # Update the output artifact with the demultiplexing stats
         sample_demux_stats = demultiplex_stats[
                                         (demultiplex_stats['Lane'] == lane_id) & 
-                                        (demultiplex_stats['SampleID'] == samplesheet_sampleid)
+                                        (demultiplex_stats['SampleID'].str.match(samplesheet_sampleid))
                                         ]
         # In rare cases there may be more than one demultiplexed artifact with the same
         # sample ID. We aggregate the stats for all of them.
@@ -133,7 +143,7 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
         if quality_metrics is not None:
             sample_quality_metrics = quality_metrics[
                                             (quality_metrics['Lane'] == lane_id) & 
-                                            (quality_metrics['SampleID'] == samplesheet_sampleid)
+                                            (quality_metrics['SampleID'].str.match(samplesheet_sampleid))
                                             ]
         read_count = sample_demux_stats['# Reads'].sum().item()
 
@@ -163,7 +173,13 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
             output_artifact.udf['Ave Q Score'] = 0
 
         # The Sample_ID may be used on multiple lanes, so the following info is not unique
-        output_artifact.udf['SampleSheet Sample_ID'] = samplesheet_sampleid
+        if len(sample_demux_stats) > 0:
+            output_artifact.udf['SampleSheet Sample_ID'] = sample_demux_stats['SampleID'].iloc[0]
+            if output_artifact.samples[0].project.udf.get('Project type') == "Diagnostics": 
+                output_artifact.udf['Dataset UUID'] = output_artifact.udf['SampleSheet Sample_ID'].split("_")[-1]
+        else:
+            # Unable to find the true Sample_ID information, we have to fall back on the pattern.
+            output_artifact.udf['SampleSheet Sample_ID'] = samplesheet_sampleid
 
         if detailed_summary is not None:
             # Save the pipeline type used for this sample
@@ -306,7 +322,7 @@ def get_sample_identity_matching(process):
             if dem_reagent_label == output_reagent_label:
                 sample_info['artifact_id'] = demux_artifact.id
                 sample_info['artifact_name'] = demux_artifact.name
-                sample_info['samplesheet_sample_id'] = get_samplesheet_sampleid(sample, demux_artifact)
+                sample_info['samplesheet_sample_id'] = get_samplesheet_sampleid_pattern(sample, demux_artifact)
                 break
         sample_list.append(sample_info)
 

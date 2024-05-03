@@ -4,6 +4,7 @@ import sys
 import traceback
 import os
 import re
+import uuid
 import operator
 import logging
 import datetime
@@ -165,6 +166,29 @@ def parse_settings(settings_string):
     return app_name, tuple(kv_list)
 
 
+def get_sample_id(sample_ids_map, sample, artifact):
+    """Get the string that is used as Sample_ID in the sample sheet.
+    
+    It takes a cache of sample IDs as an argument, and updates it, so that the UUID-based IDs are not regenerated for
+    each lane."""
+
+    if sample.project.udf.get('Project type') == "Diagnostics":
+        if (sample.id, artifact.id) in sample_ids_map:
+            return sample_ids_map[(sample.id, artifact.id)]
+        split = sample.project.name.split("-")
+        if len(split) >= 2:
+            batch_id = split[1]
+        else:
+            batch_id = sample.project.name
+        dna_id = sample.name.split("-")[0]
+        uuidstring = str(uuid.uuid4())
+        sample_id = "_".join([batch_id, dna_id, uuidstring])
+        sample_ids_map[(sample.id, artifact.id)] = sample_id
+        return sample_id
+    else:
+        return sample.name + "_" + artifact.id
+
+
 def generate_saample_sheet(process_id, output_samplesheet_luid):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     process = Process(lims, id=process_id)
@@ -204,6 +228,10 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
     # (app, settings) is a parsed tuple structure from the UDF NovaSeqX Secondary Analysis string
     analysis_settings = []
 
+    # Store sample IDs keyed by (sample.id, artifact.id) so the same Sample_ID string can be used across
+    # all lanes. This is important for non-deterministic IDs used by Diagnostics.
+    sample_ids_map = {}
+
     for lane_artifact in sorted(output_lanes, key=lambda artifact: artifact.location[1][0]):
         # Get lane from well position e.g. B:1 is lane 2.
         lane_id = int(lane_artifact.location[1].split(":")[0])
@@ -224,7 +252,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
             index_lengths = set(len(index_pair[index_read-1]) for index_pair in index_pairs)
             if len(index_lengths) != 1:
                 warning_flag = True
-                logging.warning(f"Different index{index_read} lenghts in lane {lane_id}: {index_lengths}.")
+                logging.warning(f"Different index{index_read} lengths in lane {lane_id}: {index_lengths}.")
             configured_cycles = process.udf[f"Index {index_read} Cycles"]
             if any(index_length > configured_cycles for index_length in index_lengths):
                 # We fail hard, as this can be fixed easily by the user by increasing the cycles
@@ -236,7 +264,7 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
 
         # Loop over the unique samples (indexes) in this lane
         for (sample, artifact, _), (index1, index2) in zip(demux_list, index_pairs):
-            sample_id = sample.name + "_" + artifact.id
+            sample_id = get_sample_id(sample_ids_map, sample, artifact)
             logging.info(f"Adding sample {sample.name} / artifact ID {artifact.id}. Sample_ID in SampleSheet: {sample_id}.")
             override_cycles = get_override_cycles(
                         process.udf['Read 1 Cycles'],
