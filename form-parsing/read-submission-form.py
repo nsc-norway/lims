@@ -487,7 +487,7 @@ LABEL_UDF_PARSER = [
         ("Portable hard drive", 'Delivery method', get_portable_hard_drive),    # Support old form versions
         ("Upload to https site", 'Delivery method', get_delivery_method),       # New delivery method table (but before v17.1)
         ("Upload to NIRD", 'Delivery method', partial(single_checkbox, 'Norstore')),    # BEGIN Newer v17.1 delivery method table, separate rows
-        ("Upload to NeLS", 'Delivery method', partial(single_checkbox, 'NeLS roject')), 
+        ("Upload to NeLS", 'Delivery method', partial(single_checkbox, 'NeLS project')), 
         ("Upload to NeLS", "NeLS project identifier", partial(get_substring, 'Existing project')),
         (r"Portable hard drive \(exFAT format\), Provided by user", 'Delivery method', partial(single_checkbox, 'User HDD')),
         (r"Portable hard drive \(exFAT format\), provided by NSC", 'Delivery method', partial(single_checkbox, 'New HDD')),
