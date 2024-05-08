@@ -474,6 +474,9 @@ def process_analysis(run_dir, analysis_dir):
     with open(limsfile_path, "w") as ofile:
         json.dump({
             'status': 'ImportCompleted',
+            'bcl_convert_version': process.udf['BCL Convert Version'],
+            'compute_platform': process.udf['Compute platform'],
+            'demultiplexing_process_id': process.id,
             'samples': sample_id_list
             }, ofile)
 
