@@ -31,7 +31,7 @@ INSTRUMENT_NAME_MAP = {seq['id']: seq['name']
 # new version, the script should be updated at the time when the new version is activated.
 PROCESS_TYPE_NAME = "AUTOMATED - Sequencing Run NovaSeqX AMG 1.0"
 WORKFLOW_NAME = "NovaSeq X 1.0"
-#DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 1.0"
+DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 0.9"
 
 RUN_STORAGES=[
     "/data/runScratch.boston/NovaSeqX"
@@ -459,33 +459,33 @@ def main():
             logging.info(f"Run {run_id} already has an 'Run End Time', nothing done.")
 
         # Handle demultiplexing / analysis
-        # Disabled functionality. It may be better to let the demux monitor script handle this.
-        # --- Code below kept in case we want to have this information ---
         # Regardless of the step's completion state, there should be a demultiplexing step.
         # The job of this script is only to start an empty demultiplexing step if DRAGEN analysis
         # is enabled and there is not already a demultiplexing step.
         # The demultiplexing step is a placeholder to show the user that it will come when the
         # run is finished.
-        #if not process.udf.get('Demultiplexing Process ID'):
-        #    logging.info("The run does not have Demultiplexing Process ID field - starting demultiplexing process")
-        #    # Check if analysis is enabled
-        #    secondary_analysis = rp_tree.find("SecondaryAnalysisInfo/SecondaryAnalysisInfo")
-        #    if secondary_analysis is not None:
-        #        demux_wfs = lims.get_workflows(name=DEMULTIPLEXING_WORKFLOW_NAME)
-        #        demux_wf = demux_wfs[0]
-        #        logging.info(f"Will queue input artifacts in workflow {DEMULTIPLEXING_WORKFLOW_NAME}.")
-        #        selected_inputs = process.all_inputs(unique=True)
-        #        lims.route_analytes(selected_inputs, demux_wf.stages[0])
-        #        logging.debug("Creating a step") 
-        #        dmx_step = lims.create_step(demux_wf.protocols[0].steps[0], selected_inputs)
-        #        logging.info(f"Created demultiplexing step with id {dmx_step.id}.") 
-        #        dmx_process = Process(lims, id=dmx_step.id)
-        #        dmx_process.udf['Run ID'] = process.udf['Run ID']
-        #        dmx_process.udf['Analysis ID'] = '1'
-        #        dmx_process.udf['Status'] = "Waiting"
-        #        dmx_process.put()
-        #        process.udf['Demultiplexing Process ID'] = dmx_process.id
-        #        process.put()
+        # This will just assume that the full set of lanes is enabled for this step. It's unlikely
+        # that the automated analysis will run only on a subset of lanes.
+        if not process.udf.get('Demultiplexing Process ID'):
+            logging.info("The run does not have Demultiplexing Process ID field - starting demultiplexing process")
+            # Check if analysis is enabled
+            secondary_analysis = rp_tree.find("SecondaryAnalysisInfo/SecondaryAnalysisInfo")
+            if secondary_analysis is not None:
+                demux_wfs = lims.get_workflows(name=DEMULTIPLEXING_WORKFLOW_NAME)
+                demux_wf = demux_wfs[0]
+                logging.info(f"Will queue input artifacts in workflow {DEMULTIPLEXING_WORKFLOW_NAME}.")
+                selected_inputs = process.all_inputs(unique=True)
+                lims.route_analytes(selected_inputs, demux_wf.stages[0])
+                logging.debug("Creating a step") 
+                dmx_step = lims.create_step(demux_wf.protocols[0].steps[0], selected_inputs)
+                logging.info(f"Created demultiplexing step with id {dmx_step.id}.") 
+                dmx_process = Process(lims, id=dmx_step.id)
+                dmx_process.udf['Run ID'] = process.udf['Run ID']
+                dmx_process.udf['Analysis ID'] = '1'
+                dmx_process.udf['Status'] = "ACTIVE"
+                dmx_process.put()
+                process.udf['Demultiplexing Process ID'] = dmx_process.id
+                process.put()
 
 
     logging.info(f"NovaSeq X run monitoring completed at {datetime.datetime.now()}")
