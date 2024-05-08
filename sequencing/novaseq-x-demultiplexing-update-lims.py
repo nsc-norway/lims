@@ -187,15 +187,22 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
 
         if detailed_summary is not None:
             # Save the pipeline type and compression type used for this sample
-            workflow_info = [
-                            (workflow['workflow_name'], sample['ora_compression'])
+            # This also tries an experimental way to get the S-number for the sample, as the overall index
+            # of the sample into these full lists. It's very unsure if this will work in all edge cases.
+            workflow_all_samples = [
+                            (workflow, sample)
                             for workflow in detailed_summary['workflows']
                             for sample in workflow['samples']
+                            ]
+            workflow_info = [
+                            (i, workflow['workflow_name'], sample['ora_compression'])
+                            for i, (workflow, sample) in enumerate(workflow_all_samples)
                             if sample['sample_id'] == samplesheet_sampleid
                             ]
             if len(workflow_info) == 1:
-                output_artifact.udf['Onboard analysis type'] = workflow_info[0][0]
-                output_artifact.udf['ORA compression'] = workflow_info[0][1] == "enabled"
+                output_artifact.udf['Sample sheet position'] = workflow_info[0][0] + 1
+                output_artifact.udf['Onboard analysis type'] = workflow_info[0][1]
+                output_artifact.udf['ORA compression'] = workflow_info[0][2] == "enabled"
 
         updated_artifacts.append(output_artifact)
      
@@ -325,7 +332,8 @@ def get_sample_identity_matching(process):
         onboard_analysis = o['uri'].udf.get('Onboard analysis type')
         if onboard_analysis:
             sample_info['onboard_workflow'] = onboard_analysis
-            sample_info['ora_compression'] = o['uri'].udf.get('ORA compression')
+            sample_info['ora_compression'] = o['uri'].udf['ORA compression']
+            sample_info['samplesheet_position'] = o['uri'].udf['Sample sheet position']
         # Check if the number of data reads has been recorded
         if 'Number of data read passes' in o['uri'].udf:
             sample_info['num_data_read_passes'] = o['uri'].udf['Number of data read passes']
