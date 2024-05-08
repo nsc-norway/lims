@@ -285,7 +285,7 @@ def get_sample_identity_matching(process):
     """Retrieves the sample/project naming, index information and LIMS identifiers
     for the samples in this analysis.
 
-    Returns a list of sample_info dicts:
+    Returns a list of sample_info dicts, one for each sample for each lane.
     """
 
     sample_list = []
@@ -315,6 +315,11 @@ def get_sample_identity_matching(process):
         sample_info['project_id'] = sample.project.id
         sample_info['project_name'] = sample.project.name
         sample_info['project_type'] = sample.project.udf.get('Project type')
+
+        # The onboard analysis type is set above in update_lims_output_info
+        onboard_analysis = o['uri'].udf.get('Onboard analysis type')
+        if onboard_analysis:
+            sample_info['onboard_analysis'] = onboard_analysis
 
         # Locate the demultiplexed artifact with the same reagent label as the output
         # of this step. This may be used as Sample_ID in the sample sheet..
