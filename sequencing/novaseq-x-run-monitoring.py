@@ -467,6 +467,8 @@ def main():
         # This will just assume that the full set of lanes is enabled for this step. It's unlikely
         # that the automated analysis will run only on a subset of lanes.
         if not process.udf.get('Demultiplexing Process ID'):
+            process.udf['Demultiplexing Process ID'] = "PENDING"
+            process.put() # Prevent retrying in case of step creation failure
             logging.info("The run does not have Demultiplexing Process ID field - starting demultiplexing process")
             # Check if analysis is enabled
             secondary_analysis = rp_tree.find("SecondaryAnalysisInfo/SecondaryAnalysisInfo")
