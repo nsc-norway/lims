@@ -401,24 +401,20 @@ def process_analysis(run_dir, analysis_dir):
 
     process = None
     # If the analysis ID is 1, there may be an existing step created by the run monitoring script
-    # This function is temporarily disabled. It may be relevant to keep demultiplexing steps open, not
-    # just the first analysis. At the moment it's not clear how to get the selected lane set from an analysis
-    # before it's completed.
-    #if analysis_id == '1':
-    #    logging.info("Analysis ID is '1', looking for open processes created by run monitoring.")
-    #    processes = lims.get_processes(inputartifactlimsid=run_artifact_limsids,
-    #                                type=DEMULTIPLEXING_PROCESS_TYPE,
-    #                                udf={'Status':'Waiting','Analysis ID': '1'})
-    #    if len(processes) == 1:
-    #        process = processes[0]
-    #        step=...
-    #        # TO DO? Verify input lane set?
-    #        logging.info(f"Found process {process.id}, will update it.")
-    #    elif len(processes) == 0:
-    #        logging.info(f"No processes match the search criteria, so we will create one instead.")
-    #    else:
-    #        logging.error(f"Unexpectedly found {len(processes)} demux processes for analysis 1, will skip this analysis.")
-    #        return
+    if analysis_id == '1':
+        logging.info("Analysis ID is '1', looking for open processes created by run monitoring.")
+        processes = lims.get_processes(inputartifactlimsid=run_artifact_limsids,
+                                    type=DEMULTIPLEXING_PROCESS_TYPE,
+                                    udf={'Status':'ACTIVE','Analysis ID': '1'})
+        if len(processes) == 1:
+            process = processes[0]
+            # We don't verify the input lane set for this process. Onboard analysis will use all lanes.
+            logging.info(f"Found process {process.id}, will update it.")
+        elif len(processes) == 0:
+            logging.info(f"No processes match the search criteria, so we will create one instead.")
+        else:
+            logging.error(f"Unexpectedly found {len(processes)} demux processes for analysis 1, will skip this analysis.")
+            return
 
     if not process: # Always the case now- we have to start a process
         # Queue artifacts and create a process. The artifacts cannot be queued if they are already in a
