@@ -172,6 +172,10 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
             output_artifact.udf['% Bases >=Q30'] = 0
             output_artifact.udf['Ave Q Score'] = 0
 
+        # Add number of read 1, read 2 etc. (single read / paired end / weird 10x stuff)
+        if quality_metrics is not None:
+            output_artifact.udf['Number of data read passes'] = sample_quality_metrics['ReadNumber'].nunique()
+
         # The Sample_ID may be used on multiple lanes, so the following info is not unique
         if len(sample_demux_stats) > 0:
             output_artifact.udf['SampleSheet Sample_ID'] = sample_demux_stats['SampleID'].iloc[0]
@@ -182,15 +186,16 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
             output_artifact.udf['SampleSheet Sample_ID'] = samplesheet_sampleid
 
         if detailed_summary is not None:
-            # Save the pipeline type used for this sample
-            workflow_names = [
-                            workflow['workflow_name']
+            # Save the pipeline type and compression type used for this sample
+            workflow_info = [
+                            (workflow['workflow_name'], sample['ora_compression'])
                             for workflow in detailed_summary['workflows']
                             for sample in workflow['samples']
                             if sample['sample_id'] == samplesheet_sampleid
                             ]
-            if len(workflow_names) == 1:
-                output_artifact.udf['Onboard analysis type'] = workflow_names[0]
+            if len(workflow_info) == 1:
+                output_artifact.udf['Onboard analysis type'] = workflow_info[0][0]
+                output_artifact.udf['ORA compression'] = workflow_info[0][1] == "enabled"
 
         updated_artifacts.append(output_artifact)
      
@@ -316,10 +321,14 @@ def get_sample_identity_matching(process):
         sample_info['project_name'] = sample.project.name
         sample_info['project_type'] = sample.project.udf.get('Project type')
 
-        # The onboard analysis type is set above in update_lims_output_info
+        # The onboard analysis type and number of data reads is set above in update_lims_output_info
         onboard_analysis = o['uri'].udf.get('Onboard analysis type')
         if onboard_analysis:
-            sample_info['onboard_analysis'] = onboard_analysis
+            sample_info['onboard_workflow'] = onboard_analysis
+            sample_info['ora_compression'] = o['uri'].udf.get('ORA compression')
+        # Check if the number of data reads has been recorded
+        if 'Number of data read passes' in o['uri'].udf:
+            sample_info['num_data_read_passes'] = o['uri'].udf['Number of data read passes']
 
         # Locate the demultiplexed artifact with the same reagent label as the output
         # of this step. This may be used as Sample_ID in the sample sheet..
