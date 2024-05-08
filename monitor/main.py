@@ -408,10 +408,10 @@ def read_post_sequencing_process(server, process, sequencing_process):
     elif completed:
         status = "All jobs completed"
     else:
-        try:
+        if JOB_STATUS_UDF in process.udf:
             status = process.udf[JOB_STATUS_UDF]
-        except KeyError:
-            status = "Open"
+        else:
+            status = process.udf.get('Status', "Open")
 
         if automated:
             status = "[auto] " + status
