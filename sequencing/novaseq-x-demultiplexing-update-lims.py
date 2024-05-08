@@ -408,6 +408,7 @@ def process_analysis(run_dir, analysis_dir):
                                     udf={'Status':'ACTIVE','Analysis ID': '1'})
         if len(processes) == 1:
             process = processes[0]
+            step = Step(lims, id=process.id)
             # We don't verify the input lane set for this process. Onboard analysis will use all lanes.
             logging.info(f"Found process {process.id}, will update it.")
         elif len(processes) == 0:
