@@ -11,6 +11,7 @@ from xml.etree.ElementTree import ElementTree
 import pandas as pd
 import datetime
 import json
+import yaml
 from genologics.lims import *
 from genologics import config
 from lib import demultiplexing
@@ -470,9 +471,9 @@ def process_analysis(run_dir, analysis_dir):
     sample_id_list = get_sample_identity_matching(process)
 
     complete_step(step)
-    limsfile_path = os.path.join(analysis_dir, "ClarityLIMSImport_NSC.json")
+    limsfile_path = os.path.join(analysis_dir, "ClarityLIMSImport_NSC.yaml")
     with open(limsfile_path, "w") as ofile:
-        json.dump({
+        yaml.dump({
             'status': 'ImportCompleted',
             'bcl_convert_version': process.udf['BCL Convert Version'],
             'compute_platform': process.udf['Compute platform'],
@@ -503,16 +504,17 @@ def find_and_process_runs():
             analysis_id = os.path.basename(analysis_dir)
             logging.info(f"Processing analysis {analysis_id}")
 
-            limsfile_path = os.path.join(analysis_dir, "ClarityLIMSImport_NSC.json")
-            if os.path.exists(limsfile_path):
-                logging.info(f"Skipping analysis {analysis_id} because ClarityLIMSImport_NSC.json exists.")
+            limsfile_path = os.path.join(analysis_dir, "ClarityLIMSImport_NSC.yaml")
+            limsfile2_path = os.path.join(analysis_dir, "ClarityLIMSImport_NSC.json")
+            if os.path.exists(limsfile_path) or os.path.exists(limsfile2_path):
+                logging.info(f"Skipping analysis {analysis_id} because ClarityLIMSImport_NSC.yaml exists.")
                 continue
             if not os.path.exists(os.path.join(analysis_dir, "CopyComplete.txt")):
                 logging.info(f"Analysis {analysis_id} does not have CopyComplete.txt. Skipping.")
                 continue
 
             # We will process this analysis or die trying, so we mark it as processed.
-            logging.info(f"Analysis {analysis_id} is ready for LIMS import. Creating ClarityLIMSImport_NSC.json.")
+            logging.info(f"Analysis {analysis_id} is ready for LIMS import. Creating ClarityLIMSImport_NSC.yaml.")
             with open(limsfile_path, "w") as ofile:
                 ofile.write("{'status': 'ImportStarted'}")
 
