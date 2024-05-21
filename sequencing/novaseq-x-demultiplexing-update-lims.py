@@ -358,7 +358,8 @@ def get_sample_identity_matching(process):
             if dem_reagent_label == output_reagent_label:
                 sample_info['artifact_id'] = demux_artifact.id
                 sample_info['artifact_name'] = demux_artifact.name
-                sample_info['samplesheet_sample_id'] = get_samplesheet_sampleid_pattern(sample, demux_artifact)
+                sample_info['samplesheet_sample_id'] = o['uri'].udf.get('SampleSheet Sample_ID',
+                                                                get_samplesheet_sampleid_pattern(sample, demux_artifact))
                 break
         sample_list.append(sample_info)
 
