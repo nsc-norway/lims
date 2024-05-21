@@ -161,7 +161,7 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
             if quality_metrics is not None:
                 output_artifact.udf['Yield PF (Gb)'] = sample_quality_metrics['Yield'].sum().item() / 1e9        
                 output_artifact.udf['% Bases >=Q30'] = \
-                                sample_quality_metrics['YieldQ30'].sum().item() / sample_quality_metrics['Yield'].sum().item() * 100
+                                sample_quality_metrics['YieldQ30'].sum().item() / max(1, sample_quality_metrics['Yield'].sum().item() * 100)
                 output_artifact.udf['Ave Q Score'] = sample_quality_metrics['Mean Quality Score (PF)'].mean().item()
         else:
             output_artifact.udf['# Reads'] = 0
