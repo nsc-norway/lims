@@ -12,6 +12,7 @@ import pandas as pd
 import datetime
 import json
 import yaml
+import math
 from genologics.lims import *
 from genologics import config
 from lib import demultiplexing
@@ -162,7 +163,10 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
                 output_artifact.udf['Yield PF (Gb)'] = sample_quality_metrics['Yield'].sum().item() / 1e9        
                 output_artifact.udf['% Bases >=Q30'] = \
                                 sample_quality_metrics['YieldQ30'].sum().item() / max(1, sample_quality_metrics['Yield'].sum().item() * 100)
-                output_artifact.udf['Ave Q Score'] = sample_quality_metrics['Mean Quality Score (PF)'].mean().item()
+                # empirically, the following value can be NaN if there are no reads. We can't put NaN into LIMS
+                mean_q_score = sample_quality_metrics['Mean Quality Score (PF)'].mean()
+                if not math.isnan(mean_q_score):
+                    output_artifact.udf['Ave Q Score'] = mean_q_score
         else:
             output_artifact.udf['# Reads'] = 0
             output_artifact.udf['# Reads PF'] = 0
