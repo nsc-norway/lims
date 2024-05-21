@@ -444,7 +444,8 @@ def process_analysis(run_dir, analysis_dir):
         logging.info(f"Started process {process.id}.")
 
     # Import demultiplexing quality metrics. They will be in the App configured for the specific sample.
-    qmetrics_paths = glob.glob(os.path.join(analysis_dir, "Data", "*", "fastq", "Reports", "Quality_Metrics.csv"))
+    # The *fastq component is designed to also match "ora_fastq".
+    qmetrics_paths = glob.glob(os.path.join(analysis_dir, "Data", "*", "*fastq", "Reports", "Quality_Metrics.csv"))
     if qmetrics_paths:
         quality_metrics = pd.concat([
             pd.read_csv(qmetrics_path)
