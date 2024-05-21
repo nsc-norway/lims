@@ -162,12 +162,13 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
             if quality_metrics is not None:
                 output_artifact.udf['Yield PF (Gb)'] = sample_quality_metrics['Yield'].sum().item() / 1e9        
                 output_artifact.udf['% Bases >=Q30'] = \
-                                sample_quality_metrics['YieldQ30'].sum().item() / max(1, sample_quality_metrics['Yield'].sum().item() * 100)
+                                sample_quality_metrics['YieldQ30'].sum().item() * 100 / max(1, sample_quality_metrics['Yield'].sum().item())
                 # empirically, the following value can be NaN if there are no reads. We can't put NaN into LIMS
                 mean_q_score = sample_quality_metrics['Mean Quality Score (PF)'].mean()
                 if not math.isnan(mean_q_score):
                     output_artifact.udf['Ave Q Score'] = mean_q_score
         else:
+            logging.info(f"Found zero read count for {samplesheet_sampleid} and will set everything to 0.")
             output_artifact.udf['# Reads'] = 0
             output_artifact.udf['# Reads PF'] = 0
             output_artifact.udf['Yield PF (Gb)'] = 0    
@@ -191,9 +192,10 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
             output_artifact.udf['SampleSheet Sample_ID'] = samplesheet_sampleid
 
         if detailed_summary is not None:
+            # Based on the previous block we may have been able to find the true sample ID. Then we
+            # would be able to get the workflow info.
+            sample_id = output_artifact.udf['SampleSheet Sample_ID']
             # Save the pipeline type and compression type used for this sample
-            # This also tries an experimental way to get the S-number for the sample, as the overall index
-            # of the sample into these full lists. It's very unsure if this will work in all edge cases.
             workflow_all_samples = [
                             (workflow, sample)
                             for workflow in detailed_summary['workflows']
@@ -202,12 +204,19 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
             workflow_info = [
                             (i, workflow['workflow_name'], sample['ora_compression'])
                             for i, (workflow, sample) in enumerate(workflow_all_samples)
-                            if sample['sample_id'] == samplesheet_sampleid
+                            if sample['sample_id'] == sample_id
                             ]
             if len(workflow_info) == 1:
+                logging.info(f"Workflow info found for {sample_id}: {workflow_info}.")
+                # TODO this way of getting the Sample Sheet position (S-number) will probably not work in case of
+                # multiple analysis types.
                 output_artifact.udf['Sample sheet position'] = workflow_info[0][0] + 1
                 output_artifact.udf['Onboard analysis type'] = workflow_info[0][1]
-                output_artifact.udf['ORA compression'] = workflow_info[0][2] == "enabled"
+                output_artifact.udf['ORA compression'] = workflow_info[0][2] == "completed"
+            else:
+                logging.info(f"Have detailed_summary but didn't find workflow info for {sample_id}.")
+        else:
+            logging.info(f"Skipping workflow info, as there's no detailed_summary.")
 
         updated_artifacts.append(output_artifact)
      
