@@ -91,7 +91,7 @@ def get_samplesheet_sampleid_pattern(sample, artifact):
         return sample.name + "_" + artifact.id
 
 
-def update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary):
+def update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary, num_read_phases):
     lane_total_read_counts = {
         lane: demultiplex_stats[demultiplex_stats['Lane'] == lane]['# Reads'].sum().item()
         for lane in demultiplex_stats['Lane'].unique()
@@ -151,8 +151,8 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
 
         if read_count > 0:
             logging.info(f"Found nonzero read count for {samplesheet_sampleid}, quality metrics: {quality_metrics is not None}")
-            output_artifact.udf['# Reads'] = read_count
-            output_artifact.udf['# Reads PF'] = read_count
+            output_artifact.udf['# Reads'] = read_count * num_read_phases
+            output_artifact.udf['# Reads PF'] = read_count * num_read_phases
             output_artifact.udf['% of PF Clusters Per Lane'] = \
                             read_count / lane_total_read_counts[lane_id] * 100
             output_artifact.udf['% Perfect Index Read'] = \
@@ -284,12 +284,9 @@ def update_lims_process(process, analysis_dir, run_id, analysis_id, detailed_sum
     process.put()
 
 
-def get_input_artifacts(run_dir):
+def get_input_artifacts(rp_tree):
     """Get the input artifacts of the run based on the library tube strip ID."""
 
-    rp_tree = ElementTree()
-    rp_tree.parse(os.path.join(run_dir, "RunParameters.xml"))
-    logging.info(f"Loaded RunParameters.xml in {run_dir} to look for library tube strip ID.")
     consumable_infos = rp_tree.findall("ConsumableInfo/ConsumableInfo")
     for consumable_info in consumable_infos:
         try:
@@ -388,7 +385,10 @@ def process_analysis(run_dir, analysis_dir):
     # Find the LIMS artifacts of this run
     logging.info(f"Looking for artifacts.")
     try:
-        run_artifacts = get_input_artifacts(run_dir)
+        rp_tree = ElementTree()
+        rp_tree.parse(os.path.join(run_dir, "RunParameters.xml"))
+        logging.info(f"Loaded RunParameters.xml in {run_dir} to look for library tube strip ID.")
+        run_artifacts = get_input_artifacts(rp_tree)
     except Exception as e:
         logging.warn(f"Error while getting input artifacts: {e}.")
         return
@@ -476,8 +476,25 @@ def process_analysis(run_dir, analysis_dir):
     else:
         raise RuntimeError("Found multiple detailed_summary.json, but there should only be one.")
 
+    # We need to get the number of data reads (single read / paired end), because the '# Reads PF' UDF should be reported
+    # as reads per end. This info is contained in Quality_Metrics.csv, but we base it on RunParameters.xml because we may
+    # not always have Quality_Metrics.
+    num_read_phases = sum( # Get length
+            1
+            for node in rp_tree.findall("PlannedReads/Read")
+            if node.attrib['ReadName'].startswith("Read") # Read1, Read2
+            )
+    if quality_metrics is not None:
+        qm_num_read_phases = quality_metrics['ReadNumber'].nunique()
+        if num_read_phases != qm_num_read_phases:
+            logging.warn(f"Number of read passes in RunParameters.xml ({num_read_phases}) and Quality_Metrics.csv "
+                    f"({qm_num_read_phases}) don't match. Using Quality_Metrics.csv number.")
+            # There can be a mismatch if OverrideCycles is used to change the meaning of some reads. Then
+            # Quality_Metrics.csv will have the correct value.
+            num_read_phases = qm_num_read_phases
+
     logging.info(f"Updating output (per index) metrics and details.")
-    update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary)
+    update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary, num_read_phases)
     logging.info(f"Updating lane metrics.")
     update_lims_lane_metrics(process, demultiplex_stats)
     logging.info(f"Updating global process-level details.")
