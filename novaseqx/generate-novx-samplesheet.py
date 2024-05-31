@@ -274,6 +274,12 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
                         len(index1),
                         len(index2)
                     )
+            # Check how many index reads and set BarcodeMismatches to "na" if the index read is not used
+            barcode_mismatches_read = [
+                    barcode_mismatches if index_seq else "na"
+                    for index_seq in [index1, index2]
+                    ]
+            # Output a sample sheet row
             bclconvert_rows.append({
                 'lane': lane_id,
                 'sample_id': sample_id, # The sample ID should be determined here, not in the template, for consistency w analysis
@@ -282,7 +288,8 @@ def generate_saample_sheet(process_id, output_samplesheet_luid):
                 'index1': index1,
                 'index2': index2,
                 'override_cycles': override_cycles,
-                'barcode_mismatches': barcode_mismatches
+                'barcode_mismatches_1': barcode_mismatches_read[0],
+                'barcode_mismatches_2': barcode_mismatches_read[1]
             })
 
             analysis_string = sample.udf.get('NovaSeqX Secondary Analysis')

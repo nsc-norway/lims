@@ -20,7 +20,7 @@ FastqCompressionFormat,{{ process.udf['FASTQ Compression Format'] }}
 
 [BCLConvert_Data]
 Lane,Sample_ID,Index,Index2,OverrideCycles,BarcodeMismatchesIndex1,BarcodeMismatchesIndex2
-{% for row in bclconvert_rows %}{{ row.lane }},{{ row.sample_id }},{{ row.index1 }},{{ row.index2 }},{{ row.override_cycles }},{{ row.barcode_mismatches }},{{ row.barcode_mismatches }}
+{% for row in bclconvert_rows %}{{ row.lane }},{{ row.sample_id }},{{ row.index1 }},{{ row.index2 }},{{ row.override_cycles }},{{ row.barcode_mismatches_1 }},{{ row.barcode_mismatches_2 }}
 {% endfor %}
 
 {% for app, settings, data_headers, data in analyses_zipped %}
