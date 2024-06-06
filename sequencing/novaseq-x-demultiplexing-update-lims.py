@@ -338,6 +338,7 @@ def get_sample_identity_matching(process):
         sample_info['project_id'] = sample.project.id
         sample_info['project_name'] = sample.project.name
         sample_info['project_type'] = sample.project.udf.get('Project type')
+        sample_info['delivery_method'] = sample.project.udf.get('Delivery method')
 
         # The onboard analysis type and number of data reads is set above in update_lims_output_info
         onboard_analysis = o['uri'].udf.get('Onboard analysis type')
