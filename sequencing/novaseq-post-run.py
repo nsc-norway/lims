@@ -43,9 +43,13 @@ if using_xp_workflow:
 else: # Standard loading workflow
     # Assign lane artifacts in order of outputs (as we get them from LIMS),
     # and also rename the artifacts
-    for laneno, art in zip(range(1,5), outs):
-        lane_artifacts[laneno] = art
-        art.name = "Lane {}:1".format(laneno)
+    lane_id = 1
+    for i, o in process.input_output_maps:
+        if o['output-generation-type'] == 'PerInput':
+            art = o['uri']
+            lane_artifacts[lane_id] = art
+            art.name = "Lane {}:1".format(lane_id)
+            lane_id += 1
 
 run_dir = "/data/runScratch.boston/{}".format(run_id)
 if not os.path.exists(run_dir):
