@@ -45,10 +45,12 @@ questions:
   - udf:        'Sample prep requested'
     line:       'For DNA samples'
     mapping:    sample_prep_dna
+    allow_custom: true
     
   - udf:        'Sample prep requested'
     line:       'For RNA samples'
     mapping:    sample_prep_rna
+    allow_custom: true
 
   - udf:        'Sample prep requested'
     line:       'Do you need rRNA depletion (HMR)?'

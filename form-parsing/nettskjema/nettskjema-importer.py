@@ -145,11 +145,12 @@ def main(process_id, test=False):
                     value = item['out']
                     break
             else: # If not break
-                raise ValueError(
-                        "Unable to map value '{}' for question '{}'.".format(
-                                    value,
-                                    question.get('line'))
-                        )
+                if not question.get('allow_custom'):
+                    raise ValueError(
+                            "Unable to map value '{}' for question '{}'.".format(
+                                        value,
+                                        question.get('line'))
+                            )
         if 'transform' in question and value is not None:
             value = transforms[question['transform']](value)
 

@@ -47,6 +47,8 @@ other properties are optional:
     Transformations are defined in the python script.
 *   `mapping`: Name of a mapping. Replaces certain input values with
     other output values. Mappings are defined in the config file.
+*   `allow_custom`: Boolean. If a mapping is defined but the value is not
+    one of the listed "in" values, it will report the value instead of failing.
 
 The UDF will be included in the put request if and only if it has a
 value: that means if there is a match for the line, and the question is 
