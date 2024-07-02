@@ -18,7 +18,7 @@ questions:
     line:       'Reference genome and release version'
     default:    '-- Not provided --'
   
-  - udf:        'Project Goal'
+  - udf:        'Project goal'
     line:       'Project Goal'
   
   - udf:        'Project type'
