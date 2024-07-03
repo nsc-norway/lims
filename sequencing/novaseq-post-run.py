@@ -44,7 +44,7 @@ else: # Standard loading workflow
     # Assign lane artifacts in order of outputs (as we get them from LIMS),
     # and also rename the artifacts
     lane_id = 1
-    for i, o in process.input_output_maps:
+    for i, o in seq_process.input_output_maps:
         if o['output-generation-type'] == 'PerInput':
             art = o['uri']
             lane_artifacts[lane_id] = art
