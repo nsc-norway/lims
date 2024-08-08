@@ -7,9 +7,9 @@ IndexOrientation,Forward
 
 [Reads]
 Read1Cycles,{{ process.udf['Read 1 Cycles'] }}
-{% if process.udf['Read 2 Cycles'] != 0 %}
+{%- if process.udf['Read 2 Cycles'] != 0 %}
 Read2Cycles,{{ process.udf['Read 2 Cycles']  }}
-{% endif %}
+{%- endif %}
 Index1Cycles,{{ process.udf['Index 1 Cycles'] }}
 Index2Cycles,{{ process.udf['Index 2 Cycles'] }}
 
