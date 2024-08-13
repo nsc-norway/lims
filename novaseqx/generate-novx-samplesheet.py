@@ -27,9 +27,13 @@ def get_index_sequences(lims, reagent_label_list):
 
     logging.info("Retrieving index sequences from LIMS API.")
 
-    # First retrieve all reagent labels
-    reagent_types = lims.get_reagent_types(name=[name for name in reagent_label_list if name])
-    # This will fetch all reagent types from API
+    # First retrieve all reagent labels, using batches to avoid URL size limit
+    reagent_types = []
+    BATCH_SIZE = 100
+    for batch_start in range(0, len(reagent_label_list), BATCH_SIZE):
+        reagent_types += lims.get_reagent_types(name=[name for name in reagent_label_list[batch_start:(batch_start+BATCH_SIZE)] if name])
+
+    # This will fetch all reagent types from API one by one, by querying for the "name" property
     reagent_type_map = {rt.name: rt for rt in reagent_types}
 
     result_index_list = []
