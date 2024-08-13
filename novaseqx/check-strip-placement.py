@@ -19,6 +19,7 @@ if outputs[0].location[0].id == outputs[0].location[0].name:
     sys.exit(1)
 
 # Fix output container name strip tube barcode, change "+" to "-" (BC reader keyboard layout)
-outputs[0].location[0].name = outputs[0].location[0].name.replace("+", "-")
+# And uppercase
+outputs[0].location[0].name = outputs[0].location[0].name.replace("+", "-").upper()
 outputs[0].location[0].put()
 
