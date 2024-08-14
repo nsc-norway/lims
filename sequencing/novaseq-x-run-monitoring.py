@@ -446,8 +446,12 @@ def main():
                 set_final_fields(process, run_dir, run_id)
                 process.put()
 
-                # Complete the sequencing step when the run is finsihed
-                complete_step(step)
+                # Complete the sequencing step when the run is finsihed if there's no NSC lanes
+                # (leave open if any NSC)
+                if not any(project.udf.get('Project type') in ['Sensitive', 'Non-Sensitive']
+                        for project
+                        ):
+                    complete_step(step)
 
                 # Set the UDF on the container, for use by the overview page
                 # Under normal operation, there should only be one library tube strip container.
