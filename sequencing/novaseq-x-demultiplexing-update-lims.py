@@ -538,8 +538,7 @@ def find_and_process_runs():
             logging.info(f"Processing analysis {analysis_id}")
 
             limsfile_path = os.path.join(analysis_dir, "ClarityLIMSImport_NSC.yaml")
-            limsfile2_path = os.path.join(analysis_dir, "ClarityLIMSImport_NSC.json")
-            if os.path.exists(limsfile_path) or os.path.exists(limsfile2_path):
+            if os.path.exists(limsfile_path):
                 logging.info(f"Skipping analysis {analysis_id} because ClarityLIMSImport_NSC.yaml exists.")
                 continue
             if not os.path.exists(os.path.join(analysis_dir, "CopyComplete.txt")):
