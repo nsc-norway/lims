@@ -185,7 +185,7 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
         # The Sample_ID may be used on multiple lanes, so the following info is not unique
         if len(sample_demux_stats) > 0:
             output_artifact.udf['SampleSheet Sample_ID'] = sample_demux_stats['SampleID'].iloc[0]
-            if output_artifact.samples[0].project.udf.get('Project type') == "Diagnostics": 
+            if len(output_artifact.samples) > 0 and output_artifact.samples[0].project.udf.get('Project type') == "Diagnostics": 
                 output_artifact.udf['Dataset UUID'] = output_artifact.udf['SampleSheet Sample_ID'].split("_")[-1]
         else:
             # Unable to find the true Sample_ID information, we have to fall back on the pattern.
