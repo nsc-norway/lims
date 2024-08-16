@@ -328,10 +328,10 @@ def get_sample_identity_matching(process):
         elif o['output-generation-type'] == 'PerReagentLabel':
             sample_info['output_artifact_id'] = o['limsid']
             output_reagent_label = next(iter(o['uri'].reagent_labels))
-            for sample, demux_artifact, _ in demux:
+            for i_sample, demux_artifact, _ in demux:
                 if demux_artifact.reagent_labels == o['uri'].reagent_labels:
                     assert len(demux_artifact.samples) == 1, f"In output {o['uri'].id}: Expect demux artifact to have exactly one sample"
-                    sample = demux_artifact.samples[0]
+                    sample = i_sample
                     break
             else: # Throw if the loop doesn't break
                 raise RuntimeError(f"Unable to determine the sample object for output artifact {o['uri'].id}.")
