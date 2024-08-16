@@ -337,6 +337,8 @@ def get_sample_identity_matching(process):
                     if demux_artifact.reagent_labels == o['uri'].reagent_labels:
                         assert len(demux_artifact.samples) == 1, "Expect demux artifact to have exactly one sample"
                         sample = demux_artifact.samples[0]
+                        o['uri'].name = sample.name + " (name corrected by script)"
+                        o['uri'].put()
                         break
                 else:
                     raise RuntimeError(f"Output artifact {o['uri'].id} has {len(o['uri'].samples)} samples, and an attempt to find the "
