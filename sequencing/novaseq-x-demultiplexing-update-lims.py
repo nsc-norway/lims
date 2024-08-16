@@ -328,21 +328,17 @@ def get_sample_identity_matching(process):
         elif o['output-generation-type'] == 'PerReagentLabel':
             sample_info['output_artifact_id'] = o['limsid']
             output_reagent_label = next(iter(o['uri'].reagent_labels))
-            if len(o['uri'].samples) == 1:
-                sample = o['uri'].samples[0]
-            else:
-                logging.warn(f"Found {len(o['uri'].samples)} samples on output artifact {o['uri'].id} due to LIMS demultiplexing step bug.")
-                logging.info(f"Looking up the sample in a more reliable way.")
-                for sample, demux_artifact, _ in demux:
-                    if demux_artifact.reagent_labels == o['uri'].reagent_labels:
-                        assert len(demux_artifact.samples) == 1, "Expect demux artifact to have exactly one sample"
-                        sample = demux_artifact.samples[0]
-                        o['uri'].name = sample.name + " (name corrected by script)"
-                        o['uri'].put()
-                        break
-                else:
-                    raise RuntimeError(f"Output artifact {o['uri'].id} has {len(o['uri'].samples)} samples, and an attempt to find the "
-                            "correct sample using the demux endpoint failed. Unable to produce a sensible yaml file.")
+            for sample, demux_artifact, _ in demux:
+                if demux_artifact.reagent_labels == o['uri'].reagent_labels:
+                    assert len(demux_artifact.samples) == 1, f"In output {o['uri'].id}: Expect demux artifact to have exactly one sample"
+                    sample = demux_artifact.samples[0]
+                    break
+            else: # Throw if the loop doesn't break
+                raise RuntimeError(f"Unable to determine the sample object for output artifact {o['uri'].id}.")
+            if o['uri'].samples != [sample]:
+                logging.warn(f"Found wrong samples {o['uri'].samples} on output artifact {o['uri'].id} due to LIMS demultiplexing step bug.")
+                o['uri'].name = sample.name + " (name corrected by script)"
+                o['uri'].put()
         else: # This is some other output like a log file etc., skip it
             continue
 
