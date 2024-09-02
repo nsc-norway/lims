@@ -293,7 +293,7 @@ def get_input_artifacts(rp_tree):
             if consumable_info.find("Type").text == "SampleTube":
                 lts_id = consumable_info.find("SerialNumber").text
                 logging.info(f"Found ID {lts_id}.")
-                containers = lims.get_containers(name=lts_id)
+                containers = lims.get_containers(name=lts_id, type=["Library 2-tube Strip NSC", "Library 8-tube Strip"])
                 if len(containers) == 1:
                     logging.info(f"Found container {containers[0]}.")
                     return list(containers[0].placements.values())
