@@ -1,0 +1,1 @@
+../../novaseqx/retrieve-novx-settings.py

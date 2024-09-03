@@ -1,1 +1,36 @@
-../../novaseqx/samplesheet-template.csv.j2
+[Header],
+FileFormatVersion,2
+RunName,{{ process.udf.get('Run Name', '') }}
+InstrumentPlatform,NovaSeqXSeries
+InstrumentType,NovaSeqXPlus
+IndexOrientation,Forward
+
+[Reads]
+Read1Cycles,{{ process.udf['Read 1 Cycles'] }}
+{%- if process.udf['Read 2 Cycles'] != 0 %}
+Read2Cycles,{{ process.udf['Read 2 Cycles']  }}
+{%- endif %}
+Index1Cycles,{{ process.udf['Index 1 Cycles'] }}
+Index2Cycles,{{ process.udf['Index 2 Cycles'] }}
+
+[Sequencing_Settings]
+InputContainerIdentifier,{{ library_tube_strip_id }}
+
+[BCLConvert_Settings]
+SoftwareVersion,{{ process.udf['DRAGEN BCLConvert SoftwareVersion'] }}
+FastqCompressionFormat,{{ process.udf['FASTQ Compression Format'] }}
+
+[BCLConvert_Data]
+Lane,Sample_ID,Index,Index2,OverrideCycles,BarcodeMismatchesIndex1,BarcodeMismatchesIndex2
+{% for row in bclconvert_rows %}{{ row.lane }},{{ row.sample_id }},{{ row.index1 }},{{ row.index2 }},{{ row.override_cycles }},{{ row.barcode_mismatches_1 }},{{ row.barcode_mismatches_2 }}
+{% endfor %}
+
+{% for app, settings, data_headers, data in analyses_zipped %}
+[{{ app }}_Settings]{% for key, value in settings %}
+{{ key }},{{ value }}{% endfor %}
+
+[{{ app }}_Data]
+{{ ",".join(data_headers) }}
+{% for row in data %}{{ ",".join(row) }}
+{% endfor %}
+{% endfor %}

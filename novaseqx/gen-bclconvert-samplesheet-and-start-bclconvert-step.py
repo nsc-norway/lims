@@ -15,8 +15,8 @@ from genologics.lims import *
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-DEMULTIPLEXING_PROCESS_TYPE = "BCL Convert Demultiplexing 0.10"
-DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 0.10"
+DEMULTIPLEXING_PROCESS_TYPE = "BCL Convert Demultiplexing 1.0"
+DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 1.0w"
 SEQUENCING_PROCESS_TYPE = "AUTOMATED - Sequencing Run NovaSeqX AMG 1.0"
 LOAD_LIBRARY_TUBE_PROCESS_TYPE = "Load to Library Tube Strip NovaSeqX AMG"
 
@@ -215,55 +215,87 @@ def parse_settings(settings_string):
     return app_name, tuple(kv_list)
 
 
-def get_sample_id(sample_ids_map, sample, artifact):
-    """Get the string that is used as Sample_ID in the sample sheet.
-
-    It takes a cache of sample IDs as an argument, and updates it, so that the UUID-based IDs are not regenerated for
-    each lane."""
+def get_sample_id(datasetuuid, sample, artifact):
+    """Get the string that is used as Sample_ID in the sample sheet. """
 
     if sample.project.udf.get("Project type") == "Diagnostics":
-        if (sample.id, artifact.id) in sample_ids_map:
-            return sample_ids_map[(sample.id, artifact.id)]
         split = sample.project.name.split("-")
         if len(split) >= 2:
             batch_id = split[1]
         else:
             batch_id = sample.project.name
         dna_id = sample.name.split("-")[0]
-        uuidstring = str(uuid.uuid4())
-        sample_id = "_".join([batch_id, dna_id, uuidstring])
-        sample_ids_map[(sample.id, artifact.id)] = sample_id
+        sample_id = "_".join([batch_id, dna_id, datasetuuid])
         return sample_id
     else:
         return sample.name + "_" + artifact.id
 
 
 def generate_sample_sheet_start_bclconvert(
-    sample_sheet_process, output_samplesheet_luid
+    is_redemultiplexing, sample_sheet_process, output_samplesheet_luid
 ):
     warning_flag = False
-    sample_sheet_sample = dict()
+    # Store SampleID and UUID for setting on the BCL convert step
+    # Key: (TBC)
+    # Value: (datasetuuid, sample_id)
+    sample_uuid_sampleid = dict()
     logging.info(
         f"Generating NovaSeq X SampleSheet file for process {sample_sheet_process.id} and will upload to artifact ID {output_samplesheet_luid}"
     )
 
-    # Get the output Analyte artifact, corresponding to lanes of the flow cell
-    input_lanes = sample_sheet_process.all_inputs()
+    if is_redemultiplexing:
+        # Re-demultiplex NovaSeq X run process
+        # Get the input Analyte artifact, corresponding to lanes of the flow cell
+        lane_artifacts = sample_sheet_process.all_inputs()
 
-    assert all(
-        la.parent_process
-        and la.parent_process.type_name.startswith(LOAD_LIBRARY_TUBE_PROCESS_TYPE)
-        for la in input_lanes
-    ), f"Can only re-demultiplex the DERIVED SAMPLES of {LOAD_LIBRARY_TUBE_PROCESS_TYPE} step"
+        assert all(
+            la.parent_process
+            and la.parent_process.type_name.startswith(LOAD_LIBRARY_TUBE_PROCESS_TYPE)
+            for la in lane_artifacts
+        ), f"Can only re-demultiplex the DERIVED SAMPLES of {LOAD_LIBRARY_TUBE_PROCESS_TYPE} step"
 
-    load_tube_process = input_lanes[0].parent_process
+        load_tube_process = lane_artifacts[0].parent_process
+    else:
+        # Load to Library Tube Strip process
+        # Get the output Analyte artifact, corresponding to lanes of the flow cell
+        output_artifacts = process.all_outputs(unique=True, resolve=True)
+        lane_artifacts = [o for o in output_artifacts if o.type == 'Analyte']
+        # There is just one process, Load to Library Tube Strip, for the first demultiplexing
+        load_tube_process = sample_sheet_process
+
+    logging.info(
+        f"Load tube process is {load_tube_process.id}, sample sheet process is {sample_sheet_process.id}."
+    )
 
     # Get and pre-cache all the samples, to determine analysis types etc.
-    samples = lims.get_batch([s for a in input_lanes for s in a.samples])
+    samples = lims.get_batch([s for a in lane_artifacts for s in a.samples])
+
+    # Set the Run name to a fixed pattern
+    if not is_redemultiplexing and load_tube_process.udf["Run Name"] == "(Set automatically)":
+        # Get the first component of the project names: Diag, or the last name of NSC users
+        project_names = set(
+                sample.project.name.split("-")[0]
+                for sample in samples
+                )
+        project_string = ""
+        if "Diag" in project_names:
+            project_string = "Diag-"
+            project_names.remove("Diag")
+        project_string += "-".join(sorted(project_names))
+        # Get the date
+        date_string = datetime.datetime.now().strftime("%Y-%m-%d")
+        # Flow cell side - only available on Load to Library Tube step
+        fc_side = load_tube_process.udf['Planned Flow Cell Side']
+        load_tube_process.udf['Run Name'] = "_".join([date_string, fc_side, project_string])
+        logging.info(
+            f"Defining Run Name: {load_tube_process.udf['Run Name']}"
+        )
+        # The process will be PUT at the end of the script to update the field in LIMS.
+        # If we fail before then, the run name is not updated.
 
     # Check flow cell type compatibility
     flowcell_type = load_tube_process.udf["Flow Cell Type"]
-    container = next(iter(input_lanes)).location[
+    container = next(iter(lane_artifacts)).location[
         0
     ]  # Placement script assures that there is just one container
     container_size = container.type.y_dimension["size"]
@@ -294,12 +326,13 @@ def generate_sample_sheet_start_bclconvert(
     # (app, settings) is a parsed tuple structure from the UDF NovaSeqX Secondary Analysis string
     analysis_settings = []
 
-    # Store sample IDs keyed by (sample.id, artifact.id) so the same Sample_ID string can be used across
-    # all lanes. This is important for non-deterministic IDs used by Diagnostics.
-    sample_ids_map = {}
+    # Store sample UUID keyed by (sample.id, artifact.id) so the same UUID is used for the same
+    # sample when it's run on multiple lanes. The "artifact" is the uniquely demultiplexed
+    # ancestor artifact returned by the demux endpoint, reprensenting a single unique reagent_label.
+    sample_uuids_map = {}
 
     for lane_artifact in sorted(
-        input_lanes, key=lambda artifact: artifact.location[1][0]
+        lane_artifacts, key=lambda artifact: artifact.location[1][0]
     ):
         # Get lane from well position e.g. B:1 is lane 2.
         lane_id = int(lane_artifact.location[1].split(":")[0])
@@ -348,10 +381,17 @@ def generate_sample_sheet_start_bclconvert(
 
         # Loop over the unique samples (indexes) in this lane
         for (sample, artifact, _), (index1, index2) in zip(demux_list, index_pairs):
-            sample_id = get_sample_id(sample_ids_map, sample, artifact)
+            # Get / Create UUID and Sample ID
+            if (sample.id, artifact.id) in sample_uuids_map:
+                datasetuuid = sample_uuids_map[(sample.id, artifact.id)]
+            else:
+                datasetuuid = str(uuid.uuid4())
+                sample_uuids_map[(sample.id, artifact.id)] = datasetuuid
+            sample_id = get_sample_id(datasetuuid, sample, artifact)
             logging.info(
                 f"Adding sample {sample.name} / artifact ID {artifact.id}. Sample_ID in SampleSheet: {sample_id}."
             )
+            # Configure index reads
             override_cycles = get_override_cycles(
                 sample_sheet_process.udf["Read 1 Cycles"],
                 sample_sheet_process.udf["Read 2 Cycles"],
@@ -379,9 +419,10 @@ def generate_sample_sheet_start_bclconvert(
                     "barcode_mismatches_2": barcode_mismatches_read[1],
                 }
             )
-            sample_sheet_sample[sample] = sample_id
+            sample_uuid_sampleid[tuple(artifact.reagent_labels)] = (datasetuuid, sample_id)
 
-            bclconvert_only = sample_sheet_process.udf["Demultiplexing Only"]
+            # This option is only avaiable for Re-demultiplexing. For the initial sample sheet, this is defaulted to False.
+            bclconvert_only = sample_sheet_process.udf.get("Demultiplexing Only")
 
             if not bclconvert_only:
                 analysis_string = sample.udf.get("NovaSeqX Secondary Analysis")
@@ -498,7 +539,7 @@ def generate_sample_sheet_start_bclconvert(
         .render(variables)
     )
 
-    # The file name is set as <date>_<run-name>_<strip-id>
+    # The file name is set as <run-name>_<strip-id>
     # (strip ID is sanitised above, by crashing if it contains invalid characters)
     safe_run_name = "".join(
         [
@@ -507,9 +548,8 @@ def generate_sample_sheet_start_bclconvert(
             if (c.isalnum() or c in "-_.,")
         ]
     )
-    date_string = datetime.datetime.now().strftime("%Y%m%d")
     output_file_name = (
-        "_".join([date_string, safe_run_name, library_tube_strip_id]) + ".csv"
+        "_".join([safe_run_name, library_tube_strip_id]) + ".csv"
     )
 
     # Upload to LIMS
@@ -524,10 +564,15 @@ def generate_sample_sheet_start_bclconvert(
         lims, output_samplesheet_artifact, output_file_name, samplesheet_data
     )
 
+    # PUT the process to save the run name
+    if not is_redemultiplexing:
+        load_tube_process.put()
+
     # Write to shared storage sample sheet folder
     instrument_dir = "".join(
         [c for c in sample_sheet_process.udf["NovaSeq X Instrument"] if c.isalpha()]
     ).lower()
+    assert len(instrument_dir) > 0
     write_samplesheet_path = (
         f"/boston/runScratch/NovaSeqX/SampleSheets/{instrument_dir}/{output_file_name}"
     )
@@ -535,45 +580,46 @@ def generate_sample_sheet_start_bclconvert(
         output_file.write(samplesheet_data)
 
     try:
-        start_bclconvert_process(sample_sheet_process, sample_sheet_sample)
+        start_bclconvert_process(sample_sheet_process, lane_artifacts, sample_uuid_sampleid)
     except Exception:
         warning_flag = True
+        logging.exception("Exception when creating BCL Convert process:")
 
     return warning_flag
 
 
-def start_bclconvert_process(sample_sheet_process, samplesheet_sample_ids):
+def start_bclconvert_process(sample_sheet_process, bclconvert_inputs, samplesheet_sample_ids):
     """
     Queue artifacts and create a process.
     """
 
-    bclconvert_inputs = sample_sheet_process.all_inputs()
-
-    existing_bclconvert_steps = lims.get_processes(
-        inputartifactlimsid=[a.id for a in bclconvert_inputs],
-        type=DEMULTIPLEXING_PROCESS_TYPE,
-        udf={"Status": "PENDING"},
-    )
-
-    if existing_bclconvert_steps:
-        logging.warning(
-            "PENDING %s processes found: %s",
-            DEMULTIPLEXING_PROCESS_TYPE,
-            existing_bclconvert_steps,
+    bclconvert_id = sample_sheet_process.udf.get("BCL Convert LIMS-ID")
+    bclconvert_process = None
+    if bclconvert_id:
+        bclconvert_process = Process(lims, id=bclconvert_id)
+        logging.info(
+            f"Recycling existing process of type '{DEMULTIPLEXING_PROCESS_TYPE}' with ID '{bclconvert_process.id}'."
         )
-
-    stepconf, workflow = get_stepconf_and_workflow(
-        DEMULTIPLEXING_WORKFLOW_NAME, DEMULTIPLEXING_PROCESS_TYPE
-    )
-
-    logging.info(
-        f"Queue the artifacts for {DEMULTIPLEXING_WORKFLOW_NAME} and start a step."
-    )
-    lims.route_analytes(bclconvert_inputs, workflow)
-    time.sleep(1)  # artifact not in queue error sometimes
-    bclconvert_step = lims.create_step(stepconf, bclconvert_inputs)
-    bclconvert_process = Process(lims, id=bclconvert_step.id)
-    logging.info("Started process %s", bclconvert_process)
+        try:
+            bclconvert_process.get()
+        except:
+            logging.warn(f"Unable to fetch Process '{bclconvert_process.id}', will create a new one instead.")
+            bclconvert_process = None
+    if bclconvert_process is None:
+        stepconf, workflow = get_stepconf_and_workflow(
+            DEMULTIPLEXING_WORKFLOW_NAME, DEMULTIPLEXING_PROCESS_TYPE
+        )
+        logging.info(
+            f"Queue the artifacts for {DEMULTIPLEXING_WORKFLOW_NAME} and start a step."
+        )
+        lims.route_analytes(bclconvert_inputs, workflow)
+        time.sleep(1)  # artifact not in queue error sometimes
+        bclconvert_step = lims.create_step(stepconf, bclconvert_inputs)
+        bclconvert_process = Process(lims, id=bclconvert_step.id)
+        sample_sheet_process.udf["BCL Convert LIMS-ID"] = bclconvert_step.id
+        sample_sheet_process.udf["BCL Convert LIMS-ID"] = bclconvert_step.id
+        sample_sheet_process.put()
+        logging.info("Started process %s", bclconvert_process)
 
     # update bclconvert process UDFs
     bclconvert_process.udf["Compute platform"] = sample_sheet_process.udf[
@@ -582,6 +628,8 @@ def start_bclconvert_process(sample_sheet_process, samplesheet_sample_ids):
     bclconvert_process.udf["BCL Convert Version"] = sample_sheet_process.udf[
         "Onboard DRAGEN BCL Convert Version"
     ]
+    # Enable for Overview page
+    bclconvert_process.udf["Monitor"] = True
 
     # Run ID from the sequencing step
     sequencing_steps = lims.get_processes(
@@ -603,35 +651,43 @@ def start_bclconvert_process(sample_sheet_process, samplesheet_sample_ids):
 
     # store samplesheet sample id
     for o in bclconvert_process.all_outputs():
+        _dataset_uuid, _sample_id = samplesheet_sample_ids[tuple(o.reagent_labels)]
         logging.info(
-            "Update 'SampleSheet Sample_ID' UDF for %s to '%s'",
+            "Update 'SampleSheet Sample_ID' and 'Dataset UUID' UDFs for %s to '%s' and '%s'",
             o,
-            samplesheet_sample_ids[o.samples[0]],
+            _sample_id,
+            _dataset_uuid
         )
-        _sample_sheet_uuid = samplesheet_sample_ids[o.samples[0]]
-        _dataset_uuid = _sample_sheet_uuid.split("_")[-1]
-        o.udf["SampleSheet Sample_ID"] = _sample_sheet_uuid
+        o.udf["SampleSheet Sample_ID"] = _sample_id
         o.udf["Dataset UUID"] = _dataset_uuid
-        o.put()
+    lims.put_batch(bclconvert_process.all_outputs())
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 4:
         print(
-            f"Usage: {sys.argv[0]} PROCESS_ID SAMPLESHEET_ARTIFACT_LUID LOG_FILE_NAME"
+            f"Usage: {sys.argv[0]} MODE PROCESS_ID SAMPLESHEET_ARTIFACT_LUID LOG_FILE_NAME"
         )
         sys.exit(1)
 
-    process_id = sys.argv[1]
-    output_samplesheet_luid = sys.argv[2]
+    mode = sys.argv[1]
+    if mode not in ["redemultiplexing", "loadtubestrip"]:
+        print(
+            f"The mode should be one of: [redemultiplexing, loadtubestrip], not '{mode}'."
+        )
+        sys.exit(1)
+    is_redemultiplexing = mode == "redemultiplexing"
+
+    process_id = sys.argv[2]
+    output_samplesheet_luid = sys.argv[3]
 
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    logging.basicConfig(level=log_level, filename=sys.argv[3])
+    logging.basicConfig(level=log_level, filename=sys.argv[4])
 
     process = Process(lims, id=process_id)
     try:
         warning_flag = generate_sample_sheet_start_bclconvert(
-            process, output_samplesheet_luid
+            is_redemultiplexing, process, output_samplesheet_luid
         )
     except Exception as e:
         logging.exception("Exception caught:")
@@ -652,3 +708,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
     logging.info("Script completed successfully.")
+
