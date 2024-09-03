@@ -19,11 +19,13 @@ from lib import demultiplexing
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-DEMULTIPLEXING_PROCESS_TYPE = "BCL Convert Demultiplexing 0.9"
-DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 0.9"
+DEMULTIPLEXING_PROCESS_TYPE = "BCL Convert Demultiplexing 1.0"
+DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 1.0"
 
 RUN_STORAGES = ["/data/runScratch.boston/NovaSeqX"]
 RUN_FOLDER_MATCH = r"\d{8}_LH[0-9\-_]+"
+
+IMPORT_FILE_NAME = "ClarityLIMSImport_NSC.yaml"
 
 # Use this to cache demultiplexings of lanes. They are used in two functions.
 demux_cache = {}
@@ -74,23 +76,6 @@ def get_output_lanes(demultiplex_stats):
     return list(nonzero_lanes.index)
 
 
-def get_samplesheet_sampleid_pattern(sample, artifact):
-    """Return the string to match the Sample_ID in the sample sheet. This needs to mirror the selected string in the
-    sample sheet generator. A part of the Sample_ID may be random, so this is implemented as a regex."""
-
-    if sample.project.udf.get('Project type') == "Diagnostics":
-        split = sample.project.name.split("-")
-        if len(split) >= 2:
-            batch_id = split[1]
-        else:
-            batch_id = sample.project.name
-        dna_id = sample.name.split("-")[0]
-        sample_id = f"^{re.escape(batch_id)}_{re.escape(dna_id)}_[a-f0-9-]+$"
-        return sample_id
-    else:
-        return sample.name + "_" + artifact.id
-
-
 def update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary, num_read_phases):
     lane_total_read_counts = {
         lane: demultiplex_stats[demultiplex_stats['Lane'] == lane]['# Reads'].sum().item()
@@ -105,7 +90,7 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
 
         if o is None:
             logging.info(f"Input {lane_artifact.id} has a mapping with no output. This sample probably "
-                    "does not have an index. Due to a bug there is nowhere to PUT the demux stats..")
+                    "does not have an index. Due to a bug there is nowhere to PUT the demux stats.")
             continue
 
         # Only process demultiplexed artifacts
@@ -120,21 +105,24 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
         
         # Locate the demultiplexed artifact with the same reagent label as the output
         # of this step
+        samplesheet_sampleid = None
         for sample, demux_artifact, _ in demux:
             if demux_artifact.reagent_labels == output_artifact.reagent_labels:
-                samplesheet_sampleid = get_samplesheet_sampleid_pattern(sample, demux_artifact)
-                logging.info(f"Looking up artifact {demux_artifact.id} in metrics files by SampleSheet Sample_ID '{samplesheet_sampleid}'.")
-                break
+                if "SampleSheet Sample_ID" in demux_artifact.udf:
+                    samplesheet_sampleid = demux_artifact.udf["SampleSheet Sample_ID"]
+                    logging.info(f"Looking up artifact {demux_artifact.id} in metrics files by SampleSheet Sample_ID '{samplesheet_sampleid}'.")
+                    break
+                else:
+                    raise RuntimeError(f"Found a demux artifact {demux_artifact.id} for sample {sample.name}, but it didn't have "
+                                     "SampleSheet Sample_ID UDF. This will break things downstream, aborting.")
         else:
-            # Unable to find the demultiplexed artifact. We set the sample ID to a regex that will
-            # never match anything.
-            samplesheet_sampleid = "^\b$"
-            logging.warn(f"No corresponding demux artifact found for output artifact {output_artifact.id}.")
+            logging.warn(f"No corresponding demux artifact found for output artifact {output_artifact.id}, skipping.")
+            continue
 
         # Update the output artifact with the demultiplexing stats
         sample_demux_stats = demultiplex_stats[
                                         (demultiplex_stats['Lane'] == lane_id) & 
-                                        (demultiplex_stats['SampleID'].str.match(samplesheet_sampleid))
+                                        (demultiplex_stats['SampleID'] == samplesheet_sampleid)
                                         ]
         # In rare cases there may be more than one demultiplexed artifact with the same
         # sample ID. We aggregate the stats for all of them.
@@ -145,7 +133,7 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
         if quality_metrics is not None:
             sample_quality_metrics = quality_metrics[
                                             (quality_metrics['Lane'] == lane_id) & 
-                                            (quality_metrics['SampleID'].str.match(samplesheet_sampleid))
+                                            (quality_metrics['SampleID'] == samplesheet_sampleid)
                                             ]
         read_count = sample_demux_stats['# Reads'].sum().item()
 
@@ -182,19 +170,8 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
         if quality_metrics is not None:
             output_artifact.udf['Number of data read passes'] = sample_quality_metrics['ReadNumber'].nunique()
 
-        # The Sample_ID may be used on multiple lanes, so the following info is not unique
-        if len(sample_demux_stats) > 0:
-            output_artifact.udf['SampleSheet Sample_ID'] = sample_demux_stats['SampleID'].iloc[0]
-            if len(output_artifact.samples) > 0 and output_artifact.samples[0].project.udf.get('Project type') == "Diagnostics": 
-                output_artifact.udf['Dataset UUID'] = output_artifact.udf['SampleSheet Sample_ID'].split("_")[-1]
-        else:
-            # Unable to find the true Sample_ID information, we have to fall back on the pattern.
-            output_artifact.udf['SampleSheet Sample_ID'] = samplesheet_sampleid
-
         if detailed_summary is not None:
-            # Based on the previous block we may have been able to find the true sample ID. Then we
-            # would be able to get the workflow info.
-            sample_id = output_artifact.udf['SampleSheet Sample_ID']
+            # Get workflow info for this sample
             # Save the pipeline type and compression type used for this sample
             workflow_all_samples = [
                             (workflow, sample)
@@ -204,7 +181,7 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
             workflow_info = [
                             (i, workflow['workflow_name'], sample['ora_compression'])
                             for i, (workflow, sample) in enumerate(workflow_all_samples)
-                            if sample['sample_id'] == sample_id
+                            if sample['sample_id'] == samplesheet_sampleid
                             ]
             if len(workflow_info) == 1:
                 logging.info(f"Workflow info found for {sample_id}: {workflow_info}.")
@@ -298,7 +275,7 @@ def get_input_artifacts(rp_tree):
                     logging.info(f"Found container {containers[0]}.")
                     return list(containers[0].placements.values())
                 else:
-                    raise RuntimeError(f"Incorrect number of containers named '{lts_id}': {len(containers)}.")
+                    raise RuntimeError(f"Incorrect number of containers named '{lts_id}': {len(containers)}")
         except AttributeError: # Ignore missing things in the XML payload
             pass
     return None
@@ -365,8 +342,7 @@ def get_sample_identity_matching(process):
             if dem_reagent_label == output_reagent_label:
                 sample_info['artifact_id'] = demux_artifact.id
                 sample_info['artifact_name'] = demux_artifact.name
-                sample_info['samplesheet_sample_id'] = o['uri'].udf.get('SampleSheet Sample_ID',
-                                                                get_samplesheet_sampleid_pattern(sample, demux_artifact))
+                sample_info['samplesheet_sample_id'] = o['uri'].udf['SampleSheet Sample_ID']
                 break
         sample_list.append(sample_info)
 
@@ -424,44 +400,33 @@ def process_analysis(run_dir, analysis_dir):
     analysis_lanes = set(demultiplex_stats['Lane'])
     logging.info(f"Analysis '{analysis_id}' includes lanes: {','.join(str(l) for l in sorted(analysis_lanes))}.")
 
+    # Find artifacts for this analysis
     process = None
-    # If the analysis ID is 1, there may be an existing step created by the run monitoring script
-    if analysis_id == '1':
-        logging.info("Analysis ID is '1', looking for open processes created by run monitoring.")
-        processes = lims.get_processes(inputartifactlimsid=run_artifact_limsids,
-                                    type=DEMULTIPLEXING_PROCESS_TYPE,
-                                    udf={'Status':'ACTIVE','Analysis ID': '1'})
-        if len(processes) == 1:
-            process = processes[0]
-            step = Step(lims, id=process.id)
-            # We don't verify the input lane set for this process. Onboard analysis will use all lanes.
-            logging.info(f"Found process {process.id}, will update it.")
-        elif len(processes) == 0:
-            logging.info(f"No processes match the search criteria, so we will create one instead.")
-        else:
-            logging.error(f"Unexpectedly found {len(processes)} demux processes for analysis 1, will skip this analysis.")
-            return
+    analysis_artifacts = []
+    for a in run_artifacts:
+        if well_id_to_lane(a.location[1]) in analysis_lanes:
+            analysis_artifacts.append(a)
+    if analysis_artifacts:
+        logging.info(f"Found artifacts for this analysis: {analysis_artifacts}.")
+    else:
+        logging.error("None of the Run artifacts have locations matching the lane IDs. Skipping this analysis.")
+        return
 
-    if not process: # Always the case now- we have to start a process
-        # Queue artifacts and create a process. The artifacts cannot be queued if they are already in a
-        # demux process, then this will fail. In normal operation, the processes of other analyses should
-        # have been closed.
-        qbl_artifacts = []
-        for a in run_artifacts:
-            if well_id_to_lane(a.location[1]) in analysis_lanes:
-                qbl_artifacts.append(a)
-        if qbl_artifacts:
-            logging.info(f"Will create a step with artifacts: {qbl_artifacts}.")
+    # There should always be an existing step created by the sample sheet generator
+    processes = [p for p in lims.get_processes(inputartifactlimsid=analysis_artifacts, type=DEMULTIPLEXING_PROCESS_TYPE)
+                    if p.udf.get("Status") == "PENDING"]
+    logging.info(f"PENDING processes matching the input artifacts: {processes}.")
+    for test_process in processses:
+        if set(test_process.all_inputs()) == set(analysis_artifacts):
+            logging.info(f"Using process {test_process.id}, which has an exact overlap with the analysis artifacts.")
+            process = test_process
+            step = Step(lims, id=process.id)
         else:
-            logging.error("None of the artifacts had locations matching the lane IDs. Skipping this analysis.")
-            return
-            
-        stepconf, workflow = get_stepconf_and_workflow(DEMULTIPLEXING_WORKFLOW_NAME, DEMULTIPLEXING_PROCESS_TYPE)
-        logging.info(f"Will queue the artifacts for {DEMULTIPLEXING_WORKFLOW_NAME} and start a step.")
-        lims.route_analytes(qbl_artifacts, workflow)
-        step = lims.create_step(stepconf, qbl_artifacts)
-        process = Process(lims, id=step.id)
-        logging.info(f"Started process {process.id}.")
+            logging.warning(f"Skipping {test_process.id} input artifacts {test_process.all_inputs()} because of mismatch with analysis lanes")
+
+    if not process: # No existing process
+        raise RuntimeError(f"Didn't find any BCL Convert process for Analysis {analysis_id} in run {run_id}")
+
 
     # Import demultiplexing quality metrics. They will be in the App configured for the specific sample.
     # The *fastq component is designed to also match "ora_fastq".
@@ -513,7 +478,7 @@ def process_analysis(run_dir, analysis_dir):
     sample_id_list = get_sample_identity_matching(process)
 
     complete_step(step)
-    limsfile_path = os.path.join(analysis_dir, "ClarityLIMSImport_NSC.yaml")
+    limsfile_path = os.path.join(analysis_dir, IMPORT_FILE_NAME)
     with open(limsfile_path, "w") as ofile:
         yaml.dump({
             'status': 'ImportCompleted',
@@ -546,16 +511,16 @@ def find_and_process_runs():
             analysis_id = os.path.basename(analysis_dir)
             logging.info(f"Processing analysis {analysis_id}")
 
-            limsfile_path = os.path.join(analysis_dir, "ClarityLIMSImport_NSC.yaml")
+            limsfile_path = os.path.join(analysis_dir, IMPORT_FILE_NAME)
             if os.path.exists(limsfile_path):
-                logging.info(f"Skipping analysis {analysis_id} because ClarityLIMSImport_NSC.yaml exists.")
+                logging.info(f"Skipping analysis {analysis_id} because {IMPORT_FILE_NAME} exists.")
                 continue
             if not os.path.exists(os.path.join(analysis_dir, "CopyComplete.txt")):
                 logging.info(f"Analysis {analysis_id} does not have CopyComplete.txt. Skipping.")
                 continue
 
             # We will process this analysis or die trying, so we mark it as processed.
-            logging.info(f"Analysis {analysis_id} is ready for LIMS import. Creating ClarityLIMSImport_NSC.yaml.")
+            logging.info(f"Analysis {analysis_id} is ready for LIMS import. Creating {IMPORT_FILE_NAME}.")
             with open(limsfile_path, "w") as ofile:
                 ofile.write("{'status': 'ImportStarted'}")
 
