@@ -416,7 +416,7 @@ def process_analysis(run_dir, analysis_dir):
     processes = [p for p in lims.get_processes(inputartifactlimsid=analysis_artifacts, type=DEMULTIPLEXING_PROCESS_TYPE)
                     if p.udf.get("Status") == "PENDING"]
     logging.info(f"PENDING processes matching the input artifacts: {processes}.")
-    for test_process in processses:
+    for test_process in processes:
         if set(test_process.all_inputs()) == set(analysis_artifacts):
             logging.info(f"Using process {test_process.id}, which has an exact overlap with the analysis artifacts.")
             process = test_process
