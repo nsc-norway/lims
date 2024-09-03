@@ -108,9 +108,9 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
         samplesheet_sampleid = None
         for sample, demux_artifact, _ in demux:
             if demux_artifact.reagent_labels == output_artifact.reagent_labels:
-                if "SampleSheet Sample_ID" in demux_artifact.udf:
-                    samplesheet_sampleid = demux_artifact.udf["SampleSheet Sample_ID"]
-                    logging.info(f"Looking up artifact {demux_artifact.id} in metrics files by SampleSheet Sample_ID '{samplesheet_sampleid}'.")
+                if "SampleSheet Sample_ID" in output_artifact.udf:
+                    samplesheet_sampleid = output_artifact.udf["SampleSheet Sample_ID"]
+                    logging.info(f"Looking up artifact {output_artifact.name} in metrics files by SampleSheet Sample_ID '{samplesheet_sampleid}'.")
                     break
                 else:
                     raise RuntimeError(f"Found a demux artifact {demux_artifact.id} for sample {sample.name}, but it didn't have "
@@ -184,7 +184,7 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
                             if sample['sample_id'] == samplesheet_sampleid
                             ]
             if len(workflow_info) == 1:
-                logging.info(f"Workflow info found for {sample_id}: {workflow_info}.")
+                logging.info(f"Workflow info found for {samplesheet_sampleid}: {workflow_info}.")
                 # TODO this way of getting the Sample Sheet position (S-number) will probably not work in case of
                 # multiple analysis types.
                 output_artifact.udf['Sample sheet position'] = workflow_info[0][0] + 1
@@ -257,7 +257,7 @@ def update_lims_process(process, analysis_dir, run_id, analysis_id, detailed_sum
     else:
         process.udf['Status'] = 'COMPLETED'
         process.udf['Compute platform'] = 'UNKNOWN'
-    process.udf['LIMS import completed'] = str(datetime.datetime.now())
+    process.udf['LIMS import completed on'] = str(datetime.datetime.now())
     process.put()
 
 
@@ -413,16 +413,17 @@ def process_analysis(run_dir, analysis_dir):
         return
 
     # There should always be an existing step created by the sample sheet generator
-    processes = [p for p in lims.get_processes(inputartifactlimsid=analysis_artifacts, type=DEMULTIPLEXING_PROCESS_TYPE)
-                    if p.udf.get("Status") == "PENDING"]
-    logging.info(f"PENDING processes matching the input artifacts: {processes}.")
+    processes = lims.get_processes(inputartifactlimsid=[a.id for a in analysis_artifacts], type=DEMULTIPLEXING_PROCESS_TYPE)
+    logging.info(f"BCL Convert processes matching the input artifacts: {processes}.")
+    processes = [p for p in processes if p.udf.get("Status") == "PENDING"]
+    logging.info(f"PENDING BCL Convert processes matching the input artifacts: {processes}.")
     for test_process in processes:
         if set(test_process.all_inputs()) == set(analysis_artifacts):
             logging.info(f"Using process {test_process.id}, which has an exact overlap with the analysis artifacts.")
             process = test_process
             step = Step(lims, id=process.id)
         else:
-            logging.warning(f"Skipping {test_process.id} input artifacts {test_process.all_inputs()} because of mismatch with analysis lanes")
+            logging.info(f"Skipping {test_process.id} input artifacts {test_process.all_inputs()} because of mismatch with analysis lanes")
 
     if not process: # No existing process
         raise RuntimeError(f"Didn't find any BCL Convert process for Analysis {analysis_id} in run {run_id}")
