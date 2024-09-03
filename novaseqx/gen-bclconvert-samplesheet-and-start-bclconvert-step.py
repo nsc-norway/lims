@@ -273,15 +273,16 @@ def generate_sample_sheet_start_bclconvert(
     # Set the Run name to a fixed pattern
     if not is_redemultiplexing and load_tube_process.udf["Run Name"] == "(Set automatically)":
         # Get the first component of the project names: Diag, or the last name of NSC users
-        project_names = set(
+        project_names_set = set(
                 sample.project.name.split("-")[0]
                 for sample in samples
                 )
-        project_string = ""
-        if "Diag" in project_names:
-            project_string = "Diag-"
-            project_names.remove("Diag")
-        project_string += "-".join(sorted(project_names))
+        project_names_list = []
+        if "Diag" in project_names_set:
+            project_names_set.remove("Diag")
+            project_names_list = ["Diag"]
+        project_names_list += sorted(project_names_set)
+        project_string = "-".join(project_names_list)
         # Get the date
         date_string = datetime.datetime.now().strftime("%Y-%m-%d")
         # Flow cell side - only available on Load to Library Tube step
