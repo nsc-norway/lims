@@ -236,7 +236,7 @@ def generate_sample_sheet_start_bclconvert(
 ):
     warning_flag = False
     # Store SampleID and UUID for setting on the BCL convert step
-    # Key: (TBC)
+    # Key: (lane_artifact_id, reagent_labels)
     # Value: (datasetuuid, sample_id)
     sample_uuid_sampleid = dict()
     logging.info(
@@ -420,7 +420,7 @@ def generate_sample_sheet_start_bclconvert(
                     "barcode_mismatches_2": barcode_mismatches_read[1],
                 }
             )
-            sample_uuid_sampleid[tuple(artifact.reagent_labels)] = (datasetuuid, sample_id)
+            sample_uuid_sampleid[(lane_artifact.id, tuple(artifact.reagent_labels))] = (datasetuuid, sample_id)
 
             # This option is only avaiable for Re-demultiplexing. For the initial sample sheet, this is defaulted to False.
             bclconvert_only = sample_sheet_process.udf.get("Demultiplexing Only")
@@ -650,18 +650,24 @@ def start_bclconvert_process(sample_sheet_process, bclconvert_inputs, sampleshee
 
     bclconvert_process.put()
 
+    outputs_to_put = []
     # store samplesheet sample id
-    for o in bclconvert_process.all_outputs():
-        _dataset_uuid, _sample_id = samplesheet_sample_ids[tuple(o.reagent_labels)]
-        logging.info(
-            "Update 'SampleSheet Sample_ID' and 'Dataset UUID' UDFs for %s to '%s' and '%s'",
-            o,
-            _sample_id,
-            _dataset_uuid
-        )
-        o.udf["SampleSheet Sample_ID"] = _sample_id
-        o.udf["Dataset UUID"] = _dataset_uuid
-    lims.put_batch(bclconvert_process.all_outputs())
+    for inputinfo, outputinfo in bclconvert_process.input_output_maps:
+        i = inputinfo["uri"]
+        o = outputinfo["uri"]
+        # Skip common outputs, like files, if that comes up
+        if outputinfo["output-generation-type"] == "PerReagentLabel":
+            _dataset_uuid, _sample_id = samplesheet_sample_ids[(i.id, tuple(o.reagent_labels))]
+            logging.info(
+                "Update 'SampleSheet Sample_ID' and 'Dataset UUID' UDFs for %s to '%s' and '%s'",
+                o,
+                _sample_id,
+                _dataset_uuid
+            )
+            o.udf["SampleSheet Sample_ID"] = _sample_id
+            o.udf["Dataset UUID"] = _dataset_uuid
+            outputs_to_put.append(o)
+    lims.put_batch(outputs_to_put)
 
 
 if __name__ == "__main__":
