@@ -97,6 +97,7 @@ for _, input, output in position_sorted_input_output:
     molarity = input.udf.get('Molarity')
     molarity_nm = input.udf.get('Molarity (nM)')
     normalized_conc = input.udf.get('Normalized conc. (nM)')
+    logging.info(f"Input {input.name} has 'Molarity': {molarity}, 'Molarity (nM)': {molarity_nm}, 'Normalized conc. (nM)': {normalized_conc}.")
     # If it has "Molarity" fields, it means a measurement is done on this artifact.
     # We falled back on Normalized Conc. (nM) if there is no measurement.
     if molarity is None:
