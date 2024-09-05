@@ -321,7 +321,7 @@ def complete_step(step):
 
     logging.info("Finishing process " + step.id)
     for na in step.actions.next_actions:
-        na['action'] = 'complete'
+        na['action'] = 'nextstep'
     step.actions.put()
     fail = False
     while not fail and step.current_state.upper() != "COMPLETED":
