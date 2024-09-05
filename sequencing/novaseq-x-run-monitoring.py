@@ -320,9 +320,8 @@ def complete_step(step):
     """Advance the step until completion."""
 
     logging.info("Finishing process " + step.id)
-    for na in step.actions.next_actions:
-        na['action'] = 'nextstep'
-    step.actions.put()
+    # This is a custom function in the NSC version of the client library. Sorry.
+    lims.set_default_next_step(step)
     fail = False
     while not fail and step.current_state.upper() != "COMPLETED":
         logging.debug("Advancing the step...")
