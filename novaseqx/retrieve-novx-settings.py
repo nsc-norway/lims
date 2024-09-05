@@ -9,7 +9,7 @@ logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-LOAD_LIBRARY_TUBE_PROCESS_TYPE = "Load to Library Tube Strip NovaSeqX AMG 1.1"
+LOAD_LIBRARY_TUBE_PROCESS_TYPE = "Load to Library Tube Strip NovaSeqX AMG 2.0"
 RE_DEMULTIPLEX_WORKFLOW = "Re-demultiplex NovaSeq X run"
 
 SETTINGS = [
