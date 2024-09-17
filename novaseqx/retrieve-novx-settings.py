@@ -18,6 +18,8 @@ SETTINGS = [
     "Index 1 Cycles",
     "Index 2 Cycles",
     "NovaSeq X Instrument",
+    "FASTQ Compression Format",
+    "Run Name"
 ]
 
 
@@ -47,10 +49,6 @@ def fill_original_novx_settings(sample_sheet_process):
                 sample_sheet_process.udf[setting] = original
         except KeyError:
             pass
-
-    # Run Name must be supplied, default to project name
-    default_run_name = input_lanes[0].samples[0].project.name
-    sample_sheet_process.udf["Run Name"] = default_run_name
 
     # default to demultiplexing only
     sample_sheet_process.udf["Demultiplexing Only"] = True
