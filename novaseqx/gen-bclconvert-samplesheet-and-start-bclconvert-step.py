@@ -355,7 +355,7 @@ def generate_sample_sheet_start_bclconvert(
         # Check that the index lengths are compatible with the configured cycles, and that the
         # indexes within a lane are the same length.
         for index_read in [1, 2]:
-            index_lengths = set(len(index_pair[index_read]) for index_pair in index_pairs)
+            index_lengths = set(len(index_pair[index_read - 1]) for index_pair in index_pairs)
             if len(index_lengths) != 1:
                 warning_flag = True
                 logging.warning(
