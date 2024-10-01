@@ -45,7 +45,7 @@ def fill_original_novx_settings(sample_sheet_process):
     for setting in SETTINGS:
         try:
             original = load_tube_process.udf[setting]
-            if original:
+            if original is not None:
                 sample_sheet_process.udf[setting] = original
         except KeyError:
             pass
