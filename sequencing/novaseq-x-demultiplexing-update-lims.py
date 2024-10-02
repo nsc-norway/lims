@@ -6,6 +6,7 @@ import os
 import re
 import glob
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import argparse
 from xml.etree.ElementTree import ElementTree
 import pandas as pd
@@ -19,6 +20,8 @@ from lib import demultiplexing
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
+LOG_FILE_PATH = '/var/log/lims/novaseq-x-demultiplexing-update-lims.log'
+
 DEMULTIPLEXING_PROCESS_TYPE = "BCL Convert Demultiplexing 1.0"
 DEMULTIPLEXING_WORKFLOW_NAME = "BCL Convert Demultiplexing 1.0"
 
@@ -29,6 +32,26 @@ IMPORT_FILE_NAME = "ClarityLIMSImport_NSC.yaml"
 
 # Use this to cache demultiplexings of lanes. They are used in two functions.
 demux_cache = {}
+
+# Function to configure logging
+def configure_logging():
+    log_level = "INFO"
+
+    # Create a timed rotating file handler to log to the specified log file
+    file_handler = TimedRotatingFileHandler(LOG_FILE_PATH, when='midnight', backupCount=5)
+    file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_formatter)
+    file_handler.setLevel(logging.DEBUG)  # Log everything to the file
+
+    # Create a console handler to log only warnings and higher to stderr
+    console_handler = logging.StreamHandler()
+    console_formatter = logging.Formatter('%(levelname)s: %(message)s')
+    console_handler.setFormatter(console_formatter)
+    console_handler.setLevel(logging.WARNING)  # Log only warnings and higher to the console
+
+    # Configure the root logger
+    logging.basicConfig(level=log_level, handlers=[file_handler, console_handler])
+
 
 def get_demux_artifact(artifact):
     """Memoised version of get_demux_artifact"""
@@ -529,17 +552,17 @@ def find_and_process_runs():
 
 
 def main():
-    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
-    logging.basicConfig(level=log_level)
+    configure_logging()
     logging.info(f"Executing NovaSeq X demultiplexing monitoring at {datetime.datetime.now()}")
 
+    try:
+        find_and_process_runs()
+    except Exception:
+        logging.exception("Uncaught exception in cron job")
 
-    find_and_process_runs()
     logging.info(f"Completed NovaSeq X demultiplexing monitoring at {datetime.datetime.now()}")
 
 
-
-
 if __name__ == '__main__':
-
     main()
+

@@ -12,6 +12,7 @@ import re
 import yaml
 import math
 import logging
+from logging.handlers import TimedRotatingFileHandler
 from dateutil import parser, tz
 import datetime
 import requests
@@ -21,6 +22,8 @@ from genologics.lims import *
 from genologics import config
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
+
+LOG_FILE_PATH = '/var/log/lims/novaseq-x-run-monitoring.log'
 
 # Load instrument names from config file
 INSTRUMENT_NAME_MAP = {seq['id']: seq['name']
@@ -46,6 +49,25 @@ REAGENT_TYPES = {
     'Buffer':   'NovaSeq X Buffer Cartridge',
     'Lyo':      'NovaSeq X Lyophilization Cartridge',
 }
+
+def configure_logging():
+    log_level = "INFO"
+
+    # Create a timed rotating file handler to log to the specified log file
+    file_handler = TimedRotatingFileHandler(LOG_FILE_PATH, when='midnight', backupCount=5)
+    file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_formatter)
+    file_handler.setLevel(logging.DEBUG)  # Log everything to the file
+
+    # Create a console handler to log only warnings and higher to stderr
+    console_handler = logging.StreamHandler()
+    console_formatter = logging.Formatter('%(levelname)s: %(message)s')
+    console_handler.setFormatter(console_formatter)
+    console_handler.setLevel(logging.WARNING)  # Log only warnings and higher to the console
+
+    # Configure the root logger
+    logging.basicConfig(level=log_level, handlers=[file_handler, console_handler])
+
 
 def get_library_tube_strip_id(run_parameters_xml):
     """Get the library tube strip ID from the RunParameters.xml file,
@@ -331,8 +353,6 @@ def complete_step(step):
 
 
 def main():
-    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
-    logging.basicConfig(level=log_level)
     logging.info(f"Executing NovaSeq X run monitoring at {datetime.datetime.now()}")
 
     run_dirs = [r
@@ -460,5 +480,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    configure_logging()
+    try:
+        main()
+    except:
+        logging.exception("Error in run monitoring")
 
