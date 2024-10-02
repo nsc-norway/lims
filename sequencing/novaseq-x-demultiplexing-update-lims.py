@@ -191,7 +191,7 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
                 output_artifact.udf['Onboard analysis type'] = workflow_info[0][1]
                 output_artifact.udf['ORA compression'] = workflow_info[0][2] == "completed"
             else:
-                logging.info(f"Have detailed_summary but didn't find workflow info for {sample_id}.")
+                logging.info(f"Have detailed_summary but didn't find workflow info for {samplesheet_sampleid}.")
         else:
             logging.info(f"Skipping workflow info, as there's no detailed_summary.")
 
