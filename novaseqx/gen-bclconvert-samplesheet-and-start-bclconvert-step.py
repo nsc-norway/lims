@@ -357,9 +357,8 @@ def generate_sample_sheet_start_bclconvert(
         for index_read in [1, 2]:
             index_lengths = set(len(index_pair[index_read - 1]) for index_pair in index_pairs)
             if len(index_lengths) != 1:
-                warning_flag = True
-                logging.warning(
-                    f"Different index{index_read} lengths in lane {lane_id}: {index_lengths}."
+                logging.info(
+                    f"Different index{index_read} lengths in lane {lane_id}: {index_lengths}. This is not a problem."
                 )
             original_cycles = load_tube_process.udf[f"Index {index_read} Cycles"]
             configured_cycles = sample_sheet_process.udf[f"Index {index_read} Cycles"]
