@@ -44,6 +44,12 @@ def main(process_id):
     lengths = set(len(ii) for ii in split_indexes)
     if len(lengths) > 1:
         raise ValueError("Mix of dual/single indexes. Multiplicities: " + str(list(lengths)) + ".")
+    if lengths == set([1]):
+        # Index names or single-indexes
+        split_indexes = [[value] for value in indexes.fixup_illumina_index_versions(
+                                        [index_tuple[0] for index_tuple in split_indexes]
+                                        )
+                        ]
     analyte_names = [a.name for a in analytes]
 
     if process.udf.get('Reverse complement index1'):

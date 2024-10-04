@@ -125,4 +125,34 @@ def get_reagents_for_category(reagents, index_analyte, category, sequence_match=
         return match_reagents
 
 
+def fixup_illumina_index_versions(index_name_list):
+    """Allow the user to enter indexes like how Illumina specifies their UDIs in the
+    adapter document. The are converted to the scheme used in Clarity.
+
+    Example inputs:
+    UDP0001
+    UDP0045V3
+    
+    """
+    udi_matches = [re.match(r"UDI(\d{4})([vV]\d)?$", index_name) for index_name in index_name_list]
+    udp_matches = [re.match(r"UDP(\d{4})([vV]\d)?$", index_name) for index_name in index_name_list]
+    if all(udi_matches): # TruSeq Indexes
+        version_elements = set([match.group(2).upper() for match in udi_matches if match.group(2)])
+        if version_elements == {'V2'}:
+            # If V2 only, or mixed V2 and non-V2: convert to lims format
+            return ["UDIv2_" + match.group(1) for match in udi_matches]
+    
+    elif all(udp_matches): # Nextera Flex / "Illumina" indexes
+        version_elements = set([match.group(2).upper() for match in udp_matches if match.group(2)])
+        if version_elements == {'V3'}:
+            return ["UDP" + match.group(1) + "v3" for match in udp_matches]
+        elif version_elements == {'V2'}:
+            # In LIMS, the indexes without suffix are actually V2. We can strip off V2.
+            return ["UDP" + match.group(1) for match in udp_matches]
+        # UDP V1 indexes should not be added by name. They will be converted to V2 indexes.
+
+    return index_name_list
+
+
+
 
