@@ -120,7 +120,7 @@ def get_sequencing_process(server, process):
     try:
         return seq_processes[-1]
     except IndexError:
-        return None
+        raise ValueError("There is no sequencing process for " + process.id)
 
 class Project(object):
     def __init__(self, url, name, eval_url, info_tags):
@@ -581,17 +581,22 @@ def prepare_page():
         # These are the Demultiplexing and QC processes.
         post_sequencing = []
 
-        # Find sequencing process for each post-sequencing process
-        sequencing_processes = [get_sequencing_process(server, process) for server, process in post_processes]
-
-        # One workflow for each sequencer type
-        for index in range(len(servers_seq_process_types)):
+        # Adding post-sequencing processes to the correct column:
+        # One workflow for each sequencer type - loops over all sequencing process type lists, one for each
+        # sequencer type and for each server (if applicable).
+        for seqtype_server, seq_process_types in servers_seq_process_types:
+            # Process this sequencer type, like "MiSeq"
             machine_items = [] # all processes for a type of sequencing machine
-            for (server, process), sequencing_process in zip(post_processes, sequencing_processes):
-                if sequencing_process and sequencing_process.type_name in servers_seq_process_types[index][1]:
-                    machine_items.append(read_post_sequencing_process(server, process, sequencing_process))
-            post_sequencing.append(machine_items)
-            
+            for (server, process) in post_processes:
+                # lookup sequencing process
+                try:
+                    sequencing_process = get_sequencing_process(server, process)
+                    if sequencing_process.type_name in seq_process_types:
+                        machine_items.append(read_post_sequencing_process(server, process, sequencing_process))
+                except ValueError:
+                    # Unable to find sequencing process at this time
+                    pass
+            post_sequencing.append(machine_items) # Add all post-seq for this sequencer type
 
         recently_completed = get_recently_completed_runs(servers)
 
