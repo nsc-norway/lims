@@ -215,7 +215,7 @@ def parse_settings(settings_string):
     return app_name, tuple(kv_list)
 
 
-def get_sample_id(datasetuuid, sample, artifact):
+def get_sample_id(datasetuuid, sample, artifact, project_names_enabled, enable_sampleproject_directories):
     """Get the string that is used as Sample_ID in the sample sheet. """
 
     if sample.project.udf.get("Project type") == "Diagnostics":
@@ -227,6 +227,8 @@ def get_sample_id(datasetuuid, sample, artifact):
         dna_id = sample.name.split("-")[0]
         sample_id = "_".join([batch_id, dna_id, datasetuuid])
         return sample_id
+    elif enable_sampleproject_directories:
+        sample_id = sample.name
     else:
         return sample.name + "_" + artifact.id
 
@@ -320,6 +322,9 @@ def generate_sample_sheet_start_bclconvert(
         (c.isalnum() or c in ["-"]) for c in library_tube_strip_id
     ), "Illegal characters in library strip tube name"
 
+    # Determine whether the platform supports Sample_Project column / Project directories
+    enable_sampleproject_directories = process.udf["BCL Convert Instrument"] != "Onboard DRAGEN"
+
     # Process each lane and produce BCLConvert and DragenGermline sample tables
     bclconvert_rows = []
 
@@ -387,7 +392,7 @@ def generate_sample_sheet_start_bclconvert(
             else:
                 datasetuuid = str(uuid.uuid4())
                 sample_uuids_map[(sample.id, artifact.id)] = datasetuuid
-            sample_id = get_sample_id(datasetuuid, sample, artifact)
+            sample_id = get_sample_id(datasetuuid, sample, artifact, enable_sampleproject_directories)
             logging.info(
                 f"Adding sample {sample.name} / artifact ID {artifact.id}. Sample_ID in SampleSheet: {sample_id}."
             )
