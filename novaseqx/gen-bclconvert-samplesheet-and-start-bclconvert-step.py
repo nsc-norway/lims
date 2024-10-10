@@ -322,8 +322,9 @@ def generate_sample_sheet_start_bclconvert(
         (c.isalnum() or c in ["-"]) for c in library_tube_strip_id
     ), "Illegal characters in library strip tube name"
 
-    # Determine whether the platform supports Sample_Project column / Project directories
-    enable_sampleproject_directories = process.udf["BCL Convert Instrument"] != "Onboard DRAGEN"
+    # Determine whether the platform supports Sample_Project column (Project directories)
+    bcl_convert_instrument = process.udf["BCL Convert Instrument"]
+    enable_sampleproject_column = bcl_convert_instrument != "Onboard DRAGEN"
 
     # Process each lane and produce BCLConvert and DragenGermline sample tables
     bclconvert_rows = []
@@ -392,7 +393,7 @@ def generate_sample_sheet_start_bclconvert(
             else:
                 datasetuuid = str(uuid.uuid4())
                 sample_uuids_map[(sample.id, artifact.id)] = datasetuuid
-            sample_id = get_sample_id(datasetuuid, sample, artifact, enable_sampleproject_directories)
+            sample_id = get_sample_id(datasetuuid, sample, artifact, enable_sampleproject_column)
             logging.info(
                 f"Adding sample {sample.name} / artifact ID {artifact.id}. Sample_ID in SampleSheet: {sample_id}."
             )
@@ -422,6 +423,7 @@ def generate_sample_sheet_start_bclconvert(
                     "override_cycles": override_cycles,
                     "barcode_mismatches_1": barcode_mismatches_read[0],
                     "barcode_mismatches_2": barcode_mismatches_read[1],
+                    "sample_project": sample.project.name # Always added to the list, but only used if enable_sampleproject_column.
                 }
             )
             sample_uuid_sampleid[(lane_artifact.id, tuple(artifact.reagent_labels))] = (datasetuuid, sample_id)
@@ -430,6 +432,10 @@ def generate_sample_sheet_start_bclconvert(
             bclconvert_only = sample_sheet_process.udf.get("Demultiplexing Only")
 
             if not bclconvert_only:
+                if bcl_convert_instrument != "Onboard DRAGEN":
+                    logging.warning("The option 'Demultiplexing Only' should only be enabled if running on Onboard DRAGEN.")
+                    warning_flag = True
+
                 analysis_string = sample.udf.get("NovaSeqX Secondary Analysis")
                 if analysis_string:
                     logging.info(
@@ -529,13 +535,14 @@ def generate_sample_sheet_start_bclconvert(
     variables = {
         "library_tube_strip_id": library_tube_strip_id,
         "process": sample_sheet_process,
+        "enable_sampleproject_column": enable_sampleproject_column,
         "bclconvert_rows": sorted(bclconvert_rows, key=operator.itemgetter("lane")),
         "analyses_zipped": zip(
             analysis_apps,
             analysis_settings_blocks,
             analysis_data_block_headers,
             analysis_data_blocks,
-        ),
+        )
     }
     template_dir = os.path.dirname(os.path.realpath(__file__))
     samplesheet_data = (
@@ -573,16 +580,17 @@ def generate_sample_sheet_start_bclconvert(
     if not is_redemultiplexing:
         load_tube_process.put()
 
-    # Write to shared storage sample sheet folder
-    instrument_dir = "".join(
-        [c for c in sample_sheet_process.udf["NovaSeq X Instrument"] if c.isalpha()]
-    ).lower()
-    assert len(instrument_dir) > 0
-    write_samplesheet_path = (
-        f"/boston/runScratch/NovaSeqX/SampleSheets/{instrument_dir}/{output_file_name}"
-    )
-    with open(write_samplesheet_path, "w") as output_file:
-        output_file.write(samplesheet_data)
+    if bcl_convert_instrument == "Onboard DRAGEN":
+        # Write to shared storage sample sheet folder
+        instrument_dir = "".join(
+            [c for c in sample_sheet_process.udf["NovaSeq X Instrument"] if c.isalpha()]
+        ).lower()
+        assert len(instrument_dir) > 0
+        write_samplesheet_path = (
+            f"/boston/runScratch/NovaSeqX/SampleSheets/{instrument_dir}/{output_file_name}"
+        )
+        with open(write_samplesheet_path, "w") as output_file:
+            output_file.write(samplesheet_data)
 
     try:
         start_bclconvert_process(sample_sheet_process, lane_artifacts, sample_uuid_sampleid)
