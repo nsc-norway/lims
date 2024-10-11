@@ -6,9 +6,6 @@ from genologics.lims import *
 # Script to fill the 'next action' field with the first next step 
 # matching the specified regular expression
 
-# NOTE: This script was never used or tested! Left here in case we
-# need it later, but may not work...
-
 def main(process_id, name_pattern):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
     step = Step(lims, id=process_id)
@@ -18,6 +15,9 @@ def main(process_id, name_pattern):
                 next_step_uri = tn.get("next-step-uri")
                 action = "nextstep"
                 break
+        else:
+            print(f"ERROR: Cannot find next step matching pattern '{name_pattern}'")
+            sys.exit(1)
     else:
         action = "complete"
 
