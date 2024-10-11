@@ -61,7 +61,7 @@ class LimsServer(object):
     def __init__(self, index, settings):
         self.index = index
         self.INSTRUMENTS = settings['INSTRUMENTS']
-        self.FLOWCELL_TYPES = settings['FLOWCELL_TYPES']
+        self.SEQ_FLOWCELL_TYPES = settings['SEQ_FLOWCELL_TYPES']
         self.SEQUENCING = settings['SEQUENCING']
         self.DATA_PROCESSING = settings['DATA_PROCESSING']
         if settings['CREDENTIALS_FILE']:
@@ -392,13 +392,16 @@ def automation_state(process):
 
 def read_post_sequencing_process(server, process, sequencing_process):
     url = proc_url(process)
-    seq_url = proc_url(sequencing_process)
-    #flowcell_id = process.all_inputs()[0].location[0].name
-    try:
-        runid = get_run_id(sequencing_process)
-    except (KeyError, TypeError):
-        runid = ""
-        expt_name = ""
+    seq_url = None
+    runid = ""
+    expt_name = ""
+    if sequencing_process:
+        seq_url = proc_url(sequencing_process)
+        #flowcell_id = process.all_inputs()[0].location[0].name
+        try:
+            runid = get_run_id(sequencing_process)
+        except (KeyError, TypeError):
+            pass
     projects = get_projects(server, process)
     automated, waiting, completed = automation_state(process)
 
@@ -473,7 +476,7 @@ def get_recently_completed_runs(servers):
         # Look for any flowcells which have a value for this udf
         flowcells = server.lims.get_containers(
                 udf={RECENTLY_COMPLETED_UDF: True},
-                type=server.FLOWCELL_TYPES
+                type=[fctype for seq_fcs in server.SEQ_FLOWCELL_TYPES for fctype in seq_fcs]
                 )
 
         cutoff_date = datetime.date.today() - datetime.timedelta(days=30)
@@ -579,24 +582,23 @@ def prepare_page():
 
         # This list contains one item for each sequencer type, and each item is a list of processses
         # These are the Demultiplexing and QC processes.
-        post_sequencing = []
+        post_sequencing = [list() for _ in servers_seq_process_types] # all processes for a type of sequencing machine
 
         # Adding post-sequencing processes to the correct column:
         # One workflow for each sequencer type - loops over all sequencing process type lists, one for each
         # sequencer type and for each server (if applicable).
-        for seqtype_server, seq_process_types in servers_seq_process_types:
-            # Process this sequencer type, like "MiSeq"
-            machine_items = [] # all processes for a type of sequencing machine
-            for (server, process) in post_processes:
-                # lookup sequencing process
-                try:
-                    sequencing_process = get_sequencing_process(server, process)
-                    if sequencing_process.type_name in seq_process_types:
-                        machine_items.append(read_post_sequencing_process(server, process, sequencing_process))
-                except ValueError:
-                    # Unable to find sequencing process at this time
-                    pass
-            post_sequencing.append(machine_items) # Add all post-seq for this sequencer type
+        for (server, process) in post_processes:
+            # lookup sequencing process
+            try:
+                sequencing_process = get_sequencing_process(server, process)
+            except ValueError:
+                sequencing_process = None
+            for seq_id, (seqtype_server, seq_process_types) in enumerate(servers_seq_process_types):
+                # Process this sequencer type, like "MiSeq"
+                if sequencing_process is not None and sequencing_process.type_name in seq_process_types:
+                    post_sequencing[seq_id].append(read_post_sequencing_process(server, process, sequencing_process))
+                elif process.all_inputs()[0].location[0].type.name in server.SEQ_FLOWCELL_TYPES[seq_id]:
+                    post_sequencing[seq_id].append(read_post_sequencing_process(server, process, None))
 
         recently_completed = get_recently_completed_runs(servers)
 

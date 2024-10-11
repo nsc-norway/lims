@@ -3,7 +3,7 @@
     {
         "INSTRUMENTS":  ["NovaSeqX", "NovaSeq6k", "NextSeq", "MiSeq"],
         "SEQUENCING": [["AUTOMATED - Sequencing Run NovaSeqX AMG 1.0", "NovaSeq X Run QC NSC 1.0"], ["AUTOMATED - NovaSeq Run NSC 3.4", "NovaSeq Data QC NSC 1.0"], ["NextSeq 500/550 Run NSC 3.0"], ["MiSeq Run NSC 3.0"]],
-        "FLOWCELL_TYPES": ["Library 2-tube Strip NSC", "Library 8-tube Strip", "SP", "S1", "S2", "S4", "Library Tube", "NextSeq Reagent Cartridge", "MiSeq Reagent Cartridge"],
+        "SEQ_FLOWCELL_TYPES": [["Library 2-tube Strip NSC", "Library 8-tube Strip"], ["SP", "S1", "S2", "S4", "Library Tube"], ["NextSeq Reagent Cartridge"], ["MiSeq Reagent Cartridge"]],
         "DATA_PROCESSING": ["Demultiplexing and QC NSC 3.0", "BCL Convert Demultiplexing 1.0"],
         "CREDENTIALS_FILE": null
     }
