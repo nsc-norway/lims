@@ -651,12 +651,13 @@ def start_bclconvert_process(sample_sheet_process, bclconvert_inputs, sampleshee
         type=SEQUENCING_PROCESS_TYPE,
     )
     if sequencing_steps:
-        latest_seq = sequencing_steps[-1]  # already sorted by run date?
+        latest_seq = sequencing_steps[-1]  # There should only be one seq step (rerun would use a new container)
         assert isinstance(latest_seq, Process)
         bclconvert_process.udf["Run ID"] = latest_seq.udf["Run ID"]
-        bclconvert_process.udf["Sequencing Output Folder"] = latest_seq.udf[
-            "Output Folder"
-        ]
+        # Copying the Sequencing Output Folder was removed, because the seq step provides a network UNC-like path,
+        # not valid on the Linux cluster.
+        # If we need to support multiple output locations, we can copy it here and translate it here or in the
+        # Run Demultiplexing automation.
 
     # PENDING initially; update to RUNNING or ACTIVE or SUCCESS by lims updating script Onboard/Extenal DRAGEN
     bclconvert_process.udf["Status"] = "PENDING"
