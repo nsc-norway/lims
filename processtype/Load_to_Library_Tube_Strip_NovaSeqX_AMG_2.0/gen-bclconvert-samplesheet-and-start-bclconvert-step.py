@@ -653,6 +653,7 @@ def start_bclconvert_process(sample_sheet_process, bclconvert_inputs, sampleshee
     # store samplesheet sample id
     for inputinfo, outputinfo in bclconvert_process.input_output_maps:
         i = inputinfo["uri"]
+        if outputinfo is None: continue #2024-10-18: backport fix for null outputs
         o = outputinfo["uri"]
         # Skip common outputs, like files, if that comes up
         if outputinfo["output-generation-type"] == "PerReagentLabel":
