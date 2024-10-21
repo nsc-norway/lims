@@ -14,6 +14,7 @@ import datetime
 import json
 import yaml
 import math
+import collections
 from genologics.lims import *
 from genologics import config
 from lib import demultiplexing
@@ -98,8 +99,13 @@ def get_output_lanes(demultiplex_stats):
     nonzero_lanes = lane_sums[lane_sums['# Reads'] > 0]
     return list(nonzero_lanes.index)
 
+# Some important data are stored in the output artifact and then used to create the yaml file.
+# The following dict is used to hold information for un-indexed samples. It's necessary because
+# these samples don't have any output artifact at all.
+dummy_outputs_for_unindexed_lanes = {}
 
 def update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary, num_read_phases):
+    global dummy_outputs_for_unindexed_lanes
     lane_total_read_counts = {
         lane: demultiplex_stats[demultiplex_stats['Lane'] == lane]['# Reads'].sum().item()
         for lane in demultiplex_stats['Lane'].unique()
@@ -111,36 +117,29 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
     for i, o in process.input_output_maps:
         lane_artifact = i['uri']
 
-        if o is None:
-            logging.info(f"Input {lane_artifact.id} has a mapping with no output. This sample probably "
-                    "does not have an index. Due to a bug there is nowhere to PUT the demux stats.")
-            continue
-
-        # Only process demultiplexed artifacts
-        if o['output-generation-type'] != 'PerReagentLabel': continue
-
-        output_artifact = o['uri']
-
         lane_id = well_id_to_lane(lane_artifact.location[1])
-        logging.info(f"Updating output metrics for {output_artifact.name} (lane {lane_id}).")
-    
-        demux = get_demux_artifact(lane_artifact)
-        
-        # Locate the demultiplexed artifact with the same reagent label as the output
-        # of this step
-        samplesheet_sampleid = None
-        for sample, demux_artifact, _ in demux:
-            if demux_artifact.reagent_labels == output_artifact.reagent_labels:
-                if "SampleSheet Sample_ID" in output_artifact.udf:
-                    samplesheet_sampleid = output_artifact.udf["SampleSheet Sample_ID"]
-                    logging.info(f"Looking up artifact {output_artifact.name} in metrics files by SampleSheet Sample_ID '{samplesheet_sampleid}'.")
-                    break
-                else:
-                    raise RuntimeError(f"Found a demux artifact {demux_artifact.id} for sample {sample.name}, but it didn't have "
-                                     "SampleSheet Sample_ID UDF. This will break things downstream, aborting.")
+        if o is None:
+            # Create a dummy artifact for this lane with a 'udf' property
+            logging.info(f"Input {lane_artifact.id} has a mapping with no output. Using a dummy output to hold data internally in this script.")
+            output_artifact = collections.namedtuple("DummyOutput", ["udf"])
+            # We have no way to know the original sample ID. Sorry, we just use the NSC sample ID schema here. We couldn't possibly
+            # get the UUID for a diag sample.
+            samplesheet_sampleid = lane_artifact.samples[0].name + "_" + lane_artifact.id
+            output_artifact.udf = {'SampleSheet Sample_ID': samplesheet_sampleid}
+            dummy_outputs_for_unindexed_lanes[i['limsid']] = output_artifact
         else:
-            logging.warn(f"No corresponding demux artifact found for output artifact {output_artifact.id}, skipping.")
-            continue
+            # Only process demultiplexed artifacts, not shared outputs like files.
+            if o['output-generation-type'] != 'PerReagentLabel': continue
+            output_artifact = o['uri']
+            logging.info(f"Updating output metrics for indexed sample {output_artifact.name} (lane {lane_id}).")
+    
+            if "SampleSheet Sample_ID" in output_artifact.udf:
+                samplesheet_sampleid = output_artifact.udf["SampleSheet Sample_ID"]
+                logging.info(f"Looking up artifact {output_artifact.name} in metrics files by SampleSheet Sample_ID '{samplesheet_sampleid}'.")
+                break
+            else:
+                raise RuntimeError(f"The output artifact {output_artifact.id}, with name {output_artifact.name} didn't have "
+                                 "a 'SampleSheet Sample_ID' UDF. This will break things downstream, aborting.")
 
         # Update the output artifact with the demultiplexing stats
         sample_demux_stats = demultiplex_stats[
@@ -220,7 +219,8 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
 
         updated_artifacts.append(output_artifact)
      
-    lims.put_batch(updated_artifacts)
+    # Update artifacts, but skip dummy
+    lims.put_batch([o for o in updated_artifacts if isinstance(o, Artifact)])
 
 
 def update_lims_lane_metrics(process, demultiplex_stats):
@@ -310,6 +310,7 @@ def get_sample_identity_matching(process):
 
     Returns a list of sample_info dicts, one for each sample for each lane.
     """
+    global dummy_outputs_for_unindexed_lanes
 
     sample_list = []
     for i, o in process.input_output_maps:
@@ -321,11 +322,13 @@ def get_sample_identity_matching(process):
         # Only process demultiplexed artifacts. There will however be one input-output-map with
         # no "o" if the lane has no indexes.
         if o is None:
+            output = dummy_outputs_for_unindexed_lanes[i['limsid']]
             sample_info['output_artifact_id'] = None
             output_reagent_label = None
             assert len(lane_artifact.samples) == 1, f"Un-indexed artifact should have a single sample, found {len(lane_artifact.samples)}."
             sample = lane_artifact.samples[0]
         elif o['output-generation-type'] == 'PerReagentLabel':
+            output = o['uri']
             sample_info['output_artifact_id'] = o['limsid']
             output_reagent_label = next(iter(o['uri'].reagent_labels))
             for i_sample, demux_artifact, _ in demux:
@@ -350,14 +353,14 @@ def get_sample_identity_matching(process):
         sample_info['delivery_method'] = sample.project.udf.get('Delivery method')
 
         # The onboard analysis type and number of data reads is set above in update_lims_output_info
-        onboard_analysis = o['uri'].udf.get('Onboard analysis type')
+        onboard_analysis = output.udf.get('Onboard analysis type')
         if onboard_analysis:
             sample_info['onboard_workflow'] = onboard_analysis
-            sample_info['ora_compression'] = o['uri'].udf['ORA compression']
-            sample_info['samplesheet_position'] = o['uri'].udf['Sample sheet position']
+            sample_info['ora_compression'] = output.udf['ORA compression']
+            sample_info['samplesheet_position'] = output.udf['Sample sheet position']
         # Check if the number of data reads has been recorded
-        if 'Number of data read passes' in o['uri'].udf:
-            sample_info['num_data_read_passes'] = o['uri'].udf['Number of data read passes']
+        if 'Number of data read passes' in output.udf:
+            sample_info['num_data_read_passes'] = output.udf['Number of data read passes']
 
         # Locate the demultiplexed artifact with the same reagent label as the output
         # of this step. This may be used as Sample_ID in the sample sheet..
@@ -365,7 +368,7 @@ def get_sample_identity_matching(process):
             if dem_reagent_label == output_reagent_label:
                 sample_info['artifact_id'] = demux_artifact.id
                 sample_info['artifact_name'] = demux_artifact.name
-                sample_info['samplesheet_sample_id'] = o['uri'].udf['SampleSheet Sample_ID']
+                sample_info['samplesheet_sample_id'] = output.udf['SampleSheet Sample_ID']
                 break
         sample_list.append(sample_info)
 
@@ -509,6 +512,7 @@ def process_analysis(run_dir, analysis_dir):
             'bcl_convert_version': process.udf['BCL Convert Version'],
             'compute_platform': process.udf['Compute platform'],
             'demultiplexing_process_id': process.id,
+            'run_id': run_id,
             'samples': sample_id_list
             }, ofile)
 
