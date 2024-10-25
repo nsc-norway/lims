@@ -136,7 +136,6 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
             if "SampleSheet Sample_ID" in output_artifact.udf:
                 samplesheet_sampleid = output_artifact.udf["SampleSheet Sample_ID"]
                 logging.info(f"Looking up artifact {output_artifact.name} in metrics files by SampleSheet Sample_ID '{samplesheet_sampleid}'.")
-                break
             else:
                 raise RuntimeError(f"The output artifact {output_artifact.id}, with name {output_artifact.name} didn't have "
                                  "a 'SampleSheet Sample_ID' UDF. This will break things downstream, aborting.")
