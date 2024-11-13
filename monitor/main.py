@@ -424,7 +424,7 @@ def read_post_sequencing_process(server, process, sequencing_process):
     state_code = process.udf.get(JOB_STATE_CODE_UDF, "")
 
     if status == "PENDING" and process.udf.get("Compute platform") == "Onboard DRAGEN":
-        current_job = "See NovaSeqX instrument."
+        current_job = "See NovaSeqX instrument"
         status = "NOT COMPLETED"
 
     return DataAnalysisInfo(
