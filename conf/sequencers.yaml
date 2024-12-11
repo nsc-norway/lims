@@ -17,9 +17,6 @@
   name: Newton
   id: NDX551162
 - type: novaseq
-  name: Nordis
-  id: A00943
-- type: novaseq
   name: Nobel
   id: A01447
 - type: novaseqx
