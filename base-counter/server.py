@@ -25,7 +25,7 @@ import illuminate
 from flask import Flask, url_for, redirect, jsonify, Response, request
 
 # Storage for run folders: (path, type of run)
-RUN_STORAGES = [("/data/runScratch.boston", "general"), ("/boston/diag/runs/veriseq", "nipt")]
+RUN_STORAGES = [("/data/runScratch.boston", "general"), ("/data/runScratch.boston/NovaSeqX", "general"), ("/boston/diag/runs/veriseq", "nipt")]
 
 SEQUENCER_LIST = [(seq['id'], (seq['type'], seq['name']))
             for seq in yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "sequencers.yaml")))
