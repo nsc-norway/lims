@@ -50,7 +50,7 @@ active_streams = []
 KEEPALIVE_INTERVAL = 60 # Times sleep interval 61
 
 def machine_id(run_id):
-    return re.match(r"\d{6}_([A-Z0-9]+)_.*", run_id).group(1)
+    return re.match(r"\d{6,8}_([A-Z0-9]+)_.*", run_id).group(1)
 
 class Database(object):
     """Persistent storage for some run data."""
@@ -89,12 +89,12 @@ class Database(object):
         run_dirs_and_ids = [
                 (rpath, os.path.basename(os.path.dirname(rpath)), run_type)
                 for (run_storage, run_type) in RUN_STORAGES
-                for rpath in glob.glob(os.path.join(run_storage, "??????_*_*", "*"))
+                for rpath in glob.glob(os.path.join(run_storage, "*_*_*", "*"))
             ]
         runs_on_storage = {
             run_id: (os.path.dirname(rpath), run_type)
             for (rpath, run_id, run_type) in run_dirs_and_ids
-            if re.match(r"[0-9]{6}_[A-Z0-9]+_[_A-Z0-9-]+$", run_id)
+            if re.match(r"[0-9]{6,8}_[A-Z0-9]+_[_A-Z0-9-]+$", run_id)
             }
 
         new = set(runs_on_storage) - set(self.status.keys())
@@ -172,7 +172,7 @@ class Database(object):
         for m_id, (m_type, m_name) in SEQUENCER_LIST:
             run_ids = [
                 run_id for run_id in sorted(self.status.keys())[::-1]
-                if re.match("\\d{6}_%s_.*" % (m_id), run_id) and not self.status[run_id].hidden
+                if re.match("\\d{6,8}_%s_.*" % (m_id), run_id) and not self.status[run_id].hidden
                 ]
             machines[m_id] = {
                 'id': m_id,
@@ -200,7 +200,7 @@ def instrument_rate(m_id):
         per_hour = 4137931034
     elif instrument == "miseq":
         per_hour = 133928571
-    elif instrument == "novaseq":
+    elif instrument == "novaseq" or instrument == "novaseqx":
         per_hour = 3125000000
     return per_hour / 3600.0
 
@@ -261,7 +261,7 @@ class RunStatus(object):
 
     def get_clusters(self):
         instrument = SEQUENCERS[self.machine_id][0]
-        if instrument == "novaseq":
+        if instrument in ["novaseq", "novaseqx"]:
             process = subprocess.Popen(['nsc-python27', 
                             '/opt/gls/clarity/customextensions/lims/base-counter/clusters-helper.py',
                              self.run_dir],
