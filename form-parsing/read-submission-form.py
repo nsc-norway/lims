@@ -294,7 +294,7 @@ def single_checkbox(value, cell):
     if len(checkboxes) == 1:
         if is_checked(checkboxes[0]):
             return value
-    elif "".join([node.text for node in cell.iter(TEXT)]).strip() == "x":
+    elif "".join([node.text for node in cell.iter(TEXT)]).strip() in ["x", "☒"]:
         return value
 
 
