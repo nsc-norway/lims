@@ -111,6 +111,15 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
         for lane in demultiplex_stats['Lane'].unique()
     }
 
+    # Find the sample sheet position, "S number", which is used in the file name.
+    # Get the order from demultiplex stats, but deduplicated identical sample names
+    known_samples = {"Undetermined": 0}
+    samplesheet_position = 0
+    for _, row in demultiplex_stats.iterrows():
+        if not row['SampleID'] in known_samples:
+            samplesheet_position += 1
+            known_samples[row['SampleID']] = samplesheet_position
+
     # Update stats for each input-output pair, representing a unique indexed sample
     # on a lane
     updated_artifacts = []
@@ -156,8 +165,10 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
                                             (quality_metrics['Lane'] == lane_id) & 
                                             (quality_metrics['SampleID'] == samplesheet_sampleid)
                                             ]
-        read_count = sample_demux_stats['# Reads'].sum().item()
 
+        output_artifact.udf['Sample sheet position'] = known_samples.get(samplesheet_sampleid, 0)
+
+        read_count = sample_demux_stats['# Reads'].sum().item()
         if read_count > 0:
             logging.info(f"Found nonzero read count for {samplesheet_sampleid}, quality metrics: {quality_metrics is not None}")
             output_artifact.udf['# Reads'] = read_count * num_read_phases
@@ -206,9 +217,6 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
                             ]
             if len(workflow_info) == 1:
                 logging.info(f"Workflow info found for {samplesheet_sampleid}: {workflow_info}.")
-                # TODO this way of getting the Sample Sheet position (S-number) will probably not work in case of
-                # multiple analysis types.
-                output_artifact.udf['Sample sheet position'] = workflow_info[0][0] + 1
                 output_artifact.udf['Onboard analysis type'] = workflow_info[0][1]
                 output_artifact.udf['ORA compression'] = workflow_info[0][2] == "completed"
             else:
