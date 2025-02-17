@@ -104,21 +104,12 @@ def get_output_lanes(demultiplex_stats):
 # these samples don't have any output artifact at all.
 dummy_outputs_for_unindexed_lanes = {}
 
-def update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary, num_read_phases):
+def update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary, num_read_phases, s_numbers):
     global dummy_outputs_for_unindexed_lanes
     lane_total_read_counts = {
         lane: demultiplex_stats[demultiplex_stats['Lane'] == lane]['# Reads'].sum().item()
         for lane in demultiplex_stats['Lane'].unique()
     }
-
-    # Find the sample sheet position, "S number", which is used in the file name.
-    # Get the order from demultiplex stats, but deduplicated identical sample names
-    known_samples = {"Undetermined": 0}
-    samplesheet_position = 0
-    for _, row in demultiplex_stats.iterrows():
-        if not row['SampleID'] in known_samples:
-            samplesheet_position += 1
-            known_samples[row['SampleID']] = samplesheet_position
 
     # Update stats for each input-output pair, representing a unique indexed sample
     # on a lane
@@ -166,7 +157,7 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
                                             (quality_metrics['SampleID'] == samplesheet_sampleid)
                                             ]
 
-        output_artifact.udf['Sample sheet position'] = known_samples.get(samplesheet_sampleid, 0)
+        output_artifact.udf['Sample sheet position'] = s_numbers[samplesheet_sampleid]
 
         read_count = sample_demux_stats['# Reads'].sum().item()
         if read_count > 0:
@@ -309,6 +300,34 @@ def get_input_artifacts(rp_tree):
         except AttributeError: # Ignore missing things in the XML payload
             pass
     return None
+
+
+def get_s_numbers(analysis_dir):
+    """Get samplesheet sample ("S-")numbers based on the manifest file. The S-number is a component of the
+    fastq file name (sampleName_S1_L001_R1_001.fastq.gz). It is stored as the "sample sheet position" in
+    LIMS. It needs to be determined here from the outputs, not by the sample sheet generator, in case the
+    sample sheet is modified manually after it's generated.
+    
+    It's technically possible to predict the S-numbers based on the sample sheet, but we don't have a
+    straight copy of the original sample sheet. There is no file that simply gives the same order of samples.
+    It's very intricate. I give up.
+    
+    This function just gets the information from the file names, returning a mapping from sample_id to
+    the S-number.
+    
+    The sample ID is guaranteed to be unique, even across different apps like BCLConvert, DragenGermline."""
+    
+    manifest = pd.read_table(os.path.join(analysis_dir, "Manifest.tsv"))
+    paths = manifest.iloc[:, 0]
+    mapping = {}
+    for path in paths:
+        # The file name should match:
+        # Data/{AppName}/fastq{OraOrNot}/{Sample_ID}_S{???}_L00{LaneID}_R{ReadNum}_001.fastq.{CompressionType}
+        m = re.match(r"Data/(.*)/fastq(_ora)?/(.*)_S([0-9]+)_L00[0-8]_R[0-9]_001.fastq.(gz|ora)", path)
+        if m:
+            mapping[m.group(3)] = int(m.group(4))
+
+    return mapping
 
 
 def get_sample_identity_matching(process):
@@ -502,8 +521,10 @@ def process_analysis(run_dir, analysis_dir):
             # Quality_Metrics.csv will have the correct value.
             num_read_phases = qm_num_read_phases
 
+    logging.info(f"Getting samplesheet sample numbers (S-number).")
+    s_numbers = get_s_numbers(analysis_dir)
     logging.info(f"Updating output (per index) metrics and details.")
-    update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary, num_read_phases)
+    update_lims_output_info(process, demultiplex_stats, quality_metrics, detailed_summary, num_read_phases, s_numbers)
     logging.info(f"Updating lane metrics.")
     update_lims_lane_metrics(process, demultiplex_stats)
     logging.info(f"Updating global process-level details.")
