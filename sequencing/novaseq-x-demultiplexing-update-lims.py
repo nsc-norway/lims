@@ -323,7 +323,7 @@ def get_s_numbers(analysis_dir):
     for path in paths:
         # The file name should match:
         # Data/{AppName}/fastq{OraOrNot}/{Sample_ID}_S{???}_L00{LaneID}_R{ReadNum}_001.fastq.{CompressionType}
-        m = re.match(r"Data/(.*)/fastq(_ora)?/(.*)_S([0-9]+)_L00[0-8]_R[0-9]_001.fastq.(gz|ora)", path)
+        m = re.match(r"Data/(.*)/(ora_)?fastq/(.*)_S([0-9]+)_L00[0-8]_R[0-9]_001.fastq.(gz|ora)", path)
         if m:
             mapping[m.group(3)] = int(m.group(4))
 
