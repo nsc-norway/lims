@@ -1,0 +1,65 @@
+[root@ous-lims ~]# hostname -f
+ous-lims.sequencing.uio.no
+[root@ous-lims ~]# rpm -qa |grep LIMS | sort
+BaseSpaceLIMS-AutomationWorker-2.3.1.4-5.x86_64
+BaseSpaceLIMS-Illumina-Preset-Protocols-2.6.0.17-8.x86_64
+BaseSpaceLIMS-sequencer-api-2.6.0.10-8.x86_64
+BaseSpaceLIMS-veriseq-nipt-extensions-1.0.0.130-153.x86_64
+BaseSpaceLIMS-veriseq-nipt-file-capture-service-1.0.0.130-153.x86_64
+ClarityLIMS-App-6.3.1.26-28.x86_64
+ClarityLIMS-Illumina-MiSeq-Package-v8-8.3.0.3-10.x86_64
+ClarityLIMS-Illumina-NextSeq-Package-v2-2.4.0.4-8.x86_64
+ClarityLIMS-NGS-Package-v5-5.25.0.5-25.x86_64
+ClarityLIMS-PreReqs-6.3.1.1-2.x86_64
+ClarityLIMS-SecretUtil-1.5.1.0-1.x86_64
+ClarityLIMS-Support-1.1.0.13-77.x86_64
+ClarityLIMS-UpgradePreValidation-6.3.1.1-2.x86_64
+[root@ous-lims ~]# java -jar /opt/gls/clarity/tools/propertytool/omxprops-ConfigTool.jar getInstallHistory
+
+                       Product                   Version              InstallDate
+           ________________________________  ________________  _________________________
+           nextseq - RPM                     2.4.0.4           2025-02-24 10:03:31.156
+           miseq - RPM                       8.3.0.3           2025-02-24 10:01:35.704
+           LabScientist                      6.3.1.26          2025-02-24 09:34:48.709
+           ClarityLIMS-NGS-Package-v5 - RPM  5.25.0.5          2025-02-24 09:30:16.456
+           LabScientist                      6.2.1.11          2024-03-02 12:32:24.774
+           miseq - RPM                       8.0.0.11          2021-11-25 12:05:22.366
+           LabScientist                      5.2.1.210         2021-11-25 11:39:20.574
+           veriseq-nipt                      1.0.0.130         2021-05-07 14:41:35.382
+           LabScientist                      5.2.0.342         2020-11-03 12:05:07.048
+           LabScientist                      5.2.0.342         2020-10-29 12:13:09.551
+           nextseq - RPM                     2.0.3.1           2020-09-24 11:58:02.735
+           LabScientist                      5.1.5.3           2019-05-22 17:57:44.443
+           miseq - RPM                       6.0.1.3           2019-05-03 12:14:24.988
+           LabScientist                      5.1.3.8           2018-07-04 10:54:23.433
+           LabScientist                      4.2.19.238        2018-01-09 15:08:55.068
+           Operations Interface              8.15.1.45         2018-01-09 15:08:54.244
+           LabScientist                      4.2.10.122        2017-07-18 16:23:39.128
+           Operations Interface              8.15.1.13         2017-07-18 16:23:37.661
+           LabScientist                      4.2.10.122        2016-12-15 12:00:09.571
+           Operations Interface              8.15.1.13         2016-12-15 12:00:08.178
+           LabScientist                      4.1.4.32          2016-06-06 17:36:39.633
+           Operations Interface              8.14.1.7          2016-06-06 17:36:37.6
+           hiseqx-file - Workflow            1.4.0.0           2016-04-28 14:13:24.552
+           hiseq3k4k - Workflow              1.0.0.44          2016-04-28 14:11:45.401
+           LabScientist                      4.1.4.32          2016-04-28 13:42:55.978
+           Operations Interface              8.14.1.7          2016-04-28 13:42:53.721
+           SureSelectXT.xml                  1.0.0.8           2015-05-11 14:55:59.666
+           SureSelectXT2.xml                 1.0.0.8           2015-05-06 16:01:38.478
+           nextseq - Workflow                1.1.0.3           2015-04-30 13:33:59.646
+           NimblegeneExome.xml               1.0.0.8           2015-04-21 15:24:20.578
+           KAPA.xml                          1.0.0.8           2015-04-21 15:23:56.127
+           TruSeqNano.xml                    1.0.0.8           2015-04-21 15:23:14.188
+           NexteraRapidCapture.xml           1.0.0.8           2015-04-21 15:22:47.111
+           NexteraXT.xml                     1.0.0.8           2015-04-21 15:21:59.824
+           SureSelectXT.xml                  1.0.0.8           2015-04-21 15:17:09.118
+           TruSeqTotalRNAStranded.xml        1.0.0.8           2015-04-21 15:11:29.142
+           TruSeqSmallRNA.xml                1.0.0.8           2015-04-21 15:11:14.061
+           TruSeqmRNAStranded.xml            1.0.0.8           2015-04-21 15:10:52.095
+           LabScientist                      3.5.1.38          2015-03-23 11:43:54.673
+           Operations Interface              8.12.1.5          2015-03-23 11:42:49.694
+           miseq - Workflow                  5.2.0.0-SNAPSHOT  2015-02-16 16:57:30.406
+           hiseq - Workflow                  5.2.0.11          2015-02-16 16:56:44.931
+           ngs-common - Workflow             5.7.0.17          2015-02-16 16:54:47.177
+           LabScientist                      3.4.2.10          2015-02-16 16:48:52.768
+           Operations Interface              8.11.1.1          2015-02-16 16:48:51.701
