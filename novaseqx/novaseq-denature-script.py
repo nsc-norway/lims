@@ -31,30 +31,32 @@ known_unique_input_tubes = {}
 tube_position_sequence = [c + r for r in "12" for c in "ABCDEFGH"]
 
 # Extract the relevant inputs and outputs. Sort by destination well
-# position in column order
-def get_column_sort_key(artifact):
+# position in column order. Spike-in pools are sorted after the
+# main pools.
+def get_column_sort_key(i_o):
+    artifact = i_o[1]
+    is_spike_in = bool(i_o[0].udf.get('Spike-in amount %'))
     row, column =  artifact.location[1].split(":")
-    return int(column), row, artifact.id
-position_sorted_input_output = sorted([
-        (get_column_sort_key(o['uri']), i['uri'], o['uri'])
-        for i, o in process.input_output_maps
-        if o['output-type'] == 'Analyte' ])
-logging.debug("Pre-caching input and output artifacts")
-lims.get_batch(artifact for _, i, o in position_sorted_input_output for artifact in [i, o])
+    return int(column), row, is_spike_in, artifact.id
 
-# Check columns
-assert all(column in [1, 7] for (column, _, _), _, _ in position_sorted_input_output), \
-        "Errror: Samples should only be placed in column 1 or 7."
+position_sorted_input_output = sorted([
+        (i['uri'], o['uri'])
+        for i, o in process.input_output_maps
+        if o['output-type'] == 'Analyte' ], key=get_column_sort_key)
+
+logging.debug("Pre-caching input and output artifacts")
+lims.get_batch(artifact for i, o in position_sorted_input_output for artifact in [i, o])
+
 # Check single output plate
-output_location_id = position_sorted_input_output[0][2].location[0].id
-assert all(o.location[0].id == output_location_id for _, _, o in position_sorted_input_output), \
+output_location_id = position_sorted_input_output[0][1].location[0].id
+assert all(o.location[0].id == output_location_id for _, o in position_sorted_input_output), \
         "Error: There can only be one output container."
 
 # Will contain the output table
 common_rows = []
 worksheet_rows = []
 robot_rows = []
-for _, input, output in position_sorted_input_output:
+for input, output in position_sorted_input_output:
     logging.info(f"Processing input {input.name}")
 
     common_row = {}
@@ -114,6 +116,7 @@ for _, input, output in position_sorted_input_output:
         logging.error(f"No molarity fields are available for {input.name} (target well {output.location[1]} input ID {input.id}).")
         sys.exit(1)
 
+    logging.info(f"Using: {library_conc}.")
     # Get required fields for calculation
     try:
         phix_percent = output.udf['PhiX %']
@@ -188,6 +191,8 @@ for _, input, output in position_sorted_input_output:
 
         # Buffer is what is remaining to fill the volume
         worksheet_row['RSB Volume'] = required_mix_volume - library_volume - phix_volume
+
+
 
     # Store computed values for the robot
     robot_row['Library Volume'] = library_volume_robot
