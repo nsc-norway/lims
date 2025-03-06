@@ -30,32 +30,36 @@ tube_input_counter = 0
 known_unique_input_tubes = {}
 tube_position_sequence = [c + r for r in "12" for c in "ABCDEFGH"]
 
+logging.debug("Pre-caching input and output artifacts")
+lims.get_batch(xput['uri'] for i, o in process.input_output_maps for xput in [i, o])
+
 # Extract the relevant inputs and outputs. Sort by destination well
 # position in column order. Spike-in pools are sorted after the
 # main pools.
-def get_column_sort_key(i_o):
-    artifact = i_o[1]
-    is_spike_in = bool(i_o[0].udf.get('Spike-in amount %'))
+def get_column_sort_key(artifact):
     row, column =  artifact.location[1].split(":")
-    return int(column), row, is_spike_in, artifact.id
+    return int(column), row, artifact.id
 
-position_sorted_input_output = sorted([
-        (i['uri'], o['uri'])
-        for i, o in process.input_output_maps
-        if o['output-type'] == 'Analyte' ], key=get_column_sort_key)
+position_sorted_output = sorted([
+        o['uri'] for i, o in process.input_output_maps if o['output-type'] == 'Analyte'
+    ], key=get_column_sort_key)
 
-logging.debug("Pre-caching input and output artifacts")
-lims.get_batch(artifact for i, o in position_sorted_input_output for artifact in [i, o])
 
 # Check single output plate
-output_location_id = position_sorted_input_output[0][1].location[0].id
-assert all(o.location[0].id == output_location_id for _, o in position_sorted_input_output), \
+output_location_id = position_sorted_output[0].location[0].id
+assert all(o.location[0].id == output_location_id for o in position_sorted_output), \
         "Error: There can only be one output container."
 
 # Will contain the output table
 common_rows = []
 worksheet_rows = []
 robot_rows = []
+for output in position_sorted_output:
+
+    inputs = [i['uri'] for i, o in process.input_output_maps if o['uri'] == output]
+    library_volume_sum = 0
+
+    #TODO
 for input, output in position_sorted_input_output:
     logging.info(f"Processing input {input.name}")
 
