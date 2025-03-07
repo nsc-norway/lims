@@ -76,6 +76,11 @@ def read_layout(layout_file):
                 well = parts[0]
                 sample = parts[1]
 
+            # if plate_id is missing, give an error message
+            if not plate_id:
+                print("ERROR: No plate ID (RackCode) in the uploaded file. The plate was probably turned around and scanned in the wrong way.")
+                sys.exit(1)
+
             # if not 2D tube, sample(TubeID) is empty
             if sample:
                 well = format_well(well)
