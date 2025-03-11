@@ -22,9 +22,9 @@ def main(process_id, robot_file, worksheet_file):
         row, column =  artifact.location[1].split(":")
         return int(column), row, artifact.id
 
-    position_sorted_output = sorted([
+    position_sorted_output = sorted(set(
             o['uri'] for i, o in process.input_output_maps if o['output-type'] == 'Analyte'
-        ], key=get_column_sort_key)
+        ), key=get_column_sort_key)
 
 
     # Check single output plate
@@ -48,19 +48,19 @@ def main(process_id, robot_file, worksheet_file):
     final_total_volume = 281.6 # uL
 
     for output in position_sorted_output:
-        logging.info(f"Processing output {input.name}")
+        logging.info(f"Processing output {output.name}")
 
         inputs = [i['uri'] for i, o in process.input_output_maps if o['uri'] == output]
 
         # Get required fields for calculation
         try:
             phix_percent = output.udf['PhiX %']
-            target_input_conc = output.udf['Input Conc. (pM)']
+            target_input_molarity = output.udf['Input Conc. (pM)']
         except KeyError as e:
-            logging.error(f"Sample {input.name} (for target well {output.location[1]}) is missing field {e}.")
+            logging.error(f"Library {output.name} (for target well {output.location[1]}) is missing field {e}.")
             sys.exit(1)
 
-        assert target_input_conc >= 0.0, "Target input conc. should be a non-negative number."
+        assert target_input_molarity >= 0.0, "Target input conc. should be a non-negative number."
 
         if phix_percent < 0.0 or phix_percent > 100.0:
             logging.error("PhiX should be between 0 and 100 %")
@@ -79,7 +79,7 @@ def main(process_id, robot_file, worksheet_file):
         # Sort into spike-in and non-spike-in inputs
         non_spikein_inputs = [i for i in inputs if not i.udf.get('Spike-in %')]
         if len(non_spikein_inputs) != 1:
-            logging.error(f"There must be exactly one non-spike-in (main) library/pool per target well. Found {len(non_spikein_inputs)} non-spike-in libraries/pools in location {output.location[1]}.")
+            logging.error(f"There must be exactly one main (non-spike-in) library/pool per target well. Found {len(non_spikein_inputs)} main libraries/pools in location {output.location[1]}.")
             sys.exit(1)
 
         spikein_inputs = [i for i in inputs if i.udf.get('Spike-in %')]
@@ -93,12 +93,13 @@ def main(process_id, robot_file, worksheet_file):
         logging.info(f"There is one main library and {len(spikein_inputs)} spike-ins. Total spike-in amount {total_spike_fraction*100} %.")
 
         # Required nanomoles of the output bulk
-        total_bulk_nmoles = (target_input_conc / 1000) * final_total_volume
+        total_bulk_nmoles = (target_input_molarity / 1000) * final_total_volume
+        logging.info(f"The total amount of DNA should be {total_bulk_nmoles} nanomoles.")
 
         # Loop over inputs to calculate volumes and populate most of the table rows.
         sum_robot_library_volume = 0 # aggregate library volumes across spike-ins (microlitres)
         set_rsb_in_main_library_row = None # Keep a reference to the main library robot row, in which to set the RSB
-        for input in inputs:
+        for input in non_spikein_inputs + spikein_inputs:
             logging.info(f"Getting input properties and calculations for {input.name}.")
 
             # The common cells should be included in both output files
@@ -109,14 +110,15 @@ def main(process_id, robot_file, worksheet_file):
             # Robot: Source Plate,Source Position,Output Plate Position,Library Name,Library Volume,RSB Volume
             robot_row = {}
 
-            common_row['OutPut Plate Position'] = output.location[1].replace(":", "")
             common_row['Library Name'] = input.name
+            common_row['Source Plate'], common_row['Source Position'] = source_position_calculator.compute_source(input)
+            common_row['OutPut Plate Position'] = output.location[1].replace(":", "")
             
             actual_library_molarity = get_library_molarity(input)
 
             # Add informative columns in worksheet
             worksheet_row['Sample Conc. (nM)'] = actual_library_molarity
-            worksheet_row['Input Conc. (pM)'] = target_input_conc
+            worksheet_row['Input Conc. (pM)'] = target_input_molarity
             worksheet_row['PhiX %'] = phix_percent
 
             # Get library quantity
@@ -124,7 +126,7 @@ def main(process_id, robot_file, worksheet_file):
             if is_spike_in:
                 this_library_quantity = total_bulk_nmoles * (input.udf['Spike-in %'] / 100)
                 robot_row['RSB Volume'] = 0.0
-                logging.info(f"Required DNA quantity for spike-in {input.name} is {this_library_quantity} nanomoles.")
+                logging.info(f"Required DNA quantity for spike-in library {input.name} is {this_library_quantity} nanomoles.")
             else:
                 this_library_quantity = total_bulk_nmoles * nonspike_fraction
                 set_rsb_in_main_library_row = robot_row
@@ -145,14 +147,14 @@ def main(process_id, robot_file, worksheet_file):
 
                 # The library and PhiX will be diluted to a predefined intermeditate molarity (1.5 nM)
                 # in the manual step.
-                # It's not possible to do the final dilution directly to target_input_conc pM manually, because it could
+                # It's not possible to do the final dilution directly to target_input_molarity pM manually, because it could
                 # produce a too large volume for the robot to pipette.
                 # The robot uses the manually diluted PhiX blend as input, instead of the actual library.
                 library_molarity_robot = 1.5 # nM Note this is the molarity of the PhiX + library blend!
 
                 # First compute the required amount of mix to be used by the robot, at 1.5 nM.
                 phix_fraction_manual = phix_fraction - 0.01
-                library_volume_robot = total_bulk_nmoles * (phix_fraction_manual + this_library_quantity) / library_molarity_robot
+                library_volume_robot = ((total_bulk_nmoles * phix_fraction_manual) + this_library_quantity) / library_molarity_robot
 
                 # We want to some excess volume, but at the 1.5 nM concentration. The robot won't use this excess.
                 required_mix_volume = 10 + library_volume_robot # uL
@@ -238,7 +240,7 @@ class SourcePositionCalculator:
                     self.rack_tube_input_counter += 1
                     source_position = new_tube_position
                     self.known_unique_input_tubes[tube_id_name] = new_tube_position
-            else:
+            elif project_type in ["Sensitive", "Non-sensitive"]:
                 source_plate = self.nsc_tube_input_container_name
                 cn_parts = container_name.rsplit("_", maxsplit=1)
                 if len(cn_parts) > 1 and cn_parts[-1].isdigit():
@@ -260,6 +262,9 @@ class SourcePositionCalculator:
                     self.nsc_tube_input_counter += 1
                     source_position = new_tube_position
                     self.known_unique_input_tubes[tube_id_name] = new_tube_position
+            else:
+                logging.error(f"Don't know correct tube rack for project type {project_type}.")
+                sys.exit(1)
         else:
             source_plate = input.location[0].name
             # The LIMS position is separated by colon, we will REMOVE THE COLON

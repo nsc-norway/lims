@@ -12,7 +12,7 @@ process = Process(lims, id=sys.argv[1])
 step = Step(lims, id=sys.argv[1])
 
 poolable = step.pools.available_inputs
-main_inputs = [p for p in poolable if not p.udf.get('Spike-in amount %')]
+main_inputs = [p for p in poolable if not p.udf.get('Spike-in %')]
 for main_input in main_inputs:
     step.pools.create_pool(main_input.name, [main_input])
 
