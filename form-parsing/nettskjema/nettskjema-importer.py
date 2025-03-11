@@ -133,10 +133,10 @@ def main(process_id, test=False):
             value = question['default']
         if 'line' in question:
             matching = [(q,a) for q, a in qas if question['line'] in q]
-            if len(matching) > 1:
-                print("Error: Configured question '{}' matches multiple questions in the form.".format(question['line']))
-                sys.exit(1)
-            elif len(matching) == 1:
+            #if len(matching) > 1:
+            #    print("Error: Configured question '{}' matches multiple questions in the form.".format(question['line']))
+            #    sys.exit(1)
+            if len(matching) >= 1:
                 if matching[0][1] != "Not answered":
                     value = matching[0][1]
         if 'mapping' in question and value is not None:
