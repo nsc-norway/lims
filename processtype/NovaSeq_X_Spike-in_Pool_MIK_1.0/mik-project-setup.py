@@ -1,0 +1,1 @@
+../../novaseqx/mik-project-setup.py
