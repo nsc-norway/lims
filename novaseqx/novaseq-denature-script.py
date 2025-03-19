@@ -5,6 +5,9 @@ import logging
 import sys
 import os
 
+NAME_RACK_TUBE = "RackTube"
+NAME_NSC = "NSC"
+
 def main(process_id, robot_file, worksheet_file):
     lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
@@ -15,21 +18,11 @@ def main(process_id, robot_file, worksheet_file):
     logging.debug("Pre-caching input and output artifacts")
     lims.get_batch(xput['uri'] for i, o in process.input_output_maps for xput in [i, o])
 
-    # Extract the relevant inputs and outputs. Sort by destination well
-    # position in column order. Spike-in pools are sorted after the
-    # main pools.
-    def get_column_sort_key(artifact):
-        row, column =  artifact.location[1].split(":")
-        return int(column), row, artifact.id
-
-    position_sorted_output = sorted(set(
-            o['uri'] for i, o in process.input_output_maps if o['output-type'] == 'Analyte'
-        ), key=get_column_sort_key)
-
+    outputs = set(o['uri'] for i, o in process.input_output_maps if o['output-type'] == 'Analyte')
 
     # Check single output plate
-    output_location_id = position_sorted_output[0].location[0].id
-    assert all(o.location[0].id == output_location_id for o in position_sorted_output), \
+    output_location_id = next(iter(outputs)).location[0].id
+    assert all(o.location[0].id == output_location_id for o in outputs), \
             "Error: There can only be one output container."
 
     # The following lists will contain the output table
@@ -47,7 +40,10 @@ def main(process_id, robot_file, worksheet_file):
     # to 'Input Conc. (pM)', which is specified in reference to this total volume.
     final_total_volume = 281.6 # uL
 
-    for output in position_sorted_output:
+    # Apply a scaling factor to all volumes on the robot
+    robot_volume_scaling = 1.1
+
+    for output in outputs:
         logging.info(f"Processing output {output.name}")
 
         inputs = [i['uri'] for i, o in process.input_output_maps if o['uri'] == output]
@@ -157,7 +153,7 @@ def main(process_id, robot_file, worksheet_file):
                 library_volume_robot = ((total_bulk_nmoles * phix_fraction_manual) + this_library_quantity) / library_molarity_robot
 
                 # We want to some excess volume, but at the 1.5 nM concentration. The robot won't use this excess.
-                required_mix_volume = 10 + library_volume_robot # uL
+                required_mix_volume = 10 + library_volume_robot * robot_volume_scaling # uL
 
                 # Compute the total DNA quantity required, in nanomoles
                 required_dna_quantity = required_mix_volume * library_molarity_robot # nmol
@@ -176,7 +172,7 @@ def main(process_id, robot_file, worksheet_file):
                 worksheet_row['RSB Volume'] = required_mix_volume - library_volume_manual - phix_volume_manual
             
             sum_robot_library_volume += library_volume_robot
-            robot_row['Library Volume'] = library_volume_robot
+            robot_row['Library Volume'] = library_volume_robot * robot_volume_scaling
 
             common_rows.append(common_row)
             robot_rows.append(robot_row)
@@ -188,8 +184,15 @@ def main(process_id, robot_file, worksheet_file):
         # RSB
         rsb_volume_robot = output_volume - phix_volume_simple - sum_robot_library_volume
         # Go back and set it in the row that was appended in the loop above
-        set_rsb_in_main_library_row['RSB Volume'] = rsb_volume_robot
+        set_rsb_in_main_library_row['RSB Volume'] = rsb_volume_robot * robot_volume_scaling
         logging.info(f"Processed all inputs for output position {output.location[1]} and set Robot RSB {rsb_volume_robot} uL.")
+
+    logging.info(f"Sorting the rows.")
+    # The spec is to sort by type (plate / nsc / racktube) and by input container (plate). The
+    # function also sorts by output well ID, so the order is predictable.
+    all_three = [(c, r, w) for c, r, w in zip(common_rows, robot_rows, worksheet_rows)]
+    all_three_sorted = sorted(all_three, key=output_row_ordering)
+    common_rows, robot_rows, worksheet_rows = zip(*all_three_sorted)
 
     logging.info(f"Processed all input-output pairs. Will generate robot file.")
 
@@ -210,15 +213,26 @@ def main(process_id, robot_file, worksheet_file):
             ).to_csv(worksheet_file, index=False, float_format = "%.2f")
 
 
+def output_row_ordering(common_robot_worksheet):
+    common, robot, worksheet = common_robot_worksheet
+    output_position = common['OutPut Plate Position']
+    well_index = (int(output_position[1:]), output_position[:1])
+    if common['Source Plate'] == NAME_RACK_TUBE:
+        section_index = 2
+    elif common['Source Plate'] == NAME_NSC:
+        section_index = 1
+    else:
+        section_index = 0
+    return section_index, common['Source Plate'], well_index
+
 
 class SourcePositionCalculator:
-    def __init__(self, nsc_tube_input_container_name="NSC", rack_tube_input_container_name="RackTube"):
-        self.rack_tube_input_container_name = rack_tube_input_container_name
+    def __init__(self):
         self.rack_tube_input_counter = 0
-        self.nsc_tube_input_container_name = nsc_tube_input_container_name
         self.nsc_tube_input_counter = 0
         self.known_unique_input_tubes = {}
-        self.tube_position_sequence = [c + r for r in "12" for c in "ABCDEFGH"]
+        self.nsc_tube_position_sequence = [c + r for r in "12" for c in "ABCDEFGH"]
+        self.rack_tube_position_sequence = "123456789"
 
     def compute_source(self, input):
         if input.location[0].type.name == "Tube":
@@ -230,18 +244,18 @@ class SourcePositionCalculator:
             container_name = input.location[0].name
             if project_type in ["Diagnostics", "Microbiology"]:
                 # Use RackTube for MIK spike-in
-                source_plate = self.rack_tube_input_container_name
+                source_plate = NAME_RACK_TUBE
                 tube_id_name = container_name + "." + input.id
 
                 if tube_id_name in self.known_unique_input_tubes:
                     source_position = self.known_unique_input_tubes[tube_id_name]
                 else:
-                    new_tube_position = self.tube_position_sequence[self.rack_tube_input_counter]
+                    new_tube_position = self.rack_tube_position_sequence[self.rack_tube_input_counter]
                     self.rack_tube_input_counter += 1
                     source_position = new_tube_position
                     self.known_unique_input_tubes[tube_id_name] = new_tube_position
             elif project_type in ["Sensitive", "Non-sensitive"]:
-                source_plate = self.nsc_tube_input_container_name
+                source_plate = NAME_NSC
                 cn_parts = container_name.rsplit("_", maxsplit=1)
                 if len(cn_parts) > 1 and cn_parts[-1].isdigit():
                     # Remove underscore and numeric suffix for tubes that have been duplicated on the
@@ -258,7 +272,7 @@ class SourcePositionCalculator:
                 if tube_id_name in self.known_unique_input_tubes:
                     source_position = self.known_unique_input_tubes[tube_id_name]
                 else:
-                    new_tube_position = self.tube_position_sequence[self.nsc_tube_input_counter]
+                    new_tube_position = self.nsc_tube_position_sequence[self.nsc_tube_input_counter]
                     self.nsc_tube_input_counter += 1
                     source_position = new_tube_position
                     self.known_unique_input_tubes[tube_id_name] = new_tube_position
