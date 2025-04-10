@@ -1,0 +1,1 @@
+../../novaseqx/place-outputs-in-strip.py
