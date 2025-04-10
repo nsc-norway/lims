@@ -215,7 +215,7 @@ def parse_settings(settings_string):
     return app_name, tuple(kv_list)
 
 
-def get_sample_id(datasetuuid, sample, artifact, enable_sampleproject_directories):
+def get_sample_id(datasetuuid, sample, artifact):
     """Get the string that is used as Sample_ID in the sample sheet. """
 
     if sample.project.udf.get("Project type") == "Diagnostics":
@@ -227,10 +227,8 @@ def get_sample_id(datasetuuid, sample, artifact, enable_sampleproject_directorie
         dna_id = sample.name.split("-")[0]
         sample_id = "_".join([batch_id, dna_id, datasetuuid])
         return sample_id
-    elif enable_sampleproject_directories:
-        return sample.name
     else:
-        return sample.name + "_" + artifact.id
+        return sample.name
 
 
 def generate_sample_sheet_start_bclconvert(
@@ -324,7 +322,6 @@ def generate_sample_sheet_start_bclconvert(
 
     # Determine whether the platform supports Sample_Project column (Project directories)
     bcl_convert_instrument = process.udf["BCL Convert Instrument"]
-    enable_sampleproject_column = bcl_convert_instrument != "Onboard DRAGEN"
 
     # Process each lane and produce BCLConvert and DragenGermline sample tables
     bclconvert_rows = []
@@ -393,7 +390,7 @@ def generate_sample_sheet_start_bclconvert(
             else:
                 datasetuuid = str(uuid.uuid4())
                 sample_uuids_map[(sample.id, artifact.id)] = datasetuuid
-            sample_id = get_sample_id(datasetuuid, sample, artifact, enable_sampleproject_column)
+            sample_id = get_sample_id(datasetuuid, sample, artifact)
             assert not "," in sample_id, "Comma not allowed in sample name."
             logging.info(
                 f"Adding sample {sample.name} / artifact ID {artifact.id}. Sample_ID in SampleSheet: {sample_id}."
@@ -424,7 +421,7 @@ def generate_sample_sheet_start_bclconvert(
                     "override_cycles": override_cycles,
                     "barcode_mismatches_1": barcode_mismatches_read[0],
                     "barcode_mismatches_2": barcode_mismatches_read[1],
-                    "sample_project": sample.project.name # Always added to the list, but only used if enable_sampleproject_column.
+                    "sample_project": sample.project.name
                 }
             )
             sample_uuid_sampleid[(lane_artifact.id, tuple(artifact.reagent_labels))] = (datasetuuid, sample_id)
@@ -536,7 +533,6 @@ def generate_sample_sheet_start_bclconvert(
     variables = {
         "library_tube_strip_id": library_tube_strip_id,
         "process": sample_sheet_process,
-        "enable_sampleproject_column": enable_sampleproject_column,
         "bclconvert_rows": sorted(bclconvert_rows, key=operator.itemgetter("lane")),
         "analyses_zipped": zip(
             analysis_apps,
@@ -630,7 +626,6 @@ def start_bclconvert_process(sample_sheet_process, bclconvert_inputs, sampleshee
         time.sleep(1)  # artifact not in queue error sometimes
         bclconvert_step = lims.create_step(stepconf, bclconvert_inputs)
         bclconvert_process = Process(lims, id=bclconvert_step.id)
-        sample_sheet_process.udf["BCL Convert LIMS-ID"] = bclconvert_step.id
         sample_sheet_process.udf["BCL Convert LIMS-ID"] = bclconvert_step.id
         sample_sheet_process.put()
         logging.info("Started process %s", bclconvert_process)

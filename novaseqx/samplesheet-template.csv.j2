@@ -19,17 +19,14 @@ InputContainerIdentifier,{{ library_tube_strip_id }}
 [BCLConvert_Settings]
 SoftwareVersion,{{ process.udf['Onboard DRAGEN BCL Convert Version'] }}
 FastqCompressionFormat,{{ process.udf['FASTQ Compression Format'] }}
+{% if process.udf.get('Enable DRAGEN FastQC') -%}
+GenerateFastqcMetrics,true
+{% endif %}
 
 [BCLConvert_Data]
-{% if enable_sampleproject_column %}
 Lane,Sample_ID,Index,Index2,OverrideCycles,BarcodeMismatchesIndex1,BarcodeMismatchesIndex2,Sample_Project
 {% for row in bclconvert_rows %}{{ row.lane }},{{ row.sample_id }},{{ row.index1 }},{{ row.index2 }},{{ row.override_cycles }},{{ row.barcode_mismatches_1 }},{{ row.barcode_mismatches_2 }},{{ row.sample_project }}
 {% endfor %}
-{% else %}
-Lane,Sample_ID,Index,Index2,OverrideCycles,BarcodeMismatchesIndex1,BarcodeMismatchesIndex2
-{% for row in bclconvert_rows %}{{ row.lane }},{{ row.sample_id }},{{ row.index1 }},{{ row.index2 }},{{ row.override_cycles }},{{ row.barcode_mismatches_1 }},{{ row.barcode_mismatches_2 }}
-{% endfor %}
-{% endif %}
 
 {% for app, settings, data_headers, data in analyses_zipped %}
 [{{ app }}_Settings]{% for key, value in settings %}
