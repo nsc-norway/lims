@@ -215,7 +215,7 @@ def parse_settings(settings_string):
     return app_name, tuple(kv_list)
 
 
-def get_sample_id(datasetuuid, sample, artifact):
+def get_sample_id(datasetuuid, sample, artifact, is_onboard):
     """Get the string that is used as Sample_ID in the sample sheet. """
 
     if sample.project.udf.get("Project type") == "Diagnostics":
@@ -227,8 +227,15 @@ def get_sample_id(datasetuuid, sample, artifact):
         dna_id = sample.name.split("-")[0]
         sample_id = "_".join([batch_id, dna_id, datasetuuid])
         return sample_id
-    else:
-        return sample.name
+    elif sample.project.udf.get("Project type") in ["Sensitive", "Non-Sensitive"]: # NSC
+        if not is_onboard:
+            # Using sample_project for off-board - don't need project name for uniqueness
+            return sample.name
+        else:
+            return sample.project.name + "_" + sample.name
+    else: # Handle other project types - MIK.
+        # Always use project name even when redemultiplexing, for consistency.
+        return sample.project.name + "_" + sample.name
 
 
 def generate_sample_sheet_start_bclconvert(
@@ -320,8 +327,7 @@ def generate_sample_sheet_start_bclconvert(
         (c.isalnum() or c in ["-"]) for c in library_tube_strip_id
     ), "Illegal characters in library strip tube name"
 
-    # Determine whether the platform supports Sample_Project column (Project directories)
-    bcl_convert_instrument = process.udf["BCL Convert Instrument"]
+    is_onboard = (not is_redemultiplexing) or (process.udf["BCL Convert Instrument"] == "Onboard DRAGEN")
 
     # Process each lane and produce BCLConvert and DragenGermline sample tables
     bclconvert_rows = []
@@ -390,7 +396,7 @@ def generate_sample_sheet_start_bclconvert(
             else:
                 datasetuuid = str(uuid.uuid4())
                 sample_uuids_map[(sample.id, artifact.id)] = datasetuuid
-            sample_id = get_sample_id(datasetuuid, sample, artifact)
+            sample_id = get_sample_id(datasetuuid, sample, artifact, is_onboard)
             assert not "," in sample_id, "Comma not allowed in sample name."
             logging.info(
                 f"Adding sample {sample.name} / artifact ID {artifact.id}. Sample_ID in SampleSheet: {sample_id}."
@@ -430,7 +436,7 @@ def generate_sample_sheet_start_bclconvert(
             bclconvert_only = sample_sheet_process.udf.get("Demultiplexing Only")
 
             if not bclconvert_only:
-                if bcl_convert_instrument != "Onboard DRAGEN":
+                if not is_onboard:
                     logging.warning("The option 'Demultiplexing Only' should only be enabled if running on Onboard DRAGEN.")
                     warning_flag = True
 
@@ -539,7 +545,8 @@ def generate_sample_sheet_start_bclconvert(
             analysis_settings_blocks,
             analysis_data_block_headers,
             analysis_data_blocks,
-        )
+        ),
+        "enable_sampleproject_column": not is_onboard
     }
     template_dir = os.path.dirname(os.path.realpath(__file__))
     samplesheet_data = (
@@ -577,7 +584,7 @@ def generate_sample_sheet_start_bclconvert(
     if not is_redemultiplexing:
         load_tube_process.put()
 
-    if bcl_convert_instrument == "Onboard DRAGEN":
+    if is_onboard:
         # Write to shared storage sample sheet folder
         instrument_dir = "".join(
             [c for c in sample_sheet_process.udf["NovaSeq X Instrument"] if c.isalpha()]
