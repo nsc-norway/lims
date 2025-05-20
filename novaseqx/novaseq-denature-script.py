@@ -110,7 +110,8 @@ def main(process_id, robot_file, worksheet_file):
             common_row['Source Plate'], common_row['Source Position'] = source_position_calculator.compute_source(input)
             common_row['OutPut Plate Position'] = output.location[1].replace(":", "")
             
-            actual_library_molarity = get_library_molarity(input)
+            is_spike_in = bool(input.udf.get('Spike-in %'))
+            actual_library_molarity = get_library_molarity(input, is_spike_in)
 
             # Add informative columns in worksheet
             worksheet_row['Sample Conc. (nM)'] = actual_library_molarity
@@ -118,7 +119,6 @@ def main(process_id, robot_file, worksheet_file):
             worksheet_row['PhiX %'] = phix_percent
 
             # Get library quantity
-            is_spike_in = bool(input.udf.get('Spike-in %'))
             if is_spike_in:
                 this_library_quantity = total_bulk_nmoles * (input.udf['Spike-in %'] / 100)
                 robot_row['RSB Volume'] = 0.0
@@ -286,27 +286,32 @@ class SourcePositionCalculator:
         return source_plate, source_position
 
 
-def get_library_molarity(input):
+def get_library_molarity(input, is_spike_in):
     # Get the sample molarity from one of these fields
+    spike_in_molarity = input.udf.get('Spike-in final molarity (nM)')
     molarity = input.udf.get('Molarity')
     molarity_nm = input.udf.get('Molarity (nM)')
     normalized_conc = input.udf.get('Normalized conc. (nM)')
-    logging.info(f"Input {input.name} has 'Molarity': {molarity}, 'Molarity (nM)': {molarity_nm}, 'Normalized conc. (nM)': {normalized_conc}.")
-    # If it has "Molarity" fields, it means a measurement is done on this artifact.
-    # We falled back on Normalized Conc. (nM) if there is no measurement.
-    if molarity is None:
-        library_conc = molarity_nm
+    logging.info(f"Input {input.name} has 'Spike-in final molarity (nM)': {spike_in_molarity}, 'Molarity': {molarity}, 'Molarity (nM)': {molarity_nm}, 'Normalized conc. (nM)': {normalized_conc}.")
+    if is_spike_in and (spike_in_molarity is not None):
+        # Spike-in molarity field trumps everything
+        library_conc = spike_in_molarity 
     else:
-        if molarity_nm is not None:
-            logging.error(f"Input {input.name} has both 'Molarity' and 'Molarity (nM)'. Don't know which one to use.")
+        # If it has "Molarity" fields, it means a measurement is done on this artifact.
+        # We falled back on Normalized Conc. (nM) if there is no measurement.
+        if molarity is None:
+            library_conc = molarity_nm
+        else:
+            if molarity_nm is not None:
+                logging.error(f"Input {input.name} has both 'Molarity' and 'Molarity (nM)'. Don't know which one to use.")
+                sys.exit(1)
+            library_conc = molarity
+        if library_conc is None:
+            logging.info(f"There is no measured molarity on {input.name}, falling back to Normalized Conc. (nM)")
+            library_conc = normalized_conc
+        if library_conc is None:
+            logging.error(f"No molarity fields are available for {input.name} (input ID {input.id}).")
             sys.exit(1)
-        library_conc = molarity
-    if library_conc is None:
-        logging.info(f"There is no measured molarity on {input.name}, falling back to Normalized Conc. (nM)")
-        library_conc = normalized_conc
-    if library_conc is None:
-        logging.error(f"No molarity fields are available for {input.name} (input ID {input.id}).")
-        sys.exit(1)
 
     logging.info(f"Using: {library_conc}.")
     return library_conc
