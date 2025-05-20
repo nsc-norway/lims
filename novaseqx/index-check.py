@@ -93,7 +93,7 @@ def check_indexes_main(process, check_index_1, check_index_2):
         )
         sample_names = [sample.name for sample, _, _ in demux_list]
         # (name, (index1, index2))
-        sample_index_tuples = zip(sample_names, index_pairs)
+        sample_index_tuples = list(zip(sample_names, index_pairs))
         
         # Compute all against all distances
         for index_read in check_index_reads:
@@ -105,30 +105,31 @@ def check_indexes_main(process, check_index_1, check_index_2):
                     mismatches = hamming_distance(index_seq, other_index_seq)
 
                     if mismatches < MINIMUM_MISMATCH_THRESHOLD:
-                        logging.error(f"Sample '{sample}' and '{other_sample}' insufficient mismatches in index read {index_read}.")
-                        logging.error(f"Index '{index_seq}' and '{other_index_seq}' have {mismatches} mismatches but {MINIMUM_MISMATCH_THRESHOLD} is required.")
+                        logging.error(f"Pool {pool_artifact.name}: Insufficient mismatches in index read {index_read} for sample '{name}' and '{other_name}'.")
+                        logging.error(f"Pool {pool_artifact.name}: Index '{index_seq}' and '{other_index_seq}' have {mismatches} mismatches but {MINIMUM_MISMATCH_THRESHOLD} is required.")
                         failing_pools[pool_artifact.id] = pool_artifact.name
 
     if failing_pools:
-        logging.error("Index compatibility issues in pool(s): " + ", ".join(str(l) for l in failing_pools.values()) + " - see log.")
+        message = "Index compatibility issues in pool(s): '" + "', '".join(str(l) for l in failing_pools.values()) + "' - see log."
+        logging.error(message)
+        print(message)
         sys.exit(1)
     else:
         logging.info("Index compatibility check OK.")
+        print("Index compatibility check OK.")
         sys.exit(0)
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 5:
         
-        print(
-            f"Usage: {sys.argv[0]} process output_file_name check_index_1 check_index_2"
-        )
+        print(f"Usage: {sys.argv[0]} process output_file_name check_index_1 check_index_2")
         sys.exit(1)
 
     process = Process(lims, id=sys.argv[1])
     output_file_name = sys.argv[2]
-    check_index_1 = bool(sys.argv[3])
-    check_index_2 = bool(sys.argv[4])
+    check_index_1 = sys.argv[3].lower() == "true"
+    check_index_2 = sys.argv[4].lower() == "true"
 
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(level=log_level, filename=output_file_name)

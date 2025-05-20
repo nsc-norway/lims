@@ -1,0 +1,1 @@
+../../novaseqx/index-check.py
