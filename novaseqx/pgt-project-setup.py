@@ -21,12 +21,8 @@ for output in process.all_outputs(unique=True):
         projects_to_put.add(sample.project)
 
 for project in projects_to_put:
-    project.udf['Project type'] = "Microbiology"
+    project.udf['Project type'] = "PGT"
     project.udf['Delivery method'] = "OUS network filsluse"
     project.udf['Sample type'] = "gDNA"
-    project.udf["Evaluation type"] = "None"
-    project.udf["Contact email"] = "UXKAVG@ous-hf.no; aingebre@ous-hf.no; uxriva@ous-hf.no; mahagb@ous-hf.no; cflad@ous-hf.no; siqliu@ous-hf.no"
-    project.udf["Contact person"] = "Gunilla Løvgården, Andre Ingebretsen, Marie Elisabeth Vad, Mari Elisabeth Sørås Hagbø, Cathrine Fladeby, Siqing Liu"
-    project.udf["Contact institution"] = "Molekylærbiologisk seksjon"
     project.put()
 
