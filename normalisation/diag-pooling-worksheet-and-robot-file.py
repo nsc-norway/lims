@@ -88,8 +88,8 @@ def get_sample_details(pool_input_samples, pool_pool_volume, target_sample_conc,
         else:
             if not error and input.udf['Molarity'] < target_sample_conc:
                 # Report soft error about too low concentration / too high volume
-                print ("Warning: Molarity of", input.name, "in pool", pool.name, "is",
-                        input.udf['Molarity'], ", which is less than the target per-sample molarity",
+                print ("Warning: Molarity of", input.name, "is", input.udf['Molarity'],
+                        ", which is less than the target per-sample molarity",
                         target_sample_conc, ".")
                 error = True
                 
