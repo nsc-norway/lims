@@ -63,12 +63,12 @@ def main(process_id, robot_file, worksheet_file):
             sys.exit(1)
 
         if phix_percent < 1.0:
-            logger.error("Cannot use less than 1 % PhiX. The robot will add 1 % PhiX. Setting PhiX to 1 %.")
-            # TODO Determine if this case is used, or if it could be a fatal error.
+            logging.error("Cannot use less than 1 % PhiX. The robot will add 1 % PhiX.")
+            sys.exit(1)
             # We may want to use 0 % PhiX and completely manual dilution.
             # The log warning will not be visible.
-            phix_percent = 1.0
-            phix_fraction = 0.01
+            #phix_percent = 1.0
+            #phix_fraction = 0.01
 
         phix_fraction = phix_percent / 100
 
