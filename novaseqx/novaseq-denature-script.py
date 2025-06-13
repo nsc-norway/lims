@@ -232,7 +232,7 @@ class SourcePositionCalculator:
         self.nsc_tube_input_counter = 0
         self.known_unique_input_tubes = {}
         self.nsc_tube_position_sequence = [c + r for r in "12" for c in "ABCDEFGH"]
-        self.rack_tube_position_sequence = "123456789"
+        self.rack_tube_position_sequence = [str(i) for i in range(1, 33)]
 
     def compute_source(self, input):
         if input.location[0].type.name == "Tube":
