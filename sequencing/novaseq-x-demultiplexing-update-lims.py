@@ -375,8 +375,8 @@ def get_sample_identity_matching(process):
         sample_info['sample_name'] = sample.name
         sample_info['project_id'] = sample.project.id
         sample_info['project_name'] = sample.project.name
-        # We just assume that the LIMS project name was used
-        sample_info['samplesheet_sample_project'] = sample.project.name
+        # We just assume that the LIMS project name was NOT used (current procedure)
+        #sample_info['samplesheet_sample_project'] = sample.project.name
         sample_info['project_type'] = sample.project.udf.get('Project type')
         sample_info['delivery_method'] = sample.project.udf.get('Delivery method')
 
