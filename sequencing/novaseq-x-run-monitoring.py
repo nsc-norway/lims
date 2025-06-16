@@ -244,6 +244,8 @@ def set_lane_qc(process, run_dir):
             if not read_data.read().is_index():
                 read_label = str(nonindex_read_count + 1)
                 lane_summary = read_data.at(lane_index)
+                if math.isnan(lane_summary.yield_g()):
+                    continue # Skip if the run failed and didn't start the read
                 artifact.udf['Yield PF (Gb) R{}'.format(read_label)] = lane_summary.yield_g()
                 artifact.udf['% Bases >=Q30 R{}'.format(read_label)] = lane_summary.percent_gt_q30()
                 artifact.udf['Cluster Density (K/mm^2) R{}'.format(read_label)] = lane_summary.density().mean()
