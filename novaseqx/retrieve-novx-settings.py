@@ -9,7 +9,7 @@ logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
 
 lims = Lims(config.BASEURI, config.USERNAME, config.PASSWORD)
 
-LOAD_LIBRARY_TUBE_PROCESS_TYPE = "Load to Library Tube Strip NovaSeqX AMG 2.0"
+LOAD_LIBRARY_TUBE_PROCESS_TYPE = "Load to Library Tube Strip NovaSeqX AMG "
 RE_DEMULTIPLEX_WORKFLOW = "Re-demultiplex NovaSeq X run"
 
 SETTINGS = [
@@ -29,7 +29,7 @@ def fill_original_novx_settings(sample_sheet_process):
 
     if not all(
         la.parent_process
-        and la.parent_process.type_name == LOAD_LIBRARY_TUBE_PROCESS_TYPE
+        and la.parent_process.type_name.startswith(LOAD_LIBRARY_TUBE_PROCESS_TYPE)
         for la in input_lanes
     ):
         logging.error(
