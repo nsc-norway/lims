@@ -12,12 +12,12 @@ process = Process(lims, id=sys.argv[1])
 
 required_fields = ['Spike-in %', 'Spike-in final molarity (nM)']
 projects_to_put = set()
-for output in process.all_outputs(unique=True):
+for input in process.all_inputs(unique=True):
     for field in required_fields:
-        if field not in output.udf:
-            print("Error: '{}' is required, but not specified for pool '{}'. Please go back to Record Details and set it.".format(field, output.name))
+        if field not in input.udf:
+            print("Error: '{}' is required, but not specified for pool '{}'. Please go back to Record Details and set it.".format(field, input.name))
             sys.exit(1)
-    for sample in lims.get_batch(output.samples):
+    for sample in lims.get_batch(input.samples):
         projects_to_put.add(sample.project)
 
 for project in projects_to_put:

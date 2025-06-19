@@ -1,1 +1,0 @@
-../../normalisation/diag-pooling-worksheet-and-robot-file.py
