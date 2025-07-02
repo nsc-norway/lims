@@ -134,5 +134,9 @@ if __name__ == "__main__":
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(level=log_level, filename=output_file_name)
 
-    check_indexes_main(process, check_index_1, check_index_2)
+    try:
+        check_indexes_main(process, check_index_1, check_index_2)
+    except Exception as e:
+        print(f"{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}: {e}")
+        sys.exit(1)
 
