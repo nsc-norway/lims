@@ -242,7 +242,7 @@ class SourcePositionCalculator:
                 project_type = None
 
             container_name = input.location[0].name
-            if project_type in ["Diagnostics", "Microbiology"]:
+            if project_type in ["Diagnostics", "Microbiology", "PGT"]:
                 # Use RackTube for MIK spike-in
                 source_plate = NAME_RACK_TUBE
                 tube_id_name = container_name + "." + input.id
