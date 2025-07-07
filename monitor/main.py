@@ -206,6 +206,7 @@ def read_project(server, lims_project):
             'Sensitive': 'S',
             'Non-Sensitive': 'N',
             'Diagnostics': 'E',
+            'PGT': 'E',
             'Immunology': 'E',
             'Microbiology': 'E',
             'FHI-Covid19': 'C',
