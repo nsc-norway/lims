@@ -254,7 +254,7 @@ class SourcePositionCalculator:
                     self.rack_tube_input_counter += 1
                     source_position = new_tube_position
                     self.known_unique_input_tubes[tube_id_name] = new_tube_position
-            elif project_type in ["Sensitive", "Non-sensitive"]:
+            elif project_type.lower() in ["sensitive", "non-sensitive"]:
                 source_plate = NAME_NSC
                 cn_parts = container_name.rsplit("_", maxsplit=1)
                 if len(cn_parts) > 1 and cn_parts[-1].isdigit():
