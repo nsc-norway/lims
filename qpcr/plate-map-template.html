@@ -36,7 +36,8 @@
                 {% endif %}<br>
                 {{ placement.name }}
                 {% if placement.location[1] != "1:1" %}<br>
-                From: {{ placement.location[1] }}
+		 From: {{ placement.location[1] }}<br>
+		 {{ placement.location[0].name }}
                 {% endif %}</td>
             {% else %}
             <td class="well" style="width: 8%;">&nbsp;</td>
