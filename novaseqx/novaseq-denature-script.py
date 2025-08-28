@@ -33,7 +33,9 @@ def main(process_id, robot_file, worksheet_file):
     source_position_calculator = SourcePositionCalculator()
 
     # PhiX stock concentration for use in manual and robotic blending / spiking
-    phix_molarity = 2 # nM
+    phix_manual_molarity = 2 # nM
+    # PhiX on robot
+    phix_robot_molarity = 0.1 # nM
     # PhiX is always 4.8 microlitres per lane for the robot: giving 1 % PhiX from 2 nM conc. PhiX.
     phix_volume_simple = 4.8
     # This is the final total volume after also a4dding other reagents. This is only used to translate
@@ -81,16 +83,14 @@ def main(process_id, robot_file, worksheet_file):
         spikein_inputs = [i for i in inputs if i.udf.get('Spike-in %')]
 
         # Compute total spike-in percentage (generally in case of mulitple spike-ins that are specified as
-        # percentages of the total concentration / quantity)
+        # percentages of the library concentration / quantity)
         total_spike_fraction = sum(i.udf['Spike-in %'] for i in spikein_inputs) / 100.0
-        # Main library - fraction of the output bulk
-        nonspike_fraction = (1.0 - total_spike_fraction - phix_fraction)
 
         logging.info(f"There is one main library and {len(spikein_inputs)} spike-ins. Total spike-in amount {total_spike_fraction*100} %.")
 
-        # Required nanomoles of the output bulk
-        total_bulk_nmoles = (target_input_molarity / 1000) * final_total_volume
-        logging.info(f"The total amount of DNA should be {total_bulk_nmoles} nanomoles.")
+        # Required nanomoles of the output bulk (ignores PhiX)
+        main_library_nmoles = (target_input_molarity / 1000) * final_total_volume
+        logging.info(f"The amount of DNA in the main library should be {main_library_nmoles} nanomoles.")
 
         # Loop over inputs to calculate volumes and populate most of the table rows.
         sum_robot_library_volume = 0 # aggregate library volumes across spike-ins (microlitres)
@@ -120,11 +120,12 @@ def main(process_id, robot_file, worksheet_file):
 
             # Get library quantity
             if is_spike_in:
-                this_library_quantity = total_bulk_nmoles * (input.udf['Spike-in %'] / 100)
+                # Spike-in amount is a percentage of the baseline library DNA quantity, not a percentage of the total.
+                this_library_quantity = main_library_nmoles * (input.udf['Spike-in %'] / 100)
                 robot_row['RSB Volume'] = 0.0
                 logging.info(f"Required DNA quantity for spike-in library {input.name} is {this_library_quantity} nanomoles.")
             else:
-                this_library_quantity = total_bulk_nmoles * nonspike_fraction
+                this_library_quantity = main_library_nmoles
                 set_rsb_in_main_library_row = robot_row
                 logging.info(f"Required DNA quantity for main library {input.name} is {this_library_quantity} nanomoles.")
 
@@ -135,7 +136,7 @@ def main(process_id, robot_file, worksheet_file):
                 logging.info(f"Library {input.name} has 1 % PhiX and/or is a spike-in, setting columns to zero in worksheet.")
                 worksheet_row['Library Volume'] = 0.0
                 worksheet_row['RSB Volume'] = 0.0
-                worksheet_row[f'PhiX {phix_molarity}nM Volume'] = 0.0
+                worksheet_row[f'PhiX {phix_manual_molarity}nM Volume'] = 0.0
                 library_molarity_robot = actual_library_molarity
                 library_volume_robot = this_library_quantity / actual_library_molarity
             else:
@@ -149,10 +150,13 @@ def main(process_id, robot_file, worksheet_file):
                 library_molarity_robot = 1.5 # nM Note this is the molarity of the PhiX + library blend!
 
                 # First compute the required amount of mix to be used by the robot, at 1.5 nM.
+                # The minimum amount we have to make manually.
                 phix_fraction_manual = phix_fraction - 0.01
-                library_volume_robot = ((total_bulk_nmoles * phix_fraction_manual) + this_library_quantity) / library_molarity_robot
+                # Here, the PhiX needs to count towards the total DNA amount. Using it as an additional spike-in
+                # will make the final conc way off.
+                library_volume_robot = main_library_nmoles / library_molarity_robot
 
-                # We want to some excess volume, but at the 1.5 nM concentration. The robot won't use this excess.
+                # We want to some excess volume, but at the 1.5 nM concentration. The robot won't use the 10 uL excess.
                 required_mix_volume = 10 + library_volume_robot * robot_volume_scaling # uL
 
                 # Compute the total DNA quantity required, in nanomoles
@@ -162,8 +166,8 @@ def main(process_id, robot_file, worksheet_file):
                 library_quantity_manual = required_dna_quantity * (1.0 - phix_fraction_manual)
 
                 # Compute volumes of PhiX and library
-                phix_volume_manual = phix_quantity_manual / phix_molarity # nmol / (nmol/uL) = uL
-                worksheet_row[f'PhiX {phix_molarity}nM Volume'] = phix_volume_manual
+                phix_volume_manual = phix_quantity_manual / phix_manual_molarity # nmol / (nmol/uL) = uL
+                worksheet_row[f'PhiX {phix_manual_molarity}nM Volume'] = phix_volume_manual
                 
                 library_volume_manual = library_quantity_manual / actual_library_molarity # uL
                 worksheet_row['Library Volume'] = library_volume_manual
@@ -209,7 +213,7 @@ def main(process_id, robot_file, worksheet_file):
             [dict(**c, **w) for c, w in zip(common_rows, worksheet_rows)],
             columns = ['Source Plate', 'Source Position', 'OutPut Plate Position', 'Library Name', 'Sample Conc. (nM)',
                 'Input Conc. (pM)', 'PhiX %',
-                'Library Volume', 'RSB Volume', f'PhiX {phix_molarity}nM Volume']
+                'Library Volume', 'RSB Volume', f'PhiX {phix_manual_molarity}nM Volume']
             ).to_csv(worksheet_file, index=False, float_format = "%.2f")
 
 
@@ -239,7 +243,7 @@ class SourcePositionCalculator:
             try:
                 project_type = input.samples[0].project.udf['Project type']
             except:
-                project_type = None
+                project_type = "Error"
 
             container_name = input.location[0].name
             if project_type in ["Diagnostics", "Microbiology", "PGT"]:
