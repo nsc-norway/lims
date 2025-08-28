@@ -124,7 +124,7 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
             output_artifact = collections.namedtuple("DummyOutput", ["udf"])
             # We have no way to know the original sample ID. Sorry, we just use the NSC sample ID schema here. We couldn't possibly
             # get the UUID for a diag sample.
-            samplesheet_sampleid = lane_artifact.samples[0].name + "_" + lane_artifact.id
+            samplesheet_sampleid = lane_artifact.samples[0].project.name + "_" + lane_artifact.samples[0].name
             output_artifact.udf = {'SampleSheet Sample_ID': samplesheet_sampleid}
             dummy_outputs_for_unindexed_lanes[i['limsid']] = output_artifact
         else:
