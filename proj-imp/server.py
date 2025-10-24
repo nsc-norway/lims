@@ -384,6 +384,7 @@ class ReadSampleFile(Task):
         else:
             raise ValueError("Invalid csv sample file format.")
         cells = [line.split(sep) for line in sample_table if line.strip()]
+        cells = [row for row in cells if row[0].strip()] # Remove blank lines
         if [v.lower() for v in cells[0][:2]] == ["name", "index"]:
             type = 1
         elif [v.lower() for v in cells[0][:3]] == ["name", "index1", "index2"]:
