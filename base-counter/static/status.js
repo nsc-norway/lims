@@ -9,6 +9,7 @@ var ICONS = {
 	'hiseq4k': 'graphics/hiseq-4000.png',
 	'miseq':	'graphics/miseq.png',
 	'novaseq':	'graphics/novaseq.png',
+	'novaseqx':	'graphics/novaseq-x.png',
 	'mystery':	'graphics/mystery.png',
 	};
 
