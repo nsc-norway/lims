@@ -402,7 +402,9 @@ def get_sample_identity_matching(process):
                 sample_info['artifact_name'] = demux_artifact.name
                 sample_info['samplesheet_sample_id'] = output.udf['SampleSheet Sample_ID']
                 break
-        sample_list.append(sample_info)
+        if 'Sample sheet position' in output.udf:
+            # Only include samples which are actually present in the outputs
+            sample_list.append(sample_info)
 
     return sample_list
 
