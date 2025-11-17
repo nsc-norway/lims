@@ -157,6 +157,10 @@ def update_lims_output_info(process, demultiplex_stats, quality_metrics, detaile
                                             (quality_metrics['SampleID'] == samplesheet_sampleid)
                                             ]
 
+        if samplesheet_sampleid not in s_numbers:
+            # Sample was excluded from actual procesing
+            logging.warning(f"Sample '{samplesheet_sampleid}' isn't included in the analysis outputs, skipping.")
+            continue
         output_artifact.udf['Sample sheet position'] = s_numbers[samplesheet_sampleid]
 
         read_count = sample_demux_stats['# Reads'].sum().item()
