@@ -2,27 +2,18 @@
 var seqStatusApp = angular.module('seqStatusApp', []);
 
 var ICONS = {
-	'hiseq': 'graphics/hiseq-2500.png',
-	'hiseqx':	'graphics/hiseq-x.png',
 	'nextseq':	'graphics/nextseq.png',
-	'hiseq3k': 'graphics/hiseq-4000.png',
-	'hiseq4k': 'graphics/hiseq-4000.png',
 	'miseq':	'graphics/miseq.png',
 	'miseqi100':	'graphics/miseqi100.png',
-	'novaseq':	'graphics/novaseq.png',
 	'novaseqx':	'graphics/novaseq-x.png',
 	'mystery':	'graphics/mystery.png',
 	};
 
 var TYPES = {
-	'hiseq': 'HiSeq 2500',
-	'hiseqx':	'HiSeq X',
 	'nextseq':	'NextSeq',
-	'hiseq3k': 'HiSeq 3000',
-	'hiseq4k': 'HiSeq 4000',
 	'miseq':	'MiSeq',
 	'miseqi100':	'MiSeq i100',
-	'novaseq':	'NovaSeq',
+	'novaseqx':	'NovaSeq X',
 	'mystery':	'????',
 	};
 
