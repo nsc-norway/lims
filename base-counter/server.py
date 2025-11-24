@@ -25,7 +25,7 @@ import illuminate
 from flask import Flask, url_for, redirect, jsonify, Response, request
 
 # Storage for run folders: (path, type of run)
-RUN_STORAGES = [("/data/runScratch.boston", "general"), ("/data/runScratch.boston/NovaSeqX", "general"), ("/boston/diag/runs/veriseq", "nipt")]
+RUN_STORAGES = [("/data/runScratch.boston", "general"), ("/data/runScratch.boston/MiSeqi100", "general"), ("/data/runScratch.boston/NovaSeqX", "general"), ("/boston/diag/runs/veriseq", "nipt")]
 
 SEQUENCER_LIST = [(seq['id'], (seq['type'], seq['name']))
             for seq in yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "sequencers.yaml")))
@@ -200,6 +200,8 @@ def instrument_rate(m_id):
         per_hour = 4137931034
     elif instrument == "miseq":
         per_hour = 133928571
+    elif instrument == "miseqi100":
+        per_hour = 4137931034
     elif instrument == "novaseq" or instrument == "novaseqx":
         per_hour = 3125000000
     return per_hour / 3600.0
@@ -424,6 +426,8 @@ class FakeRun(RunStatus):
             return 400e6
         elif "miseq":
             return 25e6
+        elif "miseqi100":
+            return 1e7
         elif "novaseq":
             return 3.3e9 # 3.3 billion reads, spec S2 flow cell
 

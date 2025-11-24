@@ -5,11 +5,17 @@
   name: Mina
   id: M01334
 - type: miseq
-  name: Mike
-  id: M02980
-- type: miseq
   id: M04064
   name: Mimmi
+- type: miseqi100
+  name: Miguel
+  id: SH01006
+- type: miseqi100
+  name: ??????
+  id: SH01004
+- type: nextseq
+  name: Nellik
+  id: NDX551542
 - type: nextseq
   name: Nessie
   id: NDX551382

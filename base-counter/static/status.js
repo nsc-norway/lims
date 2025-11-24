@@ -8,6 +8,7 @@ var ICONS = {
 	'hiseq3k': 'graphics/hiseq-4000.png',
 	'hiseq4k': 'graphics/hiseq-4000.png',
 	'miseq':	'graphics/miseq.png',
+	'miseqi100':	'graphics/miseqi100.png',
 	'novaseq':	'graphics/novaseq.png',
 	'novaseqx':	'graphics/novaseq-x.png',
 	'mystery':	'graphics/mystery.png',
@@ -20,6 +21,7 @@ var TYPES = {
 	'hiseq3k': 'HiSeq 3000',
 	'hiseq4k': 'HiSeq 4000',
 	'miseq':	'MiSeq',
+	'miseqi100':	'MiSeq i100',
 	'novaseq':	'NovaSeq',
 	'mystery':	'????',
 	};
