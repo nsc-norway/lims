@@ -263,7 +263,7 @@ class RunStatus(object):
 
     def get_clusters(self):
         instrument = SEQUENCERS[self.machine_id][0]
-        if instrument in ["novaseq", "novaseqx"]:
+        if instrument in ["novaseq", "novaseqx", "miseqi100"]:
             process = subprocess.Popen(['nsc-python27', 
                             '/opt/gls/clarity/customextensions/lims/base-counter/clusters-helper.py',
                              self.run_dir],
