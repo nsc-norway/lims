@@ -436,7 +436,7 @@ def process_analysis(run_dir, analysis_dir):
         logging.info(f"Loaded RunParameters.xml in {run_dir} to look for library tube strip ID.")
         run_artifacts = get_input_artifacts(rp_tree)
     except Exception as e:
-        logging.warn(f"Error while getting input artifacts: {e}.")
+        logging.error(f"Error while getting input artifacts: {e}.")
         return
     if not run_artifacts:
         logging.info("There are no artifacts for this run, skipping.")
