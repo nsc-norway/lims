@@ -61,14 +61,14 @@ def main(process_id, concentration_source, file_id, default_vol):
         sample_no = re.match(r"([0-9A-Za-z]+)-", sample_name)
         well = output.location[1].replace(":","")
         try:
-            norm_mass = output.udf['Amount of DNA per sample (ng)']
+            norm_mass = output.udf['Amount of DNA per sample (ng) WatchMaker']
         except KeyError:
-            print "Error: Missing value for Amount of DNA per sample (ng) on", output.name, "(and possibly others)"
+            print "Error: Missing value for Amount of DNA per sample (ng) WatchMaker on", output.name, "(and possibly others)"
             sys.exit(1)
 
         # Use output-level UDF, fallback to input-specific default, then global default
-        vol = output.udf.get('Volume (uL) Diag', float(default_vol))
-        output.udf['Volume (uL) Diag'] = vol
+        vol = output.udf.get('Volume (uL) WatchMaker', float(default_vol))
+        output.udf['Volume (uL) WatchMaker'] = vol
         
         if input_conc == 0.0:
             sample_volume = vol + 1 # Will produce a warning below
